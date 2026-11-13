@@ -165,7 +165,21 @@ Every copied file keeps, at the top:
 
 `THIRD-PARTY-NOTICES` in the baker image lists TACTSharp, DBCD, and those three sources. Do not copy Altrobe's `forever-sets.json` or `popular-weapons.json`. Those are curated game-ID lists, not code.
 
-## 6. Build order
+## 6. When the baker runs
+
+Not in CI, and not on deploy.
+
+| Moment                                                         | Runs the baker?                                                                                                                                                    |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CI                                                             | No. `dotnet test` uses fakes. The viewer test uses the stand-in glTF. CI never calls Blizzard and never writes the asset store.                                    |
+| Deploy                                                         | No. A deploy ships the baker image and the page. The asset volume stays. Baking on deploy would re-download the game files for bytes that have not changed.        |
+| Milestone A, first time                                        | Yes, once, by hand. Locally to see the character, then once on the server to fill that server's volume. Copying the volume across is fine too.                     |
+| Converter change (`OutputVersion`) or a different fixed outfit | Yes, once more. Old files stay beside the new ones because the version is in the path.                                                                             |
+| Milestone B, a look needs a file we have not converted         | Yes, one pg-boss job for that `(build, fileId)`. A second visitor for the same file does not start a second job.                                                   |
+| Milestone B, Blizzard ships a new `wowf` build                 | Yes. A daily check notices the build and rebakes the race bodies, then the roster's missing items. The previous build keeps serving until the new one is complete. |
+| A page view where the files are already there                  | No. The page reads the asset store.                                                                                                                                |
+
+## 7. Build order
 
 Two milestones. The first one does not know who a guild member is and does not call Battle.net. Gear is a fixed look we choose. The second milestone swaps that fixed look for the real equipment.
 
@@ -187,7 +201,7 @@ Only after milestone A is boring: the same character, same animation, locally an
 5. **The join.** The character module maps a Battle.net snapshot to a look, lists the file IDs, and enqueues the missing ones on pg-boss. The baker becomes the worker for those jobs. HTTP tests cover `ready`, `pending`, and `unavailable` with fake ports. Confirm `character-appearance` on the live Forever API here, not earlier. If it does not return choice IDs, write down what it does return before mapping. Missing choices fall back to the bake's defaults.
 6. **The page.** The character route shows the official render first and swaps in the model when `ready`. Polling stays on that route. The roster stays images. Playwright against the stub and the stand-in glTF.
 
-## 7. Checks for the agent doing the work
+## 8. Checks for the agent doing the work
 
 - Diff against Altrobe at `b864982`, not against whatever `main` is that week. If we need a newer converter fix, bump the pin in this file in the same change.
 - Do not commit `.glb`, `.png` from the game, BLP, DB2, or CASC indexes. The content check must fail when one appears.

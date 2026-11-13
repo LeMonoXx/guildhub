@@ -151,7 +151,7 @@ apps/api/             Enqueues file IDs. Never references the baker assembly.
 apps/web/             widgets/character-model, lazy on the character route.
 ```
 
-The baker image is the only one with .NET and the only one that may write the asset volume. The API image stays read-only. They share Postgres through pg-boss: the API inserts a job keyed by `(build, fileId)`, the baker runs it once.
+The baker image is the only one with .NET and the only one that may write the asset volume. The API image stays read-only. From milestone B they share Postgres through pg-boss: the API inserts a job keyed by `(build, fileId)`, the baker runs it once. Milestone A does not have that queue. The baker is a command, and the page reads one fixed look.
 
 Do not add a second Node reimplementation of M2 "so the stack stays one language". The converter is about 30 k lines of tested C#. Rewriting it is how this slips.
 
@@ -167,14 +167,25 @@ Every copied file keeps, at the top:
 
 ## 6. Build order
 
+Two milestones. The first one does not know who a guild member is and does not call Battle.net. Gear is a fixed look we choose. The second milestone swaps that fixed look for the real equipment.
+
 Each phase ends with `pnpm verify` for the TypeScript, and `dotnet test` for the baker. Do not start a phase by copying the whole Altrobe repo.
 
+### Milestone A. One character on screen, locally and on the server
+
+The baker is a command, not a job queue. The page reads a fixed look JSON from the asset store. No `apps/api` character module, no pg-boss, no Armory.
+
 1. **Baker skeleton.** New `apps/model-baker`. Copy `Convert/`, `Storage/CdnSource.cs`, `Tables/`, and the `.dbd` files at the pinned WoWDBDefs commit. Add the game-content check. `dotnet test` passes without a network. No API, no web.
-2. **One recorded character.** A manual bake, not CI, against the CDN for a single Traceless character's race body and worn items. Record the timings into [character rendering §8](character-rendering.md), replacing the estimates. Confirm `character-appearance` on the live Forever API at the same time. If it does not return choice IDs, stop and write down what it does return before mapping.
-3. **Viewer on a fixture.** Copy `dress.ts`, `compositor.ts`, `character.ts`, `prepare.ts`, the material and particle files, and their tests. Point them at a checked-in fixture that is not game content: a few-kilobyte stand-in glTF we author ourselves, so CI never needs Blizzard bytes. The character route shows it behind a flag. The real bake output stays in the asset store, gitignored.
-4. **The join.** The character module maps a snapshot to a look, lists the file IDs, and enqueues the missing ones. HTTP tests cover `ready`, `pending`, and `unavailable` with fake ports. No CDN.
-5. **The page.** Official render first, model swapped in when `ready`, polling only on that route, roster unchanged. Playwright against the stub and the stand-in glTF.
-6. **Production bake.** Only after the owner accepts serving the baked art. The baker container, the asset volume, and Caddy serving `/assets/` as immutable. A new `wowf` build rebakes bodies, then the roster's items.
+2. **Bake one fixed look.** Run the baker once against the CDN for one race and sex, the default customization, and a small fixed outfit (one chest, one weapon is enough). Write the glTF, the PNG layers, and a `look.json` into the asset store, gitignored. Record the timings into [character rendering §8](character-rendering.md), replacing the estimates. Which items are in the outfit does not matter.
+3. **Viewer.** Copy `dress.ts`, `compositor.ts`, `character.ts`, `prepare.ts`, the material and particle files, and their tests. A minimal page, not the guild site, loads that `look.json` and the baked files from our own origin. CI uses a stand-in glTF we author ourselves, a few kilobytes, so the test never needs Blizzard bytes. The real bake stays out of git.
+4. **Same thing on the server.** The baker image and a static server (Caddy, or the page's own host) run on the Linux host with the asset volume. Opening the page there shows the same character as locally. This is the gate for milestone A. Serving those bytes is the owner's call in [character rendering §12](character-rendering.md), made before this step, not after.
+
+### Milestone B. The real items
+
+Only after milestone A is boring: the same character, same animation, locally and on the server.
+
+5. **The join.** The character module maps a Battle.net snapshot to a look, lists the file IDs, and enqueues the missing ones on pg-boss. The baker becomes the worker for those jobs. HTTP tests cover `ready`, `pending`, and `unavailable` with fake ports. Confirm `character-appearance` on the live Forever API here, not earlier. If it does not return choice IDs, write down what it does return before mapping. Missing choices fall back to the bake's defaults.
+6. **The page.** The character route shows the official render first and swaps in the model when `ready`. Polling stays on that route. The roster stays images. Playwright against the stub and the stand-in glTF.
 
 ## 7. Checks for the agent doing the work
 

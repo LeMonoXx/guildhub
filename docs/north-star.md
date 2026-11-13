@@ -174,5 +174,5 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 6. Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.
 7. Identity module: Battle.net login, sessions, `GET /api/me`.
 8. Character module and pages (official renders), then guild extensions.
-9. Character model pipeline, in the order of the [plan](architecture/character-rendering-plan.md). Official renders stay the fallback.
+9. Character model pipeline, in the order of the [plan](architecture/character-rendering-plan.md): first one fixed look, rendered locally and on the server, then the Battle.net join for real gear. Official renders stay the fallback.
 10. Production server: Caddy, backups, deployment workflow.

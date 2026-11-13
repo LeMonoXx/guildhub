@@ -1,7 +1,7 @@
 # 0004. RFC 9457 problems with stable error codes
 
-Status: Accepted
-Date: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13
 
 ## Context
 

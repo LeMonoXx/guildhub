@@ -1,7 +1,7 @@
 # 0007. Docker Compose on a Linux server
 
-Status: Accepted
-Date: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13
 
 ## Context
 

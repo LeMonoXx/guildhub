@@ -1,7 +1,7 @@
 # 0005. Battle.net OAuth with server-side sessions
 
-Status: Accepted
-Date: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13
 
 ## Context
 

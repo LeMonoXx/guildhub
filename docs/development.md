@@ -83,9 +83,10 @@ exporters; they do not contain the dashboard or a telemetry database.
 
 ## 3. Battle.net stub (`apps/battlenet-stub`)
 
-- A small Hono server that implements the parts of Battle.net we use: `/authorize`, `/token`, `/userinfo`, the OAuth redirect flow, and the Profile and Game Data endpoints for one guild.
-- Responses come from recorded, anonymised fixtures in `apps/battlenet-stub/fixtures/`, captured once from the real API for Traceless and checked in.
-- Fake users for login: for example `guildmaster`, `member`, `outsider`, chosen on a stub login page. E2E tests and agents log in without real accounts.
+- A small Hono server that implements the parts of Battle.net we use today: client-credentials
+  `/token` and the guild profile/roster Game Data endpoints. Login OAuth (`/authorize`, `/userinfo`)
+  lands with identity.
+- Responses come from synthetic, anonymous fixtures in `apps/battlenet-stub/src/fixtures.ts`.
 - Error switches (`?fail=503`, `?fail=429`) let tests and agents exercise degraded paths.
 
 ## 4. Database workflow

@@ -4,7 +4,7 @@ Rules for the API. The root [`AGENTS.md`](../../AGENTS.md) applies too. The full
 
 ## Current state
 
-`src/index.ts` is the HTTP composition root and `src/migrate.ts` is the one-shot migrator. Shared HTTP, env, instance loading, database, kernel, and observability live under `src/platform/`. Feature modules land under `src/modules/` when they exist.
+`src/index.ts` is the HTTP composition root and `src/migrate.ts` is the one-shot migrator. Shared HTTP, env, instance loading, database, kernel, and observability live under `src/platform/`. The guild module under `src/modules/guild/` serves the public guild profile and roster.
 
 ## Import rules (summary)
 

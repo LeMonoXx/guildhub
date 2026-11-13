@@ -65,8 +65,9 @@ flowchart LR
 - A worker process (same codebase as the API, different entry point) refreshes Battle.net data through jobs stored in Postgres (pg-boss). There is no Redis.
 - The server's existing reverse proxy terminates TLS and routes one hostname by path. GuildHub speaks HTTP on the Docker network and does not bind ports 80 or 443. Web and API share that hostname, so there is no CORS and the session cookie stays `SameSite=Lax`. See [deployment](deployment.md).
 
-Today: `apps/api` serves `/health/live` and `/health/ready`, loads a validated instance config, and
-talks to PostgreSQL. `packages/contracts` holds the problem catalog and instance schema.
+Today: `apps/api` serves `/health/live` and `/health/ready`, loads a validated instance config,
+talks to PostgreSQL, and serves a cached guild profile and roster from Battle.net.
+`packages/contracts` holds the problem catalog, instance schema, and guild HTTP contracts.
 `instances/traceless` is the first instance. `apps/battlenet-stub` fakes client-credentials and
 guild endpoints. `apphost/` starts Postgres, migrate, API, and the stub. `apps/model-baker` has its
 tested converter skeleton. The web app and worker are not built yet.
@@ -180,7 +181,7 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
    `compose.yaml` remains the production stand-in until `aspire publish` output is committed.
 4. ~~Complete the observability rollout as each process lands; split `/health` into `/health/live`
    and `/health/ready`.~~ Done.
-5. Guild module: roster from Battle.net, cached, `GET /api/guild` and `GET /api/guild/roster`.
+5. ~~Guild module: roster from Battle.net, cached, `GET /api/guild` and `GET /api/guild/roster`.~~ Done.
 6. Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.
 7. Identity module: Battle.net login, sessions, `GET /api/me`.
 8. Character module and pages (official renders), then guild extensions.

@@ -5,9 +5,8 @@ const app = createStubApp();
 
 describe("Battle.net stub", () => {
   it("issues a client-credentials token", async () => {
-    const response = await app.request("/oauth/token", {
+    const response = await app.request("/token?grant_type=client_credentials", {
       method: "POST",
-      body: new URLSearchParams({ grant_type: "client_credentials" }),
     });
 
     expect(response.status).toBe(200);

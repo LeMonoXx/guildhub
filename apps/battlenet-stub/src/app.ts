@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { guildProfile, guildRoster } from "./fixtures.js";
 
 export function createStubApp(): Hono {
@@ -17,23 +17,14 @@ export function createStubApp(): Hono {
     return;
   });
 
-  app.post("/oauth/token", async (context) => {
-    const body = await context.req.parseBody();
-    if (body.grant_type !== "client_credentials") {
-      return context.json({ error: "unsupported_grant_type" }, 400);
-    }
-    return context.json({
-      access_token: "stub-access-token",
-      token_type: "bearer",
-      expires_in: 3600,
-    });
-  });
+  app.post("/token", issueToken);
+  app.post("/oauth/token", issueToken);
 
   app.get("/data/wow/guild/:guildSlug", (context) => {
     const guildSlug = context.req.param("guildSlug");
     return context.json({
       ...guildProfile,
-      name_slug: guildSlug,
+      slug: guildSlug,
       _links: { self: { href: `/data/wow/guild/${guildSlug}` } },
     });
   });
@@ -42,10 +33,32 @@ export function createStubApp(): Hono {
     const guildSlug = context.req.param("guildSlug");
     return context.json({
       ...guildRoster,
-      guild: { ...guildRoster.guild, name_slug: guildSlug },
+      guild: { ...guildRoster.guild, slug: guildSlug },
       _links: { self: { href: `/data/wow/guild/${guildSlug}/roster` } },
     });
   });
 
   return app;
+}
+
+async function issueToken(context: Context): Promise<Response> {
+  const grantType =
+    context.req.query("grant_type") ?? (await bodyGrantType(context));
+  if (grantType !== "client_credentials") {
+    return context.json({ error: "unsupported_grant_type" }, 400);
+  }
+  return context.json({
+    access_token: "stub-access-token",
+    token_type: "bearer",
+    expires_in: 3600,
+  });
+}
+
+async function bodyGrantType(context: Context): Promise<string | undefined> {
+  try {
+    const body = await context.req.parseBody();
+    return typeof body.grant_type === "string" ? body.grant_type : undefined;
+  } catch {
+    return undefined;
+  }
 }

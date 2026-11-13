@@ -1,6 +1,15 @@
+import {
+  createGuildBattleNetClient,
+  makeBattleNetGuildSource,
+  makeDrizzleGuildCache,
+  makeGetGuild,
+  makeGetGuildRoster,
+  registerGuild,
+} from "./modules/guild/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
+import { systemClock } from "./platform/kernel/clock.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 
 const env = readEnv(process.env);
@@ -23,6 +32,28 @@ const app = createApp({
   logger,
   serviceName: env.OTEL_SERVICE_NAME,
   database,
+});
+const battleNet = await createGuildBattleNetClient({
+  key: env.BATTLENET_CLIENT_ID,
+  secret: env.BATTLENET_CLIENT_SECRET,
+  origin: instance.region,
+  apiBaseUrl: env.BATTLENET_API_BASE_URL,
+});
+const guildCache = makeDrizzleGuildCache(database);
+const guildSource = makeBattleNetGuildSource(battleNet);
+const guildDeps = {
+  source: guildSource,
+  cache: guildCache,
+  clock: systemClock,
+  maxAgeMs: env.GUILD_CACHE_TTL_SECONDS * 1000,
+};
+registerGuild(app, {
+  instance,
+  getGuild: makeGetGuild(guildDeps),
+  getGuildRoster: makeGetGuildRoster(guildDeps),
+  onStaleCache: (kind) => {
+    logger.warn({ module: "guild", kind }, "serving stale guild cache");
+  },
 });
 
 const server = serve(

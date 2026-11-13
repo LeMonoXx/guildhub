@@ -31,7 +31,7 @@ apps/api/
       ...
 ```
 
-Today the composition root is `src/index.ts`. Shared HTTP, config, kernel, and observability already live under `src/platform/`. Feature modules land under `src/modules/` when they exist.
+Today the composition root is `src/index.ts`. Shared HTTP, config, kernel, db, and observability live under `src/platform/`. The guild module serves `GET /api/guild` and `GET /api/guild/roster`.
 
 ## 2. Layers and what they may import
 

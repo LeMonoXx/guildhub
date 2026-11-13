@@ -31,3 +31,7 @@ it("requires an instance directory", () => {
     "Invalid environment: INSTANCE_DIR",
   );
 });
+
+it("defaults the guild cache ttl", () => {
+  expect(readEnv(valid).GUILD_CACHE_TTL_SECONDS).toBe(300);
+});

@@ -6,9 +6,9 @@ Instructions for coding agents (and humans) working in this repository. Read thi
 
 GuildHub: a website platform for one World of Warcraft: Forever guild per deployment. Traceless (`eu` / `traceless`) is the first instance. The target architecture is in [`docs/north-star.md`](docs/north-star.md). It is binding.
 
-Today `apps/api` exists (Hono, `GET /health`) and `apps/model-baker` has its .NET 10 converter
-skeleton. Both have the observability foundation. Most of the north star is not built yet. Do not
-describe planned parts as existing.
+Today `apps/api` serves health, instance config, and the cached guild profile/roster. `apps/model-baker`
+has its .NET 10 converter skeleton. Both have the observability foundation. Most of the north star is
+not built yet. Do not describe planned parts as existing.
 
 ## Read before you work
 

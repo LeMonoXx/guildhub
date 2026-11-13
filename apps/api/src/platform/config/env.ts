@@ -6,6 +6,13 @@ const schema = z.object({
   BATTLENET_CLIENT_SECRET: z.string().min(1),
   BATTLENET_REDIRECT_URI: z.url(),
   DATABASE_URL: z.string().min(1),
+  GUILD_CACHE_TTL_SECONDS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value === undefined || value === "" ? 300 : Number(value),
+    )
+    .pipe(z.number().int().positive()),
   INSTANCE_DIR: z.string().min(1),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])

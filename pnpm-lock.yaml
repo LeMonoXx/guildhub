@@ -45,6 +45,15 @@ importers:
 
   apps/api:
     dependencies:
+      '@blizzard-api/client':
+        specifier: ^5.5.3
+        version: 5.5.3(@blizzard-api/core@4.3.0)
+      '@blizzard-api/core':
+        specifier: ^4.3.0
+        version: 4.3.0
+      '@blizzard-api/wow-forever':
+        specifier: ^0.1.1
+        version: 0.1.1(@blizzard-api/core@4.3.0)
       '@guildhub/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -158,6 +167,22 @@ packages:
 
   '@balena/dockerignore@1.0.2':
     resolution: {integrity: sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==}
+
+  '@blizzard-api/client@5.5.3':
+    resolution: {integrity: sha512-83n0HxfyiV6iB1hCx8tDz8hThhX0AalvadQQL+mye4VOSk/di4TnSi8oOxUQ+bJVXC6nZIFnNnjXPjLRuOKeWw==}
+    engines: {node: ^22.13.0 || ^24 || ^26}
+    peerDependencies:
+      '@blizzard-api/core': 4.3.0
+
+  '@blizzard-api/core@4.3.0':
+    resolution: {integrity: sha512-dP1ouz7lg0yTjNkPImPyXoFY9n5PMy2fbhb1eHOEAl0SVyoYx1t6BqJUyrUf8qF1Wcgl0MryikWrt5ZkPnDnTA==}
+    engines: {node: ^22.13.0 || ^24 || ^26}
+
+  '@blizzard-api/wow-forever@0.1.1':
+    resolution: {integrity: sha512-1vqH1y2Kt7AWnA+DpXRC9EpX3nrJ47uTVbMRdLXvZsKKsLbSOM4I0oat7yoQ8g+J0IJ1Q6ftIMLha4AxBE0wFA==}
+    engines: {node: ^22.13.0 || ^24 || ^26}
+    peerDependencies:
+      '@blizzard-api/core': 4.3.0
 
   '@cacheable/memory@2.2.0':
     resolution: {integrity: sha512-CTLKqLItRCEixEAewD3/j9DB3/o96gpTPD4eJ1v+DGOlxZRZncRQkGYqqnAGCscYd6RNeXfGeiuCphsPtqyIfQ==}
@@ -1549,6 +1574,10 @@ packages:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
     engines: {node: '>=6'}
 
+  ky@2.2.0:
+    resolution: {integrity: sha512-4+B63kyZt+Y8snQiUGydK1vgY9xYQJZEh9K/nIAIEts+gYJzy1EiAw3BbK8xpWRuWUpN70SNCMjqRGTm75xxIA==}
+    engines: {node: '>=22'}
+
   lazystream@1.0.1:
     resolution: {integrity: sha512-b94GiNHQNy6JNTrt5w6zNyffMrNkXZb3KTkCZJb2V1xaEGCk093vkZ2jk3tpaeP33/OiXC+WvK9AxUebnf5nbw==}
     engines: {node: '>= 0.6.3'}
@@ -2205,6 +2234,17 @@ packages:
 snapshots:
 
   '@balena/dockerignore@1.0.2': {}
+
+  '@blizzard-api/client@5.5.3(@blizzard-api/core@4.3.0)':
+    dependencies:
+      '@blizzard-api/core': 4.3.0
+      ky: 2.2.0
+
+  '@blizzard-api/core@4.3.0': {}
+
+  '@blizzard-api/wow-forever@0.1.1(@blizzard-api/core@4.3.0)':
+    dependencies:
+      '@blizzard-api/core': 4.3.0
 
   '@cacheable/memory@2.2.0':
     dependencies:
@@ -3407,6 +3447,8 @@ snapshots:
       '@keyv/serialize': 1.1.1
 
   kleur@3.0.3: {}
+
+  ky@2.2.0: {}
 
   lazystream@1.0.1:
     dependencies:

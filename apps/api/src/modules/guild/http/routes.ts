@@ -1,0 +1,73 @@
+import type { InstanceConfig } from "@guildhub/contracts";
+import {
+  guildProfileResponseSchema,
+  guildRosterResponseSchema,
+} from "@guildhub/contracts";
+import type { Hono } from "hono";
+import { problemResponse } from "../../../platform/http/problems.js";
+import type { AppEnv } from "../../../platform/http/app.js";
+import type { GetGuild } from "../application/get-guild.js";
+import type { GetGuildRoster } from "../application/get-guild-roster.js";
+import type { GuildView } from "../application/ports.js";
+
+export interface RegisterGuildDeps {
+  readonly instance: InstanceConfig;
+  readonly getGuild: GetGuild;
+  readonly getGuildRoster: GetGuildRoster;
+  readonly onStaleCache: (kind: "profile" | "roster") => void;
+}
+
+export function registerGuild(
+  app: Hono<AppEnv>,
+  deps: RegisterGuildDeps,
+): void {
+  const guild = { slug: deps.instance.guild.slug };
+
+  app.get("/api/guild", async (context) => {
+    const result = await deps.getGuild(guild);
+    if (!result.ok) return problemResponse(context, result.error);
+    if (result.value.stale) deps.onStaleCache("profile");
+    setCacheHeaders(context, result.value);
+    return context.json(
+      guildProfileResponseSchema.parse({
+        ...result.value.data,
+        fetchedAt: result.value.fetchedAt.toISOString(),
+        stale: result.value.stale,
+      }),
+    );
+  });
+
+  app.get("/api/guild/roster", async (context) => {
+    const result = await deps.getGuildRoster(guild);
+    if (!result.ok) return problemResponse(context, result.error);
+    if (result.value.stale) deps.onStaleCache("roster");
+    setCacheHeaders(context, result.value);
+    return context.json(
+      guildRosterResponseSchema.parse({
+        members: result.value.data.map((member) => ({
+          characterId: member.characterId,
+          name: member.name,
+          surname: member.surname,
+          level: member.level,
+          rankId: member.rankId,
+          classId: member.classId,
+          raceId: member.raceId,
+        })),
+        fetchedAt: result.value.fetchedAt.toISOString(),
+        stale: result.value.stale,
+      }),
+    );
+  });
+}
+
+function setCacheHeaders(
+  context: { header: (name: string, value: string) => void },
+  view: GuildView<unknown>,
+): void {
+  const etag = `"${view.fetchedAt.toISOString()}-${view.stale ? "stale" : "fresh"}"`;
+  context.header("ETag", etag);
+  context.header(
+    "Cache-Control",
+    view.stale ? "public, max-age=0, must-revalidate" : "public, max-age=60",
+  );
+}

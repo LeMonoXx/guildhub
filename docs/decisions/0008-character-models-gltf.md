@@ -11,12 +11,14 @@ The conversion we would design already exists. [Altrobe](https://github.com/Clou
 
 ## Decision
 
-Bake Forever game data into glTF and textures off the request, serve them as immutable cached files, and play them with Three.js on the character page only. The official render image is the fallback and the roster image. A look hash joins a character's Battle.net appearance and gear to those files, so a visit never waits on a build.
+Bake Forever game data into glTF and PNG off the request, serve them as immutable cached files, and play them with Three.js on the character page only. The browser composites the body texture from cached layers. The official render image is the fallback and the roster image. A look hash joins a character's Battle.net appearance and gear to those files, so a visit never waits on a build.
 
-The pipeline, the cache layers, and the budgets are in [character rendering](../architecture/character-rendering.md).
+Game bytes are not committed and not fetched live by the browser. The baker reads Blizzard's CDN once per build and writes our asset store. Table definitions from WoWDBDefs are community format files and may be vendored. The rule and the file list are in the [plan](../architecture/character-rendering-plan.md).
+
+The pipeline and the budgets are in [character rendering](../architecture/character-rendering.md).
 
 ## Consequences
 
-- We copy a proven shape instead of inventing one. Altrobe is MIT; we still write our own worker, because the part it does not have is the Armory join and our cache.
-- The API stays fast and read-only. Extraction lives in `apps/model-worker`.
-- Game files and baked assets stay out of the repo. Serving them is the owner's call before production (character rendering §12).
+- We copy Altrobe's converter and viewer instead of rewriting them. The part that is ours is the Armory join and a bake scoped to the guild.
+- The baker is .NET, in its own image. The API stays TypeScript, fast, and read-only.
+- Game files and baked assets stay out of git. Serving them is the owner's call before production (character rendering §12).

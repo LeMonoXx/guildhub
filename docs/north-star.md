@@ -108,17 +108,17 @@ Today: `apps/api` only. The other folders are created when their first code land
 
 ### 6.1 What lives where
 
-| Data                                              | Source of truth                   | Stored by us                                                                                                                                          |
-| ------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Guild profile, roster, ranks (rank IDs)           | Battle.net Profile API            | Cached snapshot with `fetched_at`                                                                                                                     |
-| Character profile, equipment, stats, media        | Battle.net Profile API            | Cached snapshot with `fetched_at`                                                                                                                     |
-| Items, media of items                             | Battle.net Game Data API          | Cached, long TTL                                                                                                                                      |
-| User identity (Battle.net account ID, BattleTag)  | Battle.net OAuth                  | `users` row                                                                                                                                           |
-| User's own characters                             | Battle.net `/profile/user/wow`    | Link table, refreshed on login                                                                                                                        |
-| Sessions                                          | GuildHub                          | `sessions` row, only a hash of the session token                                                                                                      |
-| Guild extensions (rank names, notes, events)      | GuildHub                          | Own tables                                                                                                                                            |
-| Instance configuration                            | `instances/<slug>/`               | Not in the database                                                                                                                                   |
-| Character 3D look (mesh, animations, items, skin) | Forever game files, baked to glTF | Asset store, keyed by client build and look hash. Official render stays the fallback. See [character rendering](architecture/character-rendering.md). |
+| Data                                                                | Source of truth                          | Stored by us                                                                                                                         |
+| ------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Guild profile, roster, ranks (rank IDs)                             | Battle.net Profile API                   | Cached snapshot with `fetched_at`                                                                                                    |
+| Character profile, equipment, stats, media                          | Battle.net Profile API                   | Cached snapshot with `fetched_at`                                                                                                    |
+| Items, media of items                                               | Battle.net Game Data API                 | Cached, long TTL                                                                                                                     |
+| User identity (Battle.net account ID, BattleTag)                    | Battle.net OAuth                         | `users` row                                                                                                                          |
+| User's own characters                                               | Battle.net `/profile/user/wow`           | Link table, refreshed on login                                                                                                       |
+| Sessions                                                            | GuildHub                                 | `sessions` row, only a hash of the session token                                                                                     |
+| Guild extensions (rank names, notes, events)                        | GuildHub                                 | Own tables                                                                                                                           |
+| Instance configuration                                              | `instances/<slug>/`                      | Not in the database                                                                                                                  |
+| Character 3D look (meshes, animations, item models, texture layers) | Forever game files, baked once per build | Our asset store, never git, never a live CDN fetch from the browser. See [character rendering](architecture/character-rendering.md). |
 
 OAuth access tokens of users are kept only as long as a request flow needs them. If a feature needs them later (for example to refresh the "Me" page), they are stored encrypted at rest, with a decision record.
 
@@ -174,5 +174,5 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 6. Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.
 7. Identity module: Battle.net login, sessions, `GET /api/me`.
 8. Character module and pages (official renders), then guild extensions.
-9. Character model pipeline: model worker, asset store, Three.js viewer. Official renders stay the fallback ([character rendering](architecture/character-rendering.md)).
+9. Character model pipeline, in the order of the [plan](architecture/character-rendering-plan.md). Official renders stay the fallback.
 10. Production server: Caddy, backups, deployment workflow.

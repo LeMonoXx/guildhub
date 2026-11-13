@@ -10,14 +10,14 @@ Today only `apps/api` exists (Hono, `GET /health`). Most of the north star is no
 
 ## Read before you work
 
-| You are about to...                         | Read first                                                                                                  |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Change anything in `apps/api`               | [`docs/architecture/backend.md`](docs/architecture/backend.md), [`apps/api/AGENTS.md`](apps/api/AGENTS.md)  |
-| Change or create `apps/web`                 | [`docs/architecture/frontend.md`](docs/architecture/frontend.md)                                            |
-| Touch character models or the asset bake    | [`docs/architecture/character-rendering.md`](docs/architecture/character-rendering.md)                      |
-| Add or handle an error                      | [`docs/architecture/errors.md`](docs/architecture/errors.md)                                                |
-| Touch the database, local stack, or tests   | [`docs/development.md`](docs/development.md)                                                                |
-| Pick a library, tool, or pattern not listed | [`docs/decisions/`](docs/decisions/) — if none covers it, propose a new record instead of choosing silently |
+| You are about to...                         | Read first                                                                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Change anything in `apps/api`               | [`docs/architecture/backend.md`](docs/architecture/backend.md), [`apps/api/AGENTS.md`](apps/api/AGENTS.md)                                             |
+| Change or create `apps/web`                 | [`docs/architecture/frontend.md`](docs/architecture/frontend.md)                                                                                       |
+| Touch character models or the asset bake    | [`docs/architecture/character-rendering.md`](docs/architecture/character-rendering.md), then the [plan](docs/architecture/character-rendering-plan.md) |
+| Add or handle an error                      | [`docs/architecture/errors.md`](docs/architecture/errors.md)                                                                                           |
+| Touch the database, local stack, or tests   | [`docs/development.md`](docs/development.md)                                                                                                           |
+| Pick a library, tool, or pattern not listed | [`docs/decisions/`](docs/decisions/) — if none covers it, propose a new record instead of choosing silently                                            |
 
 ## Commands
 

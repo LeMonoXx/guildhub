@@ -4,6 +4,8 @@ How a guild character becomes an animated 3D model on the site. Decision: [0008]
 
 Nothing here is built yet. Until the pipeline exists, character pages show the official render image from `characterMediaSummary`. That image stays the fallback afterwards.
 
+What we copy from Altrobe, what we leave, and the order to build it: [character rendering plan](character-rendering-plan.md).
+
 ## 1. No running game
 
 A page view never starts World of Warcraft, never runs wowmodelviewer, and never runs wow.export.
@@ -13,7 +15,7 @@ A page view never starts World of Warcraft, never runs wowmodelviewer, and never
 | Battle.net Profile API                                                          | The facts: race, gender, customization, equipped item IDs, and the official render image. Already cached as a character snapshot (north star §6, §7).                                                                                                                                                                                                                                              |
 | Forever game files (product `wowf`)                                             | The 3D source: meshes, skeletons, animations, item models, textures, and the tables that map an item ID to a display. Owned by Blizzard. Not committed to the repo.                                                                                                                                                                                                                                |
 | wow.export ([Kruithne/wow.export](https://github.com/Kruithne/wow.export), MIT) | The reference implementation. It reads those files, including product `wowf`, and can stream them from Blizzard's CDN with no local install (`casc-source-remote`). It exports M2 models to glTF with their animations, and it already composites a character texture from customization and gear. We study it and may use it by hand to prove a character once. It is not a service in our stack. |
-| `apps/model-worker`                                                             | Our own pipeline, run as a background job. It reads the game files (CDN, or a CASC copy on disk if the CDN is too slow) and writes our cached assets.                                                                                                                                                                                                                                              |
+| `apps/model-baker`                                                              | .NET bake tool, copied from Altrobe. Reads the game files once per build and writes glTF and PNG into the asset store.                                                                                                                                                                                                                                                                             |
 | The browser                                                                     | Loads the cached glTF, textures, and a manifest from our own origin. Plays animations with Three.js.                                                                                                                                                                                                                                                                                               |
 
 "From the Forever client" means from the game's data files, read while no game is running. The website only ever fetches files we already built and cached.
@@ -60,51 +62,49 @@ Altrobe (§2) is the working proof of this split for Forever. Our pipeline follo
 
 Measured nothing yet; the orders of magnitude are why the design looks like this. Budgets in §8 are the targets we build to.
 
-| Work                                                           | How often it changes               | Cost if done live                                                              |
-| -------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
-| Battle.net character call                                      | Gear changes; we poll on a window  | A network call under a limit of 100 requests/second and 36,000/hour per client |
-| Item ID to display, model file, geosets, texture paths         | Once per Forever patch             | Parsing DB2 tables out of the game files                                       |
-| Extracting a mesh, an animation, or an item model              | Once per file per patch            | Download from the CDN, decode BLP, parse M2                                    |
-| Compositing the body texture (skin, face, hair, armor, tabard) | When that character's look changes | GPU or CPU bake of several layers                                              |
-| Loading the model in the browser                               | Every visit, unless cached         | A few hundred kilobytes to a few megabytes                                     |
+| Work                                                           | How often it changes                               | Cost if done live                                                              |
+| -------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Battle.net character call                                      | Gear changes; we poll on a window                  | A network call under a limit of 100 requests/second and 36,000/hour per client |
+| Item ID to display, model file, geosets, texture paths         | Once per Forever patch                             | Parsing DB2 tables out of the game files                                       |
+| Extracting a mesh, an animation, or an item model              | Once per file per patch                            | Download from the CDN, decode BLP, parse M2                                    |
+| Compositing the body texture (skin, face, hair, armor, tabard) | Every view, in the browser, from cached layer PNGs | Milliseconds on the GPU once the layers are downloaded. Not a server job.      |
+| Loading the model in the browser                               | Every visit, unless cached                         | A few hundred kilobytes to a few megabytes                                     |
 
-A roster of 16 characters shares the race meshes, the animations, and most item models. Those are extracted once. Only the composited body texture and the choice of parts are per look.
+A roster of 16 characters shares the race meshes, the animations, the item models, and the texture layers. Those are extracted once. A look is only the list of which layers and parts to use. The browser composites the body texture.
 
 ## 5. Pipeline
 
 ```mermaid
 flowchart LR
-  bnet[Battle.net snapshot\nrace, customization, item IDs] --> look[Look hash]
-  files[Forever game files\nCDN or a CASC copy] --> index[Per-build index\nitem to display, files, geosets]
-  index --> shared[Shared assets\nbody meshes, animations, item models]
-  look --> skin[Body texture for this look]
-  shared --> manifest[Look manifest]
-  skin --> manifest
-  manifest --> store[(Asset store)]
-  store --> browser[Three.js on the character page]
+  bnet[Battle.net snapshot\nrace, customization, item IDs] --> look[Look description]
+  files[Forever game files\nread by the baker, once per build] --> index[Per-build index]
+  index --> shared[Shared assets\nglTF, PNG layers, animations]
+  shared --> store[(Asset store)]
+  look --> browser[Browser composites the body texture\nand plays the glTF]
+  store --> browser
 ```
 
-All four build steps run in `apps/model-worker`, driven by pg-boss. The API process never does them.
+The baker runs off the request. The API process never converts a file. The browser composites.
 
-1. **Index a build.** Resolve the current `wowf` build, read the tables, and write a queryable index (item ID to display ID, model file, geosets, texture paths). One index per build.
-2. **Extract shared assets.** Export the race body meshes with their animations, and each distinct item display we actually encounter, to glTF. Decode textures to a web format (WebP, PNG where WebP cannot hold the data). Keyed by build plus file ID, so the second character to wear an item pays nothing.
-3. **Composite the body texture** for one look: skin, face, hair, armor layers, guild tabard. This is the step wow.export's `CharMaterialRenderer` is the reference for.
-4. **Write the look manifest** and mark the look ready.
+1. **Index a build.** Resolve the current `wowf` build, read the tables, and write the index (item ID to display, model file, geosets, texture layers). One index per build.
+2. **Convert shared assets.** Export the race bodies, their animations, and each item display the roster actually uses to glTF. Decode each BLP texture to PNG. Keyed by build, converter version, and file ID.
+3. **Describe the look.** Customization choices and equipped items become the geosets to show and the texture layers to paint. This is data, not an image.
+4. **Composite in the browser** from those layers, then attach the item models and play the animation.
 
-A **look hash** is a hash of `clientBuild + race + gender + customization choices + equipped display IDs sorted by slot`. Same look, same files. Two characters in identical gear share one manifest and one texture.
+A **look hash** is a hash of `clientBuild + race + gender + customization choices + equipped item IDs sorted by slot`. It names which assets must be present. It is not a baked image. Two characters in identical gear share every file.
 
 ## 6. Cache
 
 Six layers. A page view should hit layers 1 to 3 and never reach 5 or 6.
 
-| Layer | Where                                         | Key                         | Lifetime                    | Holds                                                                                |
-| ----- | --------------------------------------------- | --------------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
-| 1     | Browser HTTP cache                            | URL                         | 1 year, `immutable`         | glTF, textures, manifests                                                            |
-| 2     | Caddy                                         | URL                         | same `Cache-Control`        | the same files                                                                       |
-| 3     | Asset store (volume now, S3-compatible later) | content hash in the path    | until nothing references it | `builds/{build}/...`, `looks/{lookHash}/manifest.json`, `looks/{lookHash}/skin.webp` |
-| 4     | Postgres                                      | character, look hash, build | rows are tiny and stay      | snapshot `fetched_at`, look hash, model status, asset keys                           |
-| 5     | Worker memory                                 | client build                | while the worker runs       | the parsed DB2 index                                                                 |
-| 6     | Blizzard                                      | —                           | —                           | the API and the game CDN, touched by jobs only                                       |
+| Layer | Where                                         | Key                                 | Lifetime                    | Holds                                                                                            |
+| ----- | --------------------------------------------- | ----------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------ |
+| 1     | Browser HTTP cache                            | URL                                 | 1 year, `immutable`         | glTF, textures, manifests                                                                        |
+| 2     | Caddy                                         | URL                                 | same `Cache-Control`        | the same files                                                                                   |
+| 3     | Asset store (volume now, S3-compatible later) | build + converter version + file ID | until that build is retired | `builds/{build}/v{N}/models/{fileId}.glb`, `textures/{fileId}.png`, `anims/{model}/{animId}.glb` |
+| 4     | Postgres                                      | character, look hash, build         | rows are tiny and stay      | snapshot `fetched_at`, look hash, model status, asset keys                                       |
+| 5     | Worker memory                                 | client build                        | while the worker runs       | the parsed DB2 index                                                                             |
+| 6     | Blizzard                                      | —                                   | —                           | the API and the game CDN, touched by jobs only                                                   |
 
 Rules:
 
@@ -135,23 +135,23 @@ Manifest shape, served as immutable JSON:
 {
   "lookHash": "8f3a...",
   "clientBuild": "1.60.1.70374",
-  "body": "/assets/builds/1.60.1.70374/bodies/human-male.glb",
-  "skin": "/assets/looks/8f3a.../skin.webp",
+  "body": "/assets/builds/1.60.1.70374/v3/models/12345.glb",
+  "layers": [{ "fileId": 67890, "section": "face", "blend": "blit" }],
   "items": [
     {
       "slot": "mainhand",
-      "url": "/assets/builds/1.60.1.70374/items/193838.glb"
+      "url": "/assets/builds/1.60.1.70374/v3/models/193838.glb"
     }
   ],
   "animations": ["Stand", "Wave"]
 }
 ```
 
-Sharing the body and the item models between characters is the point of the manifest: browsing the roster downloads a race mesh once and an item once, and each new character costs one small texture.
+Sharing the body, the item models, and the texture layers between characters is the point. A new character costs the layers it does not already share. The browser paints them together. There is no baked skin image.
 
 ## 7. What a visit does
 
-**Character page, model already built.** One API call from Postgres (part of the p95 under 200 ms budget). The browser fetches the manifest, the body, the worn items, and the skin. Body and items are usually already in the browser cache from another character. The page paints the official render immediately and swaps to the model when it has loaded, so a slow asset never blocks the rest of the page.
+**Character page, model already built.** One API call from Postgres (part of the p95 under 200 ms budget). The browser fetches the body, the worn items, and the texture layers, composites the body on the GPU, and plays the animation. Bodies, items, and layers are usually already in the browser cache from another character. The page paints the official render immediately and swaps to the model when it has loaded.
 
 **Character page, look not built yet.** The API enqueues the job and returns `pending` with `renderUrl`. The page shows the official render and refetches the character query with backoff (2 s, 4 s, 8 s, then every 15 s, giving up after 2 min). Only the open character page polls. The roster never polls.
 
@@ -168,7 +168,7 @@ Targets, to be replaced with measurements once a real Forever character has been
 | `GET /api/characters/:slug` from Postgres          | p95 under 200 ms, the API budget                                   |
 | Model visible, assets already in the browser cache | under 100 ms after the JSON, no network                            |
 | Model visible, assets on our server                | under 2 s on a normal connection, official render shown until then |
-| Look build, shared assets already extracted        | under 30 s, off the request                                        |
+| Missing item, shared bodies already converted      | one conversion, seconds, off the request                           |
 | New client build, first extraction                 | minutes, off the request, once per patch                           |
 | Battle.net calls caused by one page view           | zero when the snapshot is inside its freshness window              |
 
@@ -176,17 +176,17 @@ Targets, to be replaced with measurements once a real Forever character has been
 
 Follows [backend architecture](backend.md). The heavy code is isolated so the API image stays small and read-only.
 
-| Piece                                                                    | Home                                                                                                        |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Character snapshot, look hash, model status, `GET /api/characters/:slug` | `apps/api`, module `character`                                                                              |
-| Ports: `LookSource`, `ModelBuildQueue`, `ModelAssetStore`                | `character/application`                                                                                     |
-| Battle.net adapter, Drizzle status table, enqueueing the job             | `character/infrastructure` in the API                                                                       |
-| Indexing, extraction, texture compositing, glTF writing                  | `apps/model-worker`, a separate deployable with a writable asset volume                                     |
-| Job transport                                                            | pg-boss, the same Postgres. The API enqueues; only the model worker runs these handlers                     |
-| Contracts: the `model` object and the manifest schema                    | `packages/contracts`                                                                                        |
-| Viewer                                                                   | `apps/web`, slice `widgets/character-model`. Three.js is imported only there, and the route loads it lazily |
+| Piece                                                                    | Home                                                                                                                                         |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Character snapshot, look hash, model status, `GET /api/characters/:slug` | `apps/api`, module `character`                                                                                                               |
+| Ports: `LookSource`, `ModelBuildQueue`, `ModelAssetStore`                | `character/application`                                                                                                                      |
+| Battle.net adapter, Drizzle status table, enqueueing the job             | `character/infrastructure` in the API                                                                                                        |
+| Indexing, M2 to glTF, BLP to PNG                                         | `apps/model-baker`, a .NET tool copied from Altrobe. Its own image and a writable asset volume. See the [plan](character-rendering-plan.md). |
+| Job transport                                                            | pg-boss, the same Postgres. The API enqueues; only the model worker runs these handlers                                                      |
+| Contracts: the `model` object and the manifest schema                    | `packages/contracts`                                                                                                                         |
+| Viewer                                                                   | `apps/web`, slice `widgets/character-model`. Three.js is imported only there, and the route loads it lazily                                  |
 
-`apps/model-worker` depends on `packages/contracts` and talks to Postgres and the asset store. It never imports `apps/api`. The API never imports the worker and never parses M2, BLP, or CASC.
+`apps/model-baker` is .NET. It does not import the API. The API never parses M2, BLP, or CASC, and it never links the baker. They meet at Postgres (the job queue) and the asset store. The implementation order is the [plan](character-rendering-plan.md).
 
 The worker's entry point is its own composition root: open the database and the queue, load the build index into memory, register the job handlers, stop on `SIGTERM` after the current job.
 

@@ -65,7 +65,12 @@ describe("rogue proof scene", () => {
     expect(approach.scale.x).toBeLessThan(0.5);
 
     expect(command(throwing, "clip")?.value).toMatchObject({
-      animationGroup: "UseStandingStart",
+      animationGroup: "Run",
+      overlay: {
+        id: "throw",
+        animationGroup: "UseStandingStart",
+        mask: "upper-body",
+      },
     });
     const beforeThrowTransform = command(beforeThrow, "transform")?.value as {
       position: { x: number };

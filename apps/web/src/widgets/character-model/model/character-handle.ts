@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { Disposable } from "./lifecycle";
 import type { CharacterRuntime } from "./model-runtime";
 import { ResourceOwner } from "./resource-owner";
+import type { AnimationMask } from "./animation-controller";
 
 export interface CharacterHandle {
   readonly root: THREE.Object3D;
@@ -18,6 +19,15 @@ export interface CharacterHandle {
   play(clip: string): boolean;
   crossfade(clip: string, duration: number): boolean;
   selectAnimationGroup(group: string | number, fadeDuration?: number): boolean;
+  selectAnimationLayer(
+    id: string,
+    group: string | number,
+    mask: AnimationMask,
+    fadeDuration?: number,
+    weight?: number,
+  ): boolean;
+  setAnimationLayerTime(id: string, time: number): void;
+  clearAnimationLayer(id: string, fadeDuration?: number): void;
   faceCamera(camera: THREE.Camera): void;
   dispose(): void;
 }
@@ -79,6 +89,30 @@ export class CharacterModelHandle implements CharacterHandle {
 
   selectAnimationGroup(group: string | number, fadeDuration = 0): boolean {
     return this.runtime.selectPrimaryGroup(group, fadeDuration);
+  }
+
+  selectAnimationLayer(
+    id: string,
+    group: string | number,
+    mask: AnimationMask,
+    fadeDuration = 0,
+    weight = 1,
+  ): boolean {
+    return this.runtime.selectPrimaryLayer(
+      id,
+      group,
+      mask,
+      fadeDuration,
+      weight,
+    );
+  }
+
+  setAnimationLayerTime(id: string, time: number): void {
+    this.runtime.setPrimaryLayerTime(id, time);
+  }
+
+  clearAnimationLayer(id: string, fadeDuration = 0): void {
+    this.runtime.clearPrimaryLayer(id, fadeDuration);
   }
 
   faceCamera(camera: THREE.Camera): void {

@@ -90,6 +90,16 @@ const playbackSchema = z
   })
   .readonly();
 
+const animationOverlaySchema = z
+  .strictObject({
+    id: idSchema,
+    animationGroup: referenceSchema,
+    mask: z.enum(["upper-body"]),
+    weight: unitSchema,
+    fadeMs: timeSchema,
+  })
+  .readonly();
+
 const transformValueSchema = z
   .strictObject({
     position: cinematicVec3Schema,
@@ -111,6 +121,7 @@ const clipKeyframeSchema = keyframe(
       id: referenceSchema,
       crossfadeMs: timeSchema,
       playback: playbackSchema,
+      overlay: animationOverlaySchema.optional(),
     })
     .readonly(),
 );

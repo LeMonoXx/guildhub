@@ -54,13 +54,20 @@
         {
           "timeMs": 4000,
           "value": {
-            "animationGroup": "UseStandingStart",
-            "id": "animation-128",
-            "crossfadeMs": 100,
+            "animationGroup": "Run",
+            "id": "animation-5",
+            "crossfadeMs": 0,
             "playback": {
               "rate": 1,
-              "loop": false,
-              "clampWhenFinished": true
+              "loop": true,
+              "clampWhenFinished": false
+            },
+            "overlay": {
+              "id": "throw",
+              "animationGroup": "UseStandingStart",
+              "mask": "upper-body",
+              "weight": 1,
+              "fadeMs": 100
             }
           }
         },
@@ -69,7 +76,7 @@
           "value": {
             "animationGroup": "Run",
             "id": "animation-5",
-            "crossfadeMs": 100,
+            "crossfadeMs": 0,
             "playback": {
               "rate": 1,
               "loop": true,

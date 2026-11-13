@@ -112,6 +112,78 @@ describe("AnimationDirector", () => {
     expect(update).toHaveBeenNthCalledWith(2, 0.01);
   });
 
+  test("keeps the base clip running while an upper-body overlay starts and clears", () => {
+    const selectAnimationGroup = vi.fn(() => true);
+    const selectAnimationLayer = vi.fn(() => true);
+    const setAnimationLayerTime = vi.fn();
+    const clearAnimationLayer = vi.fn();
+    const setTime = vi.fn();
+    const update = vi.fn();
+    const character = {
+      selectAnimationGroup,
+      selectAnimationLayer,
+      setAnimationLayerTime,
+      clearAnimationLayer,
+      setTime,
+      update,
+    } as unknown as CharacterHandle;
+    const binding = new ClipBinding();
+    const throwing = command("clip", "actor", {
+      animationGroup: "Run",
+      crossfadeMs: 0,
+      localTimeMs: 0,
+      overlay: {
+        id: "throw",
+        animationGroup: "UseStandingStart",
+        mask: "upper-body",
+        weight: 1,
+        fadeMs: 100,
+      },
+    });
+    binding.apply(character, throwing, {
+      frame: frame([throwing], 0, 4000),
+      report: vi.fn(),
+    });
+    const continuing = command("clip", "actor", {
+      animationGroup: "Run",
+      crossfadeMs: 0,
+      localTimeMs: 16,
+      overlay: {
+        id: "throw",
+        animationGroup: "UseStandingStart",
+        mask: "upper-body",
+        weight: 1,
+        fadeMs: 100,
+      },
+    });
+    binding.apply(character, continuing, {
+      frame: frame([continuing], 0, 4016),
+      report: vi.fn(),
+    });
+    const running = command("clip", "actor", {
+      animationGroup: "Run",
+      crossfadeMs: 0,
+      localTimeMs: 0,
+    });
+    binding.apply(character, running, {
+      frame: frame([running], 0, 4650),
+      report: vi.fn(),
+    });
+
+    expect(selectAnimationGroup).toHaveBeenCalledTimes(1);
+    expect(selectAnimationLayer).toHaveBeenCalledWith(
+      "throw",
+      "UseStandingStart",
+      "upper-body",
+      0.1,
+      1,
+    );
+    expect(setAnimationLayerTime).toHaveBeenCalledWith("throw", 0);
+    expect(update).toHaveBeenNthCalledWith(1, 0.016);
+    expect(update).toHaveBeenNthCalledWith(2, 0.634);
+    expect(clearAnimationLayer).toHaveBeenCalledWith("throw", 0.1);
+  });
+
   test("applies camera, light, and UI values", () => {
     const setCamera = vi.fn();
     const camera: CameraBindingTarget = { setCamera };

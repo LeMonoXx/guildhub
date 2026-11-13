@@ -6,6 +6,7 @@ import * as THREE from "three";
 import {
   AnimationController,
   type AnimationGroup,
+  type AnimationMask,
 } from "./animation-controller";
 import {
   captureBillboard,
@@ -120,6 +121,32 @@ export class CharacterRuntime implements TimelineParticipant {
       primary.animation.selectedGroupDescriptor?.id ?? 0,
     );
     return true;
+  }
+
+  selectPrimaryLayer(
+    id: string,
+    group: string | number,
+    mask: AnimationMask,
+    fadeDuration = 0,
+    weight = 1,
+  ): boolean {
+    return (
+      this.models[0]?.animation.selectLayer(
+        id,
+        group,
+        mask,
+        fadeDuration,
+        weight,
+      ) ?? false
+    );
+  }
+
+  setPrimaryLayerTime(id: string, time: number): void {
+    this.models[0]?.animation.setLayerTime(id, time);
+  }
+
+  clearPrimaryLayer(id: string, fadeDuration = 0): void {
+    this.models[0]?.animation.clearLayer(id, fadeDuration);
   }
 
   update(delta: number): void {

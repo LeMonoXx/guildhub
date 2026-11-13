@@ -78,6 +78,13 @@ interface ClipValue {
   readonly animationGroup: string | number;
   readonly crossfadeMs: number;
   readonly localTimeMs: number;
+  readonly overlay?: {
+    readonly id: string;
+    readonly animationGroup: string | number;
+    readonly mask: "upper-body";
+    readonly weight: number;
+    readonly fadeMs: number;
+  };
 }
 
 export class ClipBinding implements CommandBinding<CharacterHandle> {
@@ -88,6 +95,13 @@ export class ClipBinding implements CommandBinding<CharacterHandle> {
       iteration: number;
       elapsedMs: number;
       localTimeMs: number;
+      overlay:
+        | {
+            id: string;
+            selection: string;
+            fadeMs: number;
+          }
+        | undefined;
     }
   >();
 
@@ -99,6 +113,9 @@ export class ClipBinding implements CommandBinding<CharacterHandle> {
     const value = command.value as ClipValue;
     const previous = this.playback.get(target);
     const groupChanged = previous?.animationGroup !== value.animationGroup;
+    const overlaySelection = value.overlay
+      ? `${String(value.overlay.animationGroup)}:${value.overlay.mask}`
+      : undefined;
     const continuous =
       previous !== undefined &&
       previous.iteration === context.frame.iteration &&
@@ -117,17 +134,58 @@ export class ClipBinding implements CommandBinding<CharacterHandle> {
           0,
           groupChanged
             ? value.localTimeMs
-            : value.localTimeMs - previous.localTimeMs,
+            : context.frame.elapsedMs - previous.elapsedMs,
         ) / 1000,
       );
     } else {
       target.setTime(Math.max(0, value.localTimeMs) / 1000);
+    }
+
+    if (
+      previous?.overlay &&
+      (previous.overlay.id !== value.overlay?.id ||
+        previous.overlay.selection !== overlaySelection)
+    ) {
+      target.clearAnimationLayer(
+        previous.overlay.id,
+        Math.max(0, previous.overlay.fadeMs) / 1000,
+      );
+    }
+    if (value.overlay) {
+      const overlayChanged =
+        previous?.overlay?.id !== value.overlay.id ||
+        previous.overlay.selection !== overlaySelection;
+      if (overlayChanged) {
+        target.selectAnimationLayer(
+          value.overlay.id,
+          value.overlay.animationGroup,
+          value.overlay.mask,
+          Math.max(0, value.overlay.fadeMs) / 1000,
+          value.overlay.weight,
+        );
+        target.setAnimationLayerTime(
+          value.overlay.id,
+          Math.max(0, value.localTimeMs) / 1000,
+        );
+      } else if (!continuous) {
+        target.setAnimationLayerTime(
+          value.overlay.id,
+          Math.max(0, value.localTimeMs) / 1000,
+        );
+      }
     }
     this.playback.set(target, {
       animationGroup: value.animationGroup,
       iteration: context.frame.iteration,
       elapsedMs: context.frame.elapsedMs,
       localTimeMs: value.localTimeMs,
+      overlay: value.overlay
+        ? {
+            id: value.overlay.id,
+            selection: overlaySelection ?? "",
+            fadeMs: value.overlay.fadeMs,
+          }
+        : undefined,
     });
   }
 

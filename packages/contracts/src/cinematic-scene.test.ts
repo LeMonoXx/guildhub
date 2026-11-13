@@ -102,6 +102,13 @@ const rogueLikeScene = () => ({
             id: "weapon-flourish",
             crossfadeMs: 350,
             playback: { rate: 1, loop: false, clampWhenFinished: true },
+            overlay: {
+              id: "upper-body-action",
+              animationGroup: "throw",
+              mask: "upper-body",
+              weight: 1,
+              fadeMs: 120,
+            },
           },
         },
       ],

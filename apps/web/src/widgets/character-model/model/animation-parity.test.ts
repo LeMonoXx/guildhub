@@ -75,6 +75,44 @@ describe("deterministic animation playback", () => {
     controller.dispose();
   });
 
+  test("layers an additive upper-body gesture without replacing the running legs", () => {
+    const root = new THREE.Object3D();
+    const lowerBody = new THREE.Bone();
+    lowerBody.name = "lower";
+    const spine = new THREE.Bone();
+    spine.name = "spine";
+    spine.userData.keyBoneId = 4;
+    const arm = new THREE.Bone();
+    arm.name = "arm";
+    spine.add(arm);
+    root.add(lowerBody, spine);
+    const run = new THREE.AnimationClip("run", 1, [
+      new THREE.NumberKeyframeTrack("lower.position[x]", [0, 1], [0, 2]),
+      new THREE.NumberKeyframeTrack("arm.position[x]", [0, 1], [0, 2]),
+    ]);
+    const throwGesture = new THREE.AnimationClip("throw", 1, [
+      new THREE.NumberKeyframeTrack("lower.position[x]", [0, 1], [10, 20]),
+      new THREE.NumberKeyframeTrack("arm.position[x]", [0, 1], [10, 20]),
+    ]);
+    const controller = new AnimationController(root, [], [], {
+      groups: [
+        { name: "Run", clips: [run] },
+        { name: "Throw", clips: [throwGesture] },
+      ],
+    });
+
+    controller.setTime(0.5);
+    expect(controller.selectLayer("action", "Throw", "upper-body")).toBe(true);
+    controller.setLayerTime("action", 0.5);
+    expect(lowerBody.position.x).toBeCloseTo(1);
+    expect(arm.position.x).toBeCloseTo(6);
+
+    controller.clearLayer("action");
+    expect(lowerBody.position.x).toBeCloseTo(1);
+    expect(arm.position.x).toBeCloseTo(1);
+    controller.dispose();
+  });
+
   test("selects named groups without sequencing across group boundaries", () => {
     const root = new THREE.Object3D();
     root.userData.value = 0;

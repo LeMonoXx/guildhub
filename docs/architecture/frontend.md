@@ -90,7 +90,7 @@ apps/web/
 - **Accessibility:** WCAG 2.2 level AA. Semantic HTML first; ARIA only where HTML has no element. Every interactive element works with the keyboard and has a visible focus. Item tooltips open on hover **and** on focus, and close with `Escape`.
 - **Internationalisation:** locales `de` and `en` (BCP 47 tags). Dates, numbers, and relative times are formatted with `Intl`, in the user's locale and time zone. No user-visible string is hard-coded in a component.
 - **Loading:** skeletons for content areas, never full-page spinners after the first paint. Show cached data while refetching.
-- **Images:** character renders and item icons come from Battle.net media URLs via the API, with fixed width and height to avoid layout shift, and lazy loading below the fold.
+- **Images:** character renders and item icons come from Battle.net media URLs via the API, with fixed width and height to avoid layout shift, and lazy loading below the fold. The animated model, when it exists, replaces the render on the character page only and is loaded lazily. See [character rendering](character-rendering.md).
 - **Performance budgets:** LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 on a mid-range phone. Route-level code splitting. Initial JavaScript ≤ 200 kB compressed.
 - **Security:** no `dangerouslySetInnerHTML` / `[innerHTML]` with API data. External scripts (for example Wowhead tooltips) only from hosts allowed by the CSP.
 

@@ -32,3 +32,4 @@ What gets easier, what gets harder, what we must watch.
 | [0005](0005-battlenet-oauth-bff-sessions.md) | Battle.net OAuth with server-side sessions   | Accepted |
 | [0006](0006-frontend-framework.md)           | Frontend framework: React                    | Accepted |
 | [0007](0007-deployment-compose-linux.md)     | Docker Compose on a Linux server             | Accepted |
+| [0008](0008-character-models-gltf.md)        | Character models as cached glTF              | Accepted |

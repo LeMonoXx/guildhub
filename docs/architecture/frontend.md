@@ -1,8 +1,8 @@
 # Frontend architecture (`apps/web`)
 
-`apps/web` does not exist yet. The framework choice (React or Angular) is open in [decision 0006](../decisions/0006-frontend-framework.md). The rules below hold for either choice. Section 8 maps them to each framework.
+`apps/web` does not exist yet. It is a React app ([decision 0006](../decisions/0006-frontend-framework.md)); section 8 lists the stack and React-specific rules.
 
-The web app is a static single-page app built by Vite (React) or the Angular CLI (which builds with Vite and esbuild). It is served by Caddy on the same origin as the API.
+The web app is a static single-page app built by Vite. It is served by Caddy on the same origin as the API.
 
 ## 1. Layers
 
@@ -65,7 +65,7 @@ apps/web/
 
 ## 3. Data and state
 
-- **Server state** (anything from the API) lives only in the query cache (TanStack Query for React, TanStack Query Angular or `httpResource` for Angular). Components never copy server data into their own state.
+- **Server state** (anything from the API) lives only in the TanStack Query cache. Components never copy server data into their own state.
 - **URL state** (filters, sort, selected tab) lives in the URL. A reloaded or shared link shows the same view.
 - **Local UI state** (open dialog, hover) lives in the component.
 - **Global client state** is the exception. It needs a reason (for example the theme); then one small store per concern.
@@ -105,15 +105,27 @@ apps/web/
 
 Every component test covers the error state for at least one `ApiError` code.
 
-## 8. Framework mapping
+## 8. React stack
 
-| Concept         | React (recommended)                           | Angular                                                                    |
-| --------------- | --------------------------------------------- | -------------------------------------------------------------------------- |
-| Build           | Vite                                          | Angular CLI (application builder)                                          |
-| Routing         | TanStack Router (type-safe params, loaders)   | Angular Router with lazy routes                                            |
-| Server state    | TanStack Query                                | TanStack Query Angular or `httpResource`                                   |
-| Local state     | `useState` / `useReducer`                     | Signals                                                                    |
-| API client      | `shared/api` functions over `fetch`           | `shared/api` services over `HttpClient`, problem parsing in an interceptor |
-| Error boundary  | Route `errorComponent` + React error boundary | Route-level error component + `ErrorHandler`                               |
-| Forms           | TanStack Form or React Hook Form with zod     | Typed reactive forms, zod validation in a validator                        |
-| Component tests | Testing Library React                         | Testing Library Angular                                                    |
+| Concept         | Choice                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| UI library      | React 19 with the React Compiler                                                                        |
+| Build and dev   | Vite, started by Aspire (`addViteApp`)                                                                  |
+| Routing         | TanStack Router, file-based routes in `src/app/routes/` that render `pages/*`                           |
+| Server state    | TanStack Query; route loaders call `queryClient.ensureQueryData` so data starts loading with navigation |
+| Local state     | `useState` / `useReducer`                                                                               |
+| API client      | `shared/api` functions over `fetch`, typed by `packages/contracts`                                      |
+| Error boundary  | Route `errorComponent` and `notFoundComponent`, plus a root error boundary in `app`                     |
+| Forms           | TanStack Form with the zod schemas from `packages/contracts`                                            |
+| Component tests | Vitest, Testing Library React, MSW                                                                      |
+| Lint            | Repo ESLint config plus `eslint-plugin-react-hooks` and `eslint-plugin-jsx-a11y`                        |
+
+React rules:
+
+- Function components and hooks only. One component per file, file name in `kebab-case`, component name in `PascalCase`.
+- No manual `useMemo`, `useCallback`, or `React.memo` for performance; the React Compiler handles memoisation. Use them only when a library needs a stable identity, with a comment.
+- No `useEffect` for data fetching or for deriving state. Data comes from queries and loaders; derived values are computed during render.
+- Route files in `app/routes/` stay thin: params validation, loader, and rendering the page from `pages/`. Business UI lives in the layers.
+- Context is for app-wide concerns provided in `app` (query client, i18n, theme). Not for passing data between features.
+
+Open for the scaffold step: the styling approach and the headless UI primitives (for dialogs, menus, tooltips). Both are recorded as decisions when `apps/web` is created.

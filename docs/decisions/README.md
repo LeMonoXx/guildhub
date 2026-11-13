@@ -30,5 +30,5 @@ What gets easier, what gets harder, what we must watch.
 | [0003](0003-postgres-drizzle.md)             | PostgreSQL 18, Drizzle, pg-boss              | Accepted |
 | [0004](0004-problem-details.md)              | RFC 9457 problems with stable error codes    | Accepted |
 | [0005](0005-battlenet-oauth-bff-sessions.md) | Battle.net OAuth with server-side sessions   | Accepted |
-| [0006](0006-frontend-framework.md)           | Frontend framework                           | Proposed |
+| [0006](0006-frontend-framework.md)           | Frontend framework: React                    | Accepted |
 | [0007](0007-deployment-compose-linux.md)     | Docker Compose on a Linux server             | Accepted |

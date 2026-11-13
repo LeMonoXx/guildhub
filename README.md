@@ -16,7 +16,7 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 
 `apps/api` is the server process. It checks its environment and answers `GET /health`. Battle.net login, the guild roster, and the site UI are not built yet.
 
-The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web UI is not in this repo until the React or Angular choice is made. The verification commands stay the same when that package is added.
+The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web UI will be a React app in `apps/web`; it is not scaffolded yet. The verification commands stay the same when that package is added.
 
 ## Verify
 

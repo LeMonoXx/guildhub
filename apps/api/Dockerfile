@@ -1,21 +1,23 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@10.22.0 --activate
+FROM node:24-alpine AS base
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    PNPM_HOME=/pnpm
+RUN corepack enable
 WORKDIR /app
 
-FROM base AS deps
+FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json apps/api/package.json
-RUN pnpm install --frozen-lockfile --filter @guildhub/api...
-
-FROM deps AS build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --filter @guildhub/api...
 COPY tsconfig.base.json ./
 COPY apps/api apps/api
 RUN pnpm --filter @guildhub/api build
-RUN pnpm --filter @guildhub/api deploy --prod /out
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm --filter @guildhub/api deploy --prod /out
 
-FROM node:22-alpine AS runtime
+FROM node:24-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build --chown=node:node /out ./

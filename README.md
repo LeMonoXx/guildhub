@@ -12,14 +12,19 @@ The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The
 
 ## Verify
 
-Requires Node 22 or newer and pnpm 10.
+Requires Node 24 (LTS). pnpm comes from the `packageManager` field through corepack:
 
 ```sh
+corepack enable pnpm
 pnpm install
 pnpm verify
 ```
 
-`pnpm verify` checks formatting, lint, types, tests, and the API build.
+If `corepack enable` cannot write next to Node (Windows under `Program Files`), use `corepack enable --install-directory "$env:APPDATA\npm" pnpm`.
+
+`pnpm verify` checks formatting and lint across the repo, then runs `typecheck`, `test`, and `build` in every workspace package that defines them. A new package under `apps/` or `packages/` joins by adding those scripts.
+
+Shared tool versions (TypeScript, Vitest, `@types/node`) live in the `catalog` in `pnpm-workspace.yaml`. pnpm installs no release younger than three days (`minimumReleaseAge`). Dependabot waits the same three days.
 
 ## Run the API
 
@@ -29,4 +34,4 @@ Copy `.env.example` to `.env` and fill in the Battle.net client values. `SESSION
 docker compose up --build
 ```
 
-The image listens on port 3000. Docker uses the `HEALTHCHECK` against `/health`.
+The image listens on port 3000. Docker uses the `HEALTHCHECK` against `/health`. The container runs as a non-root user on a read-only filesystem. On `SIGTERM` it closes open connections and exits with code 0.

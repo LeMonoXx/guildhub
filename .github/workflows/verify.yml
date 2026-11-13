@@ -16,10 +16,13 @@ jobs:
   source:
     name: format, lint, types, tests, build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -29,21 +32,26 @@ jobs:
   secrets:
     name: secret scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   image:
     name: api image
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/api/Dockerfile
@@ -54,7 +62,7 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Boot the image and require a healthy response
         run: |
-          docker run -d --name guildhub-api -p 3000:3000 \
+          docker run -d --name guildhub-api -p 3000:3000 --read-only --cap-drop ALL \
             -e BATTLENET_CLIENT_ID=ci \
             -e BATTLENET_CLIENT_SECRET=ci \
             -e BATTLENET_REDIRECT_URI=http://127.0.0.1:3000/auth/callback \
@@ -68,3 +76,7 @@ jobs:
           done
           docker logs guildhub-api
           exit 1
+      - name: Stop on SIGTERM with exit code 0
+        run: |
+          docker stop --timeout 5 guildhub-api
+          test "$(docker inspect --format '{{.State.ExitCode}}' guildhub-api)" = 0

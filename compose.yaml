@@ -7,4 +7,9 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped

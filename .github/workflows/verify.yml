@@ -1,0 +1,70 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: format, lint, types, tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  image:
+    name: api image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          load: true
+          tags: guildhub-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Boot the image and require a healthy response
+        run: |
+          docker run -d --name guildhub-api -p 3000:3000 \
+            -e BATTLENET_CLIENT_ID=ci \
+            -e BATTLENET_CLIENT_SECRET=ci \
+            -e BATTLENET_REDIRECT_URI=http://127.0.0.1:3000/auth/callback \
+            -e SESSION_SECRET=ci-session-secret-not-a-real-secret-32 \
+            guildhub-api:ci
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:3000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs guildhub-api
+          exit 1

@@ -1,0 +1,32 @@
+{
+  "name": "guildhub",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.22.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc -p apps/api/tsconfig.json --noEmit",
+    "test": "vitest run --config apps/api/vitest.config.ts",
+    "build": "tsc -p apps/api/tsconfig.build.json",
+    "verify": "prettier --check . && eslint . && tsc -p apps/api/tsconfig.json --noEmit && vitest run --config apps/api/vitest.config.ts && tsc -p apps/api/tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8",
+    "typescript-eslint": "^8.46.4"
+  }
+}

@@ -5,7 +5,7 @@
 ```sh
 corepack enable pnpm
 pnpm install
-pnpm verify            # format, lint, types, tests, build
+pnpm verify            # format, lint, boundaries, types, tests, build
 pnpm --filter @guildhub/api dev   # API with reload on :3000 (needs .env)
 docker compose up --build         # API image
 ```

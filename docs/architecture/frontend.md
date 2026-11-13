@@ -33,7 +33,7 @@ Rules:
 - **Each slice exposes one public `index.ts`.** Imports from outside the slice go through it (`@/entities/character`, never `@/entities/character/model/map.ts`).
 - **Segments inside a slice:** `ui/` (components), `model/` (state, hooks or services, types), `api/` (query and mutation definitions), `lib/` (pure helpers). A slice has only the segments it needs.
 - `shared` knows nothing about guilds or characters. If a component mentions a character, it belongs in `entities` or above.
-- `dependency-cruiser` (or `eslint-plugin-boundaries`) enforces these rules in `pnpm verify`.
+- `dependency-cruiser` enforces these rules in `pnpm verify` once `apps/web` exists.
 
 ## 2. Folder structure
 

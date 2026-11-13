@@ -26,7 +26,7 @@ describe planned parts as existing.
 
 ```sh
 pnpm install                      # Node 24, pnpm via corepack (packageManager field)
-pnpm verify                       # the gate: format, lint, types, tests, build. Must pass before you finish.
+pnpm verify                       # the gate: format, lint, boundaries, types, tests, build. Must pass before you finish.
 pnpm format                       # fix formatting
 pnpm --filter @guildhub/api dev   # run the API with reload
 pnpm --filter @guildhub/api test  # API tests only

@@ -34,7 +34,7 @@ pnpm verify
 
 If `corepack enable` cannot write next to Node (Windows under `Program Files`), use `corepack enable --install-directory "$env:APPDATA\npm" pnpm`.
 
-`pnpm verify` checks formatting and lint across the repo, then runs `typecheck`, `test`, and `build` in every workspace package that defines them. A new package under `apps/` or `packages/` joins by adding those scripts.
+`pnpm verify` checks formatting, lint, and import boundaries across the repo, then runs `typecheck`, `test`, and `build` in every workspace package that defines them. A new package under `apps/` or `packages/` joins by adding those scripts.
 
 Shared tool versions (TypeScript, Vitest, `@types/node`) live in the `catalog` in `pnpm-workspace.yaml`. pnpm installs no release younger than three days (`minimumReleaseAge`). Dependabot waits the same three days.
 

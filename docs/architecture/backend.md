@@ -2,7 +2,7 @@
 
 The API is a **modular monolith**. Each feature area is a module. Inside each module, code follows a ports-and-adapters (hexagonal / clean) layering. One process, one deployable, one database, with internal boundaries as strict as service boundaries.
 
-These rules are binding. `dependency-cruiser` enforces the import rules in `pnpm verify` (roadmap step 1). Until it does, review enforces them.
+These rules are binding. `dependency-cruiser` enforces the import rules in `pnpm verify`.
 
 ## 1. Folder structure
 

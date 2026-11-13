@@ -172,7 +172,7 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 
 ## 11. Roadmap
 
-1. Enforce layer and module boundaries with `dependency-cruiser` in `pnpm verify`.
+1. ~~Enforce layer and module boundaries with `dependency-cruiser` in `pnpm verify`.~~ Done.
 2. Add `packages/contracts` with the problem model and the instance config schema; add `instances/traceless`.
 3. Add the Aspire AppHost with Postgres, the API, the migrator, and the Battle.net stub. Replace `compose.yaml` with `aspire publish` output.
 4. Complete the observability rollout as each process lands; split `/health` into `/health/live`

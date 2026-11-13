@@ -4,6 +4,7 @@ import type { CharacterHandle } from "../../character-model";
 
 export interface StageRigOptions {
   readonly orbitControls?: boolean;
+  readonly alpha?: boolean;
   readonly renderer?: THREE.WebGLRenderer;
   readonly resizeObserver?: (resize: () => void) => {
     observe(target: Element): void;
@@ -34,18 +35,28 @@ export class StageRig {
     private readonly container: HTMLElement,
     options: StageRigOptions = {},
   ) {
+    const alpha = options.alpha === true;
     this.canvas =
       options.renderer?.domElement ?? document.createElement("canvas");
     this.canvas.setAttribute("aria-hidden", "true");
     if (!this.canvas.parentElement) container.append(this.canvas);
     this.renderer =
       options.renderer ??
-      new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+      new THREE.WebGLRenderer({
+        canvas: this.canvas,
+        antialias: true,
+        alpha,
+        premultipliedAlpha: alpha,
+      });
     this.renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    if (alpha) {
+      this.renderer.setClearColor(0x000000, 0);
+      this.renderer.setClearAlpha(0);
+    }
 
     this.scene.name = "cinematic-stage";
-    this.scene.background = this.background;
+    this.scene.background = alpha ? null : this.background;
     this.actorRoot.name = "actors";
     this.effectRoot.name = "effects";
     this.scene.add(this.actorRoot, this.effectRoot);

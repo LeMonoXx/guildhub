@@ -114,6 +114,7 @@
 
 .cinematic[data-variant="embedded"] .cinematic-stage canvas {
   min-height: 0;
+  background: transparent;
 }
 
 .cinematic-status {

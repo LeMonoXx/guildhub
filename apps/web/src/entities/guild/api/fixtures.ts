@@ -87,7 +87,7 @@ const featured: readonly FeaturedMember[] = [
     classId: "4",
     raceId: "3",
     slug: "quiet",
-    pose: "Walk",
+    pose: "StealthStand",
     accent: "class-4",
     lookManifest,
     cinematicScene,

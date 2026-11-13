@@ -101,6 +101,7 @@ export function CharacterCinematic({
           scene: sceneData,
           assetBase,
           manifest,
+          transparent: variant === "embedded",
           uiTarget: {
             setState(state) {
               applyUiState(element, state);
@@ -162,6 +163,7 @@ export function CharacterCinematic({
     previewTimeMs,
     readyLabel,
     scene,
+    variant,
   ]);
 
   const style = {
@@ -187,11 +189,11 @@ export function CharacterCinematic({
         role="img"
         aria-label={ariaLabel}
       >
-        {status !== "ready" && (
+        {status !== "ready" && (variant === "page" || status === "error") ? (
           <div className="cinematic-status" role="status">
             {message}
           </div>
-        )}
+        ) : null}
       </div>
       {variant === "page" && (
         <p className={status === "error" ? "notice error" : "notice"}>

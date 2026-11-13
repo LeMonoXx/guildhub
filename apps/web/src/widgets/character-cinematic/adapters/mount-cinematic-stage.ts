@@ -26,6 +26,7 @@ export interface MountCinematicStageOptions {
   readonly assetBase: string;
   readonly manifest?: PrepareCharacterOptions["manifest"];
   readonly uiTarget: UiBindingTarget;
+  readonly transparent?: boolean;
   readonly report?: (message: string) => void;
 }
 
@@ -49,7 +50,10 @@ export async function mountCinematicStage(
   options: MountCinematicStageOptions,
 ): Promise<MountedCinematicStage> {
   const sharedAssets = new AssetStore();
-  const rig = new StageRig(options.container, { orbitControls: false });
+  const rig = new StageRig(options.container, {
+    orbitControls: false,
+    alpha: options.transparent === true,
+  });
   const effects: SmokeEffect[] = [];
   const actors = new Map<string, CharacterHandle>();
   try {

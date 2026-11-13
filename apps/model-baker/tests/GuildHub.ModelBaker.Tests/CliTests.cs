@@ -115,7 +115,7 @@ public class CliTests
     Assert.Equal(
         [16908, 16832, 16905, 16911, 16907, 16910, 16909, 16906, 18816, 18805],
         scene.Options.ItemIds);
-    Assert.Equal([0, 5, 26, 32, 54, 119, 120, 123, 128, 129, 224], scene.Options.AnimationIds);
+    Assert.Equal([0, 4, 5, 26, 32, 54, 114, 115, 116, 119, 120, 123, 128, 129, 224], scene.Options.AnimationIds);
     Assert.Equal(
         [new EquipmentSlotOverride(18816, ItemResolver.MainHandSlot), new EquipmentSlotOverride(18805, ItemResolver.OffHandSlot)],
         scene.Options.EquipmentOverrides);

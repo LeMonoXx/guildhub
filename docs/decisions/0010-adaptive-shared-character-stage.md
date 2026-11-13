@@ -22,7 +22,7 @@ The guild home may mount **one** lazy, shared multi-actor WebGL stage on capable
 - Actor handles clone from that store. They do not fetch the same look again.
 - Capability is the conjunction of WebGL, a desktop-width viewport, an intersecting stage, and no
   reduced-motion preference. Failure of any gate keeps the static composition.
-- The static composition is the source of layout. The canvas is painted into a reserved slot.
+- The static composition is the source of layout. The canvas occupies a reserved slot that stays optically empty (transparent, no stage chrome) so characters read as walking on the page.
 - Character detail keeps the existing single-character cinematic renderer.
 - Roster and member-index routes do not import Three.js.
 - Blizzard game bytes stay untracked. Design-reference JPEGs are not copied into the repo.

@@ -9,15 +9,20 @@
   --color-danger: #ff9f9f;
   --color-hairline: rgb(244 239 230 / 0.1);
   --color-focus: #e8d7a3;
+  /* Official WoW class colours. Always color names/labels via var(--class-<id>). */
   --class-1: #c79c6e;
   --class-2: #f58cba;
   --class-3: #abd473;
   --class-4: #fff569;
   --class-5: #ffffff;
+  --class-6: #c41e3a;
   --class-7: #0070de;
   --class-8: #69ccf0;
   --class-9: #9482c9;
+  --class-10: #00ff98;
   --class-11: #ff7d0a;
+  --class-12: #a330c9;
+  --class-13: #33937f;
   --font-display: "Segoe UI", system-ui, sans-serif;
   --font-fantasy: Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;

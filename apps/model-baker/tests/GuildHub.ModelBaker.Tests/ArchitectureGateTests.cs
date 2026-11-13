@@ -15,7 +15,7 @@ public class ArchitectureGateTests
     public void RequestedBakePolicySelectsAvailableRogueProofClips()
     {
         var policy = new RequestedAnimationBakePolicy();
-        int[] rogueProof = [0, 5, 26, 32, 54, 119, 120, 123, 128, 129, 224];
+        int[] rogueProof = [0, 4, 5, 26, 32, 54, 114, 115, 116, 119, 120, 123, 128, 129, 224];
         IReadOnlySet<int> available = new HashSet<int>(rogueProof.Except([54]));
 
         Assert.Equal(

@@ -90,6 +90,7 @@ apps/web/
 
 - At startup the app loads `GET /api/instance` (name, region, guild slug, logo URL, copy, theme tokens) and renders nothing guild-specific before that.
 - Theme values are CSS custom properties (design tokens: `--color-brand`, `--font-display`, ...), set on `:root` from the instance theme. Components use only tokens, never literal brand colours.
+- World of Warcraft class colours are a shared visual standard: `--class-<id>` on `:root` uses Blizzard’s published class palette (Warrior `1` through Evoker `13`). Character names, class labels, and class marks always take their colour from `wowClassColorVar` in `entities/character` (`var(--class-<id>)`). Do not hard-code class hex values in components. Class and race marks are original geometric glyphs in that entity, not Blizzard art.
 - Copy (hero text) comes from the instance in each supported locale.
 
 ## 6. UI rules

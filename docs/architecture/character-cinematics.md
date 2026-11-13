@@ -119,8 +119,8 @@ The first scene uses a human male rogue, class ID 4, HD models, Bloodfang Armor,
 WoW item particles and material tracks continue throughout. Authored smoke is renderer-owned,
 seeded, and seekable so CI and loop reset do not depend on a spell visual kit.
 
-The bake preset provides Stand, Run, Ready1H, SpellCastOmni, StealthWalk, StealthStand,
-UseStandingLoop, UseStandingStart, and UseStandingEnd. The scene keeps `Run` as its base clip and
+The bake preset provides Stand, Walk, Run, Ready1H, SpellCastOmni, KneelStart, KneelLoop,
+KneelEnd, StealthWalk, StealthStand, UseStandingLoop, UseStandingStart, and UseStandingEnd. The scene keeps `Run` as its base clip and
 uses `UseStandingStart` as an additive `upper-body` overlay. Masks resolve from exported key-bone
 metadata instead of character-specific bone numbers, so layered actions remain reusable across
 supported skeletons. SpellCast and Emerge are requested by the preset but diagnosed and skipped

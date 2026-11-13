@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: guildhub
       POSTGRES_DB: guildhub
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U guildhub -d guildhub"]
       interval: 5s

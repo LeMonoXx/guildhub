@@ -2,5 +2,9 @@
   "packages": {
     "Aspire.Hosting.JavaScript": "13.6.0",
     "Aspire.Hosting.PostgreSQL": "13.6.0"
+  },
+  "appHost": {
+    "path": "apphost.mts",
+    "language": "typescript/nodejs"
   }
 }

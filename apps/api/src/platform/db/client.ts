@@ -1,5 +1,6 @@
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres, { type Sql } from "postgres";
+import { toPostgresUrl } from "./connection-url.js";
 import "./schema.js";
 
 export interface Database {
@@ -9,7 +10,7 @@ export interface Database {
 }
 
 export function createDatabase(url: string): Database {
-  const sql = postgres(url);
+  const sql = postgres(toPostgresUrl(url));
   return {
     sql,
     db: drizzle({ client: sql }),
@@ -20,7 +21,7 @@ export function createDatabase(url: string): Database {
 }
 
 export function createMigrationDatabase(url: string): Database {
-  const sql = postgres(url, { max: 1 });
+  const sql = postgres(toPostgresUrl(url), { max: 1 });
   return {
     sql,
     db: drizzle({ client: sql }),

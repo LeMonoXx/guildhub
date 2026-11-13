@@ -1,6 +1,6 @@
 # 0007. Docker Compose on a Linux server
 
-- Status: Accepted
+- Status: Accepted. The edge and the deploy path are refined by [0009](0009-deploy-behind-existing-proxy.md): this host already serves other sites, so GuildHub does not bind ports 80 or 443 and does not run its own Caddy.
 - Date: 2026-11-13
 
 ## Context

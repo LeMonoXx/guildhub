@@ -9,6 +9,7 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 - [North star](docs/north-star.md): the target system, principles, data, security, roadmap
 - [Backend](docs/architecture/backend.md), [frontend](docs/architecture/frontend.md), [error model](docs/architecture/errors.md), [character rendering](docs/architecture/character-rendering.md), and its [implementation plan](docs/architecture/character-rendering-plan.md)
 - [Development, local stack, and agents](docs/development.md)
+- [Deployment](docs/deployment.md): later, onto the existing Linux host behind its proxy
 - [Standards register](docs/standards.md) and [decision records](docs/decisions/)
 - [`AGENTS.md`](AGENTS.md): working rules for coding agents and humans
 

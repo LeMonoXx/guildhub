@@ -33,3 +33,4 @@ What gets easier, what gets harder, what we must watch.
 | [0006](0006-frontend-framework.md)           | Frontend framework: React                    | Accepted |
 | [0007](0007-deployment-compose-linux.md)     | Docker Compose on a Linux server             | Accepted |
 | [0008](0008-character-models-gltf.md)        | Character models as cached glTF              | Accepted |
+| [0009](0009-deploy-behind-existing-proxy.md) | Deploy behind the host's existing proxy      | Accepted |

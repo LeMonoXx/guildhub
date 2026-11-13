@@ -1,6 +1,6 @@
 # Third-party notices
 
-Renderer code in `src/renderer` is copied or adapted from Altrobe commit
+Renderer code in `src/widgets/character-model` is copied or adapted from Altrobe commit
 `b864982c08d5ac735369bdd73cb9c7bb5ca4dfa7`.
 
 Altrobe is Copyright (c) 2026 Ryan Williams and licensed under the MIT License.

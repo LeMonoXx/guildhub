@@ -2,11 +2,15 @@
 // Copyright (c) 2026 Ryan Williams, MIT License.
 // Particle semantics follow wowdev.wiki and WebWowViewerCpp.
 
-import type {
-  ParticleCurve,
-  ParticleEmitterMeta,
-  ParticleTrack,
-} from "../types";
+import type { ParticleCurve, ParticleEmitterMeta } from "../../../types";
+import {
+  defaultEmitterStrategies,
+  type EmitterSpawnStrategy,
+  type EmitterStrategyRegistry,
+} from "./emitter-strategies";
+import { interpolateValues, sampleTrack } from "./track-sampler";
+
+export { sampleTrack } from "./track-sampler";
 
 export const MAX_PARTICLES = 64;
 const STEP = 1 / 30;
@@ -26,6 +30,7 @@ export interface EmitterState {
   owed: number;
   timeMs: number;
   random: () => number;
+  spawnStrategy: EmitterSpawnStrategy;
 }
 
 export function rng(seed: number): () => number {
@@ -39,38 +44,8 @@ export function rng(seed: number): () => number {
   };
 }
 
-const lerp = (a: number[], b: number[], factor: number) =>
-  a.map((value, index) => value + ((b[index] ?? value) - value) * factor);
 const asArray = (value: number | number[]) =>
   typeof value === "number" ? [value] : value;
-
-export function sampleTrack(
-  track: ParticleTrack | undefined,
-  timeMs: number,
-  fallback: number[],
-): number[] {
-  if (!track?.keys.length) return fallback;
-  const time =
-    track.durationMs > 0
-      ? ((timeMs % track.durationMs) + track.durationMs) % track.durationMs
-      : timeMs;
-  const first = track.keys[0];
-  if (!first || time <= (first[0] ?? 0)) return first?.slice(1) ?? fallback;
-  for (let index = 1; index < track.keys.length; index += 1) {
-    const before = track.keys[index - 1];
-    const after = track.keys[index];
-    if (!before || !after || time >= (after[0] ?? 0)) continue;
-    if (track.interpolation === 0) return before.slice(1);
-    const start = before[0] ?? 0;
-    const end = after[0] ?? start;
-    return lerp(
-      before.slice(1),
-      after.slice(1),
-      end === start ? 1 : (time - start) / (end - start),
-    );
-  }
-  return track.keys.at(-1)?.slice(1) ?? fallback;
-}
 
 export function sampleCurve(
   curve: ParticleCurve | null | undefined,
@@ -86,7 +61,7 @@ export function sampleCurve(
     const time = curve.times[index];
     if (time === undefined || fraction > time) continue;
     const previousTime = curve.times[index - 1] ?? time;
-    return lerp(
+    return interpolateValues(
       asArray(curve.values[index - 1] ?? firstValue),
       asArray(curve.values[index] ?? firstValue),
       time === previousTime
@@ -115,35 +90,28 @@ export function spawn(
   emitter: ParticleEmitterMeta,
   timeMs: number,
   random: () => number,
+  registry: EmitterStrategyRegistry = defaultEmitterStrategies,
+  report?: (message: string) => void,
 ): Particle {
-  const areaX = one(emitter, "areaX", timeMs);
-  const areaY = one(emitter, "areaY", timeMs);
-  const vertical = one(emitter, "verticalRange", timeMs);
-  const horizontal = one(emitter, "horizontalRange", timeMs);
+  const strategy = registry.resolve(emitter.emitterType, report);
+  return spawnWithStrategy(emitter, timeMs, random, strategy);
+}
+
+function spawnWithStrategy(
+  emitter: ParticleEmitterMeta,
+  timeMs: number,
+  random: () => number,
+  strategy: EmitterSpawnStrategy,
+): Particle {
   const zSource = one(emitter, "zSource", timeMs);
-  let position = [0, 0, 0];
-  let direction = [0, 0, 1];
-  if (emitter.emitterType === 1) {
-    position = [(signed(random) * areaX) / 2, (signed(random) * areaY) / 2, 0];
-    const polar = signed(random) * vertical;
-    const azimuth = signed(random) * horizontal;
-    direction = [
-      Math.sin(polar) * Math.cos(azimuth),
-      Math.sin(polar) * Math.sin(azimuth),
-      Math.cos(polar),
-    ];
-  } else if (emitter.emitterType === 2) {
-    const radius = Math.min(areaX, areaY) + random() * Math.abs(areaY - areaX);
-    const elevation = signed(random) * vertical;
-    const azimuth = signed(random) * horizontal;
-    position = [
-      radius * Math.cos(elevation) * Math.cos(azimuth),
-      radius * Math.cos(elevation) * Math.sin(azimuth),
-      radius * Math.sin(elevation),
-    ];
-    const length = Math.hypot(...position);
-    if (length > 0) direction = position.map((value) => value / length);
-  }
+  const { position, direction: initialDirection } = strategy({
+    emitter,
+    timeMs,
+    random,
+    track: (name, fallback = 0) => one(emitter, name, timeMs, fallback),
+    signed: () => signed(random),
+  });
+  let direction = initialDirection;
   if (zSource > 0) {
     const away = [
       position[0] ?? 0,
@@ -176,6 +144,8 @@ export function spawn(
 export function createState(
   emitter: ParticleEmitterMeta,
   seed: number,
+  registry: EmitterStrategyRegistry = defaultEmitterStrategies,
+  report?: (message: string) => void,
 ): EmitterState {
   return {
     emitter,
@@ -183,6 +153,7 @@ export function createState(
     owed: 0,
     timeMs: 0,
     random: rng(seed),
+    spawnStrategy: registry.resolve(emitter.emitterType, report),
   };
 }
 
@@ -212,7 +183,14 @@ export function advance(state: EmitterState, delta: number): void {
   while (state.owed >= 1 - 1e-9) {
     state.owed -= 1;
     if (state.particles.length < MAX_PARTICLES)
-      state.particles.push(spawn(emitter, state.timeMs, state.random));
+      state.particles.push(
+        spawnWithStrategy(
+          emitter,
+          state.timeMs,
+          state.random,
+          state.spawnStrategy,
+        ),
+      );
   }
 }
 
@@ -220,8 +198,10 @@ export function simulateTo(
   emitter: ParticleEmitterMeta,
   seed: number,
   time: number,
+  registry: EmitterStrategyRegistry = defaultEmitterStrategies,
+  report?: (message: string) => void,
 ): EmitterState {
-  const state = createState(emitter, seed);
+  const state = createState(emitter, seed, registry, report);
   const start = Math.max(time - REPLAY, 0);
   state.timeMs = start * 1000;
   for (let left = Math.max(time, 0) - start; left > 1e-9; left -= STEP)

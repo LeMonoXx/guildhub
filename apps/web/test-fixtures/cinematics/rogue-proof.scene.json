@@ -1,0 +1,509 @@
+{
+  "id": "rogue-proof",
+  "schemaVersion": 1,
+  "durationMs": 12000,
+  "loop": true,
+  "declarations": [
+    {
+      "kind": "actor",
+      "id": "rogue",
+      "manifest": "/assets/looks/fixed/look.json",
+      "character": "human-male-rogue-class-4"
+    },
+    { "kind": "asset", "id": "camera", "asset": "stage-camera" },
+    { "kind": "asset", "id": "key-light", "asset": "key" },
+    { "kind": "asset", "id": "fill-light", "asset": "fill" },
+    { "kind": "asset", "id": "stage-ui", "asset": "cinematic-stage" },
+    { "kind": "asset", "id": "smoke", "asset": "authored-smoke" }
+  ],
+  "markers": [
+    { "id": "prewarm", "timeMs": 0 },
+    { "id": "run-in", "timeMs": 400 },
+    { "id": "pose", "timeMs": 3000 },
+    { "id": "smoke-bomb", "timeMs": 5200 },
+    { "id": "vanish", "timeMs": 7000 },
+    { "id": "fade", "timeMs": 8500 }
+  ],
+  "phases": [
+    { "id": "prewarm", "startMs": 0, "endMs": 400 },
+    { "id": "run-in", "startMs": 400, "endMs": 3000 },
+    { "id": "pose", "startMs": 3000, "endMs": 5200 },
+    { "id": "smoke-bomb", "startMs": 5200, "endMs": 7000 },
+    { "id": "vanish", "startMs": 7000, "endMs": 8500 },
+    { "id": "reset", "startMs": 8500, "endMs": 12000 }
+  ],
+  "tracks": [
+    {
+      "kind": "clip",
+      "id": "rogue-clips",
+      "target": "rogue",
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "animationGroup": "Stand",
+            "id": "animation-0",
+            "crossfadeMs": 0,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 400,
+          "value": {
+            "animationGroup": "Run",
+            "id": "animation-5",
+            "crossfadeMs": 120,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 2800,
+          "value": {
+            "animationGroup": "Ready1H",
+            "id": "animation-26",
+            "crossfadeMs": 240,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 5200,
+          "value": {
+            "animationGroup": "UseStandingStart",
+            "id": "animation-128",
+            "crossfadeMs": 120,
+            "playback": {
+              "rate": 1,
+              "loop": false,
+              "clampWhenFinished": true
+            }
+          }
+        },
+        {
+          "timeMs": 5700,
+          "value": {
+            "animationGroup": "UseStandingLoop",
+            "id": "animation-123",
+            "crossfadeMs": 80,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 6400,
+          "value": {
+            "animationGroup": "UseStandingEnd",
+            "id": "animation-129",
+            "crossfadeMs": 100,
+            "playback": {
+              "rate": 1,
+              "loop": false,
+              "clampWhenFinished": true
+            }
+          }
+        },
+        {
+          "timeMs": 6800,
+          "value": {
+            "animationGroup": "StealthStand",
+            "id": "animation-120",
+            "crossfadeMs": 90,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 7600,
+          "value": {
+            "animationGroup": "Stand",
+            "id": "animation-0",
+            "crossfadeMs": 0,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "animationGroup": "Stand",
+            "id": "animation-0",
+            "crossfadeMs": 0,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "transform",
+      "id": "rogue-transform",
+      "target": "rogue",
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "position": { "x": 0, "y": 0, "z": -3.2 },
+            "rotation": { "x": 0, "y": 0, "z": 0 },
+            "scale": { "x": 1, "y": 1, "z": 1 }
+          }
+        },
+        {
+          "timeMs": 400,
+          "value": {
+            "position": { "x": 0, "y": 0, "z": -3.2 },
+            "rotation": { "x": 0, "y": 0, "z": 0 },
+            "scale": { "x": 1, "y": 1, "z": 1 }
+          }
+        },
+        {
+          "timeMs": 2800,
+          "easing": "ease-out",
+          "value": {
+            "position": { "x": 0, "y": 0, "z": 0 },
+            "rotation": { "x": 0, "y": 0, "z": 0 },
+            "scale": { "x": 1, "y": 1, "z": 1 }
+          }
+        },
+        {
+          "timeMs": 8800,
+          "value": {
+            "position": { "x": 0, "y": 0, "z": 0 },
+            "rotation": { "x": 0, "y": 0, "z": 0 },
+            "scale": { "x": 1, "y": 1, "z": 1 }
+          }
+        },
+        {
+          "timeMs": 10400,
+          "value": {
+            "position": { "x": 0, "y": 0, "z": -3.2 },
+            "rotation": { "x": 0, "y": 0, "z": 0 },
+            "scale": { "x": 1, "y": 1, "z": 1 }
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "position": { "x": 0, "y": 0, "z": -3.2 },
+            "rotation": { "x": 0, "y": 0, "z": 0 },
+            "scale": { "x": 1, "y": 1, "z": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "kind": "visibility",
+      "id": "rogue-visibility",
+      "target": "rogue",
+      "keyframes": [
+        { "timeMs": 0, "value": false },
+        { "timeMs": 400, "value": true },
+        { "timeMs": 7000, "value": false },
+        { "timeMs": 12000, "value": false }
+      ]
+    },
+    {
+      "kind": "camera",
+      "id": "camera-move",
+      "target": "camera",
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "position": { "x": 4.8, "y": 1.35, "z": 0 },
+            "target": { "x": 0, "y": 1.25, "z": 0 },
+            "fov": 35
+          }
+        },
+        {
+          "timeMs": 2800,
+          "easing": "ease-out",
+          "value": {
+            "position": { "x": 4.35, "y": 1.4, "z": 0.15 },
+            "target": { "x": 0, "y": 1.3, "z": 0 },
+            "fov": 32
+          }
+        },
+        {
+          "timeMs": 5200,
+          "value": {
+            "position": { "x": 4.15, "y": 1.45, "z": 0.1 },
+            "target": { "x": 0, "y": 1.32, "z": 0 },
+            "fov": 31
+          }
+        },
+        {
+          "timeMs": 8500,
+          "value": {
+            "position": { "x": 4.5, "y": 1.4, "z": 0 },
+            "target": { "x": 0, "y": 1.28, "z": 0 },
+            "fov": 34
+          }
+        },
+        {
+          "timeMs": 11000,
+          "value": {
+            "position": { "x": 4.8, "y": 1.35, "z": 0 },
+            "target": { "x": 0, "y": 1.25, "z": 0 },
+            "fov": 35
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "position": { "x": 4.8, "y": 1.35, "z": 0 },
+            "target": { "x": 0, "y": 1.25, "z": 0 },
+            "fov": 35
+          }
+        }
+      ]
+    },
+    {
+      "kind": "light",
+      "id": "key-light-track",
+      "target": "key-light",
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "position": { "x": 3.5, "y": 5, "z": 2.5 },
+            "color": "#b9d8ff",
+            "intensity": 0
+          }
+        },
+        {
+          "timeMs": 1600,
+          "easing": "ease-out",
+          "value": {
+            "position": { "x": 3.5, "y": 5, "z": 2.5 },
+            "color": "#d9e8ff",
+            "intensity": 4.2
+          }
+        },
+        {
+          "timeMs": 5200,
+          "value": {
+            "position": { "x": 3, "y": 4.5, "z": 1.5 },
+            "color": "#d9e8ff",
+            "intensity": 4.8
+          }
+        },
+        {
+          "timeMs": 8200,
+          "easing": "ease-in",
+          "value": {
+            "position": { "x": 3.5, "y": 5, "z": 2.5 },
+            "color": "#b9d8ff",
+            "intensity": 0
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "position": { "x": 3.5, "y": 5, "z": 2.5 },
+            "color": "#b9d8ff",
+            "intensity": 0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "light",
+      "id": "fill-light-track",
+      "target": "fill-light",
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "position": { "x": -2, "y": 2.5, "z": -3 },
+            "color": "#592c7a",
+            "intensity": 0
+          }
+        },
+        {
+          "timeMs": 2200,
+          "easing": "ease-out",
+          "value": {
+            "position": { "x": -2, "y": 2.5, "z": -3 },
+            "color": "#7d3ca8",
+            "intensity": 2.1
+          }
+        },
+        {
+          "timeMs": 6000,
+          "value": {
+            "position": { "x": -1.5, "y": 2.8, "z": -2 },
+            "color": "#9a54bd",
+            "intensity": 3.2
+          }
+        },
+        {
+          "timeMs": 8800,
+          "easing": "ease-in",
+          "value": {
+            "position": { "x": -2, "y": 2.5, "z": -3 },
+            "color": "#592c7a",
+            "intensity": 0
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "position": { "x": -2, "y": 2.5, "z": -3 },
+            "color": "#592c7a",
+            "intensity": 0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "ui",
+      "id": "stage-treatment",
+      "target": "stage-ui",
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "opacity": 0,
+            "translation": { "x": 0, "y": 0, "z": 0 },
+            "scale": 1.015,
+            "blur": 5
+          }
+        },
+        {
+          "timeMs": 900,
+          "easing": "ease-out",
+          "value": {
+            "opacity": 1,
+            "translation": { "x": 0, "y": 0, "z": 0 },
+            "scale": 1,
+            "blur": 0
+          }
+        },
+        {
+          "timeMs": 7200,
+          "value": {
+            "opacity": 1,
+            "translation": { "x": 0, "y": 0, "z": 0 },
+            "scale": 1,
+            "blur": 0
+          }
+        },
+        {
+          "timeMs": 9800,
+          "easing": "ease-in",
+          "value": {
+            "opacity": 0,
+            "translation": { "x": 0, "y": 0, "z": 0 },
+            "scale": 1.015,
+            "blur": 5
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "opacity": 0,
+            "translation": { "x": 0, "y": 0, "z": 0 },
+            "scale": 1.015,
+            "blur": 5
+          }
+        }
+      ]
+    },
+    {
+      "kind": "smoke",
+      "id": "smoke-track",
+      "target": "smoke",
+      "seed": 424242,
+      "keyframes": [
+        {
+          "timeMs": 0,
+          "value": {
+            "density": 0,
+            "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
+            "size": 0,
+            "opacity": 0
+          }
+        },
+        {
+          "timeMs": 5200,
+          "value": {
+            "density": 0,
+            "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
+            "size": 0,
+            "opacity": 0
+          }
+        },
+        {
+          "timeMs": 6100,
+          "easing": "ease-out",
+          "value": {
+            "density": 0.82,
+            "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
+            "size": 34,
+            "opacity": 0.92
+          }
+        },
+        {
+          "timeMs": 7100,
+          "value": {
+            "density": 1,
+            "drift": { "x": 0.018, "y": 0.03, "z": -0.01 },
+            "size": 52,
+            "opacity": 1
+          }
+        },
+        {
+          "timeMs": 9000,
+          "easing": "ease-in",
+          "value": {
+            "density": 0.45,
+            "drift": { "x": 0.026, "y": 0.045, "z": -0.014 },
+            "size": 68,
+            "opacity": 0.18
+          }
+        },
+        {
+          "timeMs": 10200,
+          "value": {
+            "density": 0,
+            "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
+            "size": 0,
+            "opacity": 0
+          }
+        },
+        {
+          "timeMs": 12000,
+          "value": {
+            "density": 0,
+            "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
+            "size": 0,
+            "opacity": 0
+          }
+        }
+      ]
+    }
+  ]
+}

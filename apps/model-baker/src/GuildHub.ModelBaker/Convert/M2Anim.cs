@@ -16,6 +16,28 @@ using System.Numerics;
 
 namespace GuildHub.ModelBaker.Convert;
 
+enum M2Interpolation : ushort
+{
+    None = 0,
+    Linear = 1,
+    Bezier = 2,
+    Hermite = 3,
+}
+
+static class M2InterpolationEncoding
+{
+    public static M2Interpolation Read(ushort value) =>
+        Enum.IsDefined((M2Interpolation)value)
+            ? (M2Interpolation)value
+            : throw new InvalidDataException($"Unknown M2 interpolation value {value}");
+
+    public static bool IsSpline(this M2Interpolation interpolation) =>
+        interpolation is M2Interpolation.Bezier or M2Interpolation.Hermite;
+
+    public static string GltfName(this M2Interpolation interpolation) =>
+        interpolation == M2Interpolation.None ? "STEP" : "LINEAR";
+}
+
 // One M2Sequence (64 bytes). Flag 0x20: track data is inside this file. Flag 0x40: alias of `AliasNext`.
 record M2Sequence(ushort Id, ushort Variation, uint Duration, uint Flags, short VariationNext, ushort AliasNext)
 {
@@ -40,22 +62,28 @@ record M2Sequence(ushort Id, ushort Variation, uint Duration, uint Flags, short 
 // timestamps and for values. Offsets point into the owning file, or into the sequence's .anim file.
 sealed class M2Track
 {
-    public ushort Interpolation;  // 0 none (step), 1 linear, 2 bezier, 3 hermite
+    public M2Interpolation Interpolation;
     public short GlobalSeq;       // -1 when the track follows the playing sequence
     public (uint count, uint ofs)[] Times = [];
     public (uint count, uint ofs)[] Values = [];
 
-    public static M2Track Read(ReadOnlySpan<byte> d, int at, int baseOfs)
+    public static M2Track Read(ReadOnlySpan<byte> d, int at, int baseOfs, string diagnostic = "M2Track")
     {
-        var t = new M2Track { Interpolation = M2Bin.U16(d, at), GlobalSeq = M2Bin.I16(d, at + 2) };
-        t.Times = Pairs(d, at + 4, baseOfs);
-        t.Values = Pairs(d, at + 12, baseOfs);
+        M2Bin.Require(d, at, 20, $"{diagnostic} header");
+        var t = new M2Track
+        {
+            Interpolation = M2InterpolationEncoding.Read(M2Bin.U16(d, at)),
+            GlobalSeq = M2Bin.I16(d, at + 2),
+        };
+        t.Times = Pairs(d, at + 4, baseOfs, $"{diagnostic} timestamps");
+        t.Values = Pairs(d, at + 12, baseOfs, $"{diagnostic} values");
         return t;
     }
 
-    static (uint, uint)[] Pairs(ReadOnlySpan<byte> d, int at, int baseOfs)
+    static (uint, uint)[] Pairs(ReadOnlySpan<byte> d, int at, int baseOfs, string diagnostic)
     {
         var (n, ofs) = (M2Bin.U32(d, at), (int)M2Bin.U32(d, at + 4));
+        M2Bin.RequireArray(d, baseOfs + ofs, n, 8, diagnostic);
         var r = new (uint, uint)[n];
         for (var i = 0; i < n; i++) r[i] = (M2Bin.U32(d, baseOfs + ofs + i * 8), M2Bin.U32(d, baseOfs + ofs + i * 8 + 4));
         return r;
@@ -201,6 +229,16 @@ static class M2AnimFile
         if (afm2 >= 0) return (file, afm2, "AFM2");
         throw new InvalidDataException("Chunked .anim has neither AFSB nor AFM2");
     }
+
+    // Material tracks always use the model-animation payload. AFSB belongs exclusively to skeleton
+    // bone tracks and must not shadow AFM2 when both chunks are present.
+    public static (byte[] data, int baseOfs, string layout) MaterialData(byte[] file, bool chunked)
+    {
+        if (!chunked) return (file, 0, "raw");
+        foreach (var (id, body, _) in M2Bin.Chunks(file))
+            if (id == AFM2) return (file, body, "AFM2");
+        throw new InvalidDataException("Chunked .anim has no AFM2 material-track data");
+    }
 }
 
 static class M2Bin
@@ -212,6 +250,19 @@ static class M2Bin
     public static float F32(ReadOnlySpan<byte> d, int at) => BinaryPrimitives.ReadSingleLittleEndian(d[at..]);
     public static Vector3 V3(ReadOnlySpan<byte> d, int at) => new(F32(d, at), F32(d, at + 4), F32(d, at + 8));
     public static string FourCC(uint id) => System.Text.Encoding.ASCII.GetString(BitConverter.GetBytes(id));
+
+    public static void Require(ReadOnlySpan<byte> d, int at, int size, string diagnostic)
+    {
+        if (at < 0 || size < 0 || at > d.Length - size)
+            throw new InvalidDataException($"{diagnostic} at offset 0x{at:X} needs {size} bytes, file has {d.Length}");
+    }
+
+    public static void RequireArray(ReadOnlySpan<byte> d, int at, uint count, int stride, string diagnostic)
+    {
+        var size = (long)count * stride;
+        if (at < 0 || size > int.MaxValue || at > d.Length - size)
+            throw new InvalidDataException($"{diagnostic} at offset 0x{at:X} has {count} records of {stride} bytes, outside file size {d.Length}");
+    }
 
     public static IEnumerable<(uint id, int body, int size)> Chunks(byte[] data)
     {
@@ -247,6 +298,32 @@ static class M2AnimSource
         var entry = s.AnimFileIds.FirstOrDefault(a => a.AnimId == q.Id && a.SubAnimId == q.Variation);
         if (entry == null || entry.FileDataId == 0) return null;
         var (data, baseOfs, layout) = M2AnimFile.BoneData(open(entry.FileDataId), s.ChunkedAnims);
+        return (data, baseOfs, $"anim {entry.FileDataId} ({layout})");
+    }
+}
+
+static class M2MaterialAnimSource
+{
+    public static (byte[] data, int baseOfs, string source)? Resolve(
+        M2Model model,
+        IM2Skeleton skeleton,
+        int seq,
+        Func<uint, byte[]> open)
+    {
+        var q = skeleton.Sequences[seq];
+        for (var hops = 0; q.IsAlias && hops < skeleton.Sequences.Length; hops++)
+        {
+            if (q.AliasNext >= skeleton.Sequences.Length) return null;
+            q = skeleton.Sequences[q.AliasNext];
+        }
+        if (q.DataInFile)
+        {
+            var (inFileData, inFileBase) = model.InFileData;
+            return (inFileData, inFileBase, "in-file");
+        }
+        var entry = skeleton.AnimFileIds.FirstOrDefault(a => a.AnimId == q.Id && a.SubAnimId == q.Variation);
+        if (entry == null || entry.FileDataId == 0) return null;
+        var (data, baseOfs, layout) = M2AnimFile.MaterialData(open(entry.FileDataId), skeleton.ChunkedAnims);
         return (data, baseOfs, $"anim {entry.FileDataId} ({layout})");
     }
 }

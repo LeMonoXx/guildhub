@@ -3,7 +3,7 @@
 // The layer ordering and section placement are ported from wow.export,
 // Copyright (c) Kruithne and Marlamin, MIT License.
 
-import type { CharacterLook, TextureLayer } from "../types";
+import type { CharacterLook, TextureLayer } from "../../../types";
 
 export interface CompositedTexture {
   width: number;

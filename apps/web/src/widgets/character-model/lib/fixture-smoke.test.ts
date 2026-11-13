@@ -2,10 +2,19 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { describe, expect, test } from "vitest";
-import type { FixedLookManifest } from "./types";
+import type { FixedLookManifest } from "../../../types";
 
 const fixture = (...parts: string[]) =>
-  resolve(import.meta.dirname, "..", "test-fixtures", "assets", ...parts);
+  resolve(
+    import.meta.dirname,
+    "..",
+    "..",
+    "..",
+    "..",
+    "test-fixtures",
+    "assets",
+    ...parts,
+  );
 
 describe("authored browser fixture", () => {
   test("the manifest, glTF, metadata, and PNG form a buildable asset set", async () => {

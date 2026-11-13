@@ -201,6 +201,9 @@ The worker's entry point is its own composition root: open the database and the 
 
 Game-file access is a port (`GameDataSource`) with two adapters: `CdnGameDataSource` (default, no install) and `CascGameDataSource` (a copy of the files on a volume, used if the CDN is too slow or blocked). Neither starts the game.
 
+Character clips, material tracks, authored effects, and reusable character-detail intros follow the
+[character cinematics](character-cinematics.md) runtime and ownership boundaries.
+
 ## 10. Failure and fallback
 
 | Failure                                        | What the visitor gets                                                                 |

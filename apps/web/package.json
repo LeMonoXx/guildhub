@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@guildhub/contracts": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "three": "^0.181.0"

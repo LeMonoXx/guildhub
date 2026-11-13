@@ -99,6 +99,58 @@ module.exports = {
       },
     },
     {
+      name: "web-character-widget-public-api",
+      comment:
+        "Code outside the character widget must import its public index, never its internals.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/",
+        pathNot: "^apps/web/src/widgets/character-model/",
+      },
+      to: {
+        path: "^apps/web/src/widgets/character-model/(?:lib|model|ui)/",
+      },
+    },
+    {
+      name: "web-character-cinematic-public-api",
+      comment:
+        "Code outside the cinematic widget must import its public index, never its internals.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/",
+        pathNot: "^apps/web/src/widgets/character-cinematic/",
+      },
+      to: {
+        path: "^apps/web/src/widgets/character-cinematic/(?:adapters|ui)/",
+      },
+    },
+    {
+      name: "web-three-adapter-boundary",
+      comment:
+        "Three.js is isolated inside character rendering and cinematic adapters.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/",
+        pathNot:
+          "^apps/web/src/widgets/(?:character-model/|character-cinematic/adapters/)",
+      },
+      to: {
+        path: "(^|/)three(?:/|$)",
+      },
+    },
+    {
+      name: "web-cinematic-core-is-pure",
+      comment:
+        "The deterministic cinematic core must remain independent of React and Three.js.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/cinematic/",
+      },
+      to: {
+        path: "(^|/)(?:react|react-dom|three)(?:/|$)",
+      },
+    },
+    {
       name: "contracts-only-zod",
       comment: "packages/contracts may depend on zod and Node builtins only.",
       severity: "error",

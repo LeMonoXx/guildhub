@@ -1,6 +1,9 @@
 # Frontend architecture (`apps/web`)
 
-`apps/web` does not exist yet. It is a React app ([decision 0006](../decisions/0006-frontend-framework.md)); section 8 lists the stack and React-specific rules.
+`apps/web` is a React app ([decision 0006](../decisions/0006-frontend-framework.md)); section 8
+lists the stack and React-specific rules. Its first vertical slice is the standalone character
+viewer. The reusable animation and intro boundaries are defined in
+[character cinematics](character-cinematics.md).
 
 The web app is a static single-page app built by Vite. It is served by Caddy on the same origin as the API.
 

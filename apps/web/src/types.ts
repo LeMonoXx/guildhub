@@ -78,6 +78,9 @@ export interface ModelMeta {
     type: number;
     flags: number;
     fileDataId: number | null;
+    textureCoordIndex?: number | null;
+    textureWeightIndex?: number | null;
+    textureTransformIndex?: number | null;
   }[];
   geosets: {
     submeshIndex: number;
@@ -85,10 +88,14 @@ export interface ModelMeta {
     textureUnits?: {
       blendMode?: number;
       materialFlags?: number;
+      colorIndex?: number | null;
       textures: {
         textureIndex: number;
         type: number;
         fileDataId: number | null;
+        textureCoordIndex?: number | null;
+        textureWeightIndex?: number | null;
+        textureTransformIndex?: number | null;
       }[];
     }[];
   }[];
@@ -99,8 +106,28 @@ export interface ModelMeta {
     globalSequence?: number;
     durationMs: number;
   }[];
+  materialAnimations?: MaterialAnimation[];
   bones?: { node: string; flags: number }[];
   particles?: ParticleEmitterMeta[];
+}
+
+export type MaterialAnimationKind =
+  | "color.rgb"
+  | "color.alpha"
+  | "transparency.alpha"
+  | "textureTransform.translation"
+  | "textureTransform.rotation"
+  | "textureTransform.scaling";
+
+export interface MaterialAnimation {
+  kind: MaterialAnimationKind;
+  targetIndex: number;
+  sequenceId?: number | null;
+  variation?: number | null;
+  globalSequence?: number | null;
+  durationMs: number;
+  interpolation: "none" | "linear" | "bezier" | "hermite";
+  keys: number[][];
 }
 
 export interface ParticleTrack {

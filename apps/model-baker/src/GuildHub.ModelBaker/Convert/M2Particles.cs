@@ -67,7 +67,7 @@ static class M2Particles
                 return new JsonObject
                 {
                     ["durationMs"] = duration,
-                    ["interpolation"] = t.Interpolation,
+                    ["interpolation"] = (ushort)t.Interpolation,
                     ["globalSequence"] = t.GlobalSeq >= 0 ? t.GlobalSeq : null,
                     ["keys"] = new JsonArray(times.Select((time, j) => (JsonNode)new JsonArray([(JsonNode)time, .. values[j].Select(v => (JsonNode)v)])).ToArray()),
                 };

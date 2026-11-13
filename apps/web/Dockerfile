@@ -7,11 +7,13 @@ RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/web/package.json apps/web/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --filter @guildhub/web
+    pnpm install --frozen-lockfile --filter @guildhub/web...
 COPY tsconfig.base.json ./
 COPY apps/web apps/web
-RUN pnpm --filter @guildhub/web build
+COPY packages/contracts packages/contracts
+RUN pnpm --filter @guildhub/contracts build && pnpm --filter @guildhub/web build
 
 FROM caddy:2.10-alpine AS runtime
 COPY apps/web/Caddyfile /etc/caddy/Caddyfile

@@ -20,6 +20,9 @@ sealed class M2Model : IM2Skeleton
 {
     public record Vertex(Vector3 Position, Vector3 Normal, Vector2 Uv0, uint BoneWeights, uint BoneIndices);
     public record Texture(uint Type, uint Flags, uint FileDataId);
+    public record Color(M2Track Rgb, M2Track Alpha);
+    public record TextureWeight(M2Track Alpha);
+    public record TextureTransform(M2Track Translation, M2Track Rotation, M2Track Scaling);
     public record Attachment(uint Id, ushort Bone, Vector3 Position);
     // M2Material: render flags (0x1 unlit, 0x2 unfogged, 0x4 two-sided, 0x8 no depth test, 0x10 no depth write)
     // and blending mode (0 opaque, 1 alpha key, 2 alpha, 3 no-alpha add, 4 add, 5 mod, 6 mod2x, 7 blend add).
@@ -31,7 +34,13 @@ sealed class M2Model : IM2Skeleton
     public Vertex[] Vertices = [];
     public uint ViewCount;
     public Texture[] Textures = [];
+    public Color[] Colors = [];
+    public TextureWeight[] TextureWeights = [];
+    public TextureTransform[] TextureTransforms = [];
     public ushort[] TextureCombos = [];
+    public ushort[] TextureCoordCombos = [];
+    public ushort[] TextureWeightCombos = [];
+    public ushort[] TextureTransformCombos = [];
     public Material[] Materials = [];
     public M2Bone[] Bones { get; private set; } = [];
     public M2Sequence[] Sequences { get; private set; } = [];
@@ -109,8 +118,20 @@ sealed class M2Model : IM2Skeleton
 
         ViewCount = U32(d, 68);
 
+        // Material animation definitions. Track headers and their sequence lookup arrays are in MD20;
+        // key data may instead live in an AFM2 payload for an external .anim.
+        var (colorCount, colorOfs) = CheckedArray(d, 0x48, 40, "M2Color definitions");
+        Colors = new Color[colorCount];
+        for (var i = 0; i < colorCount; i++)
+        {
+            var o = (int)colorOfs + i * 40;
+            Colors[i] = new Color(
+                M2Track.Read(d, o, 0, $"M2Color[{i}].rgb"),
+                M2Track.Read(d, o + 20, 0, $"M2Color[{i}].alpha"));
+        }
+
         // Textures: 16 bytes each (type, flags, filename M2Array).
-        var (texCount, texOfs) = Arr(d, 80);
+        var (texCount, texOfs) = CheckedArray(d, 0x50, 16, "M2Texture definitions");
         Textures = new Texture[texCount];
         for (var i = 0; i < texCount; i++)
         {
@@ -118,8 +139,24 @@ sealed class M2Model : IM2Skeleton
             Textures[i] = new Texture(U32(d, o), U32(d, o + 4), 0);
         }
 
+        var (weightCount, weightOfs) = CheckedArray(d, 0x58, 20, "M2TextureWeight definitions");
+        TextureWeights = new TextureWeight[weightCount];
+        for (var i = 0; i < weightCount; i++)
+            TextureWeights[i] = new TextureWeight(M2Track.Read(d, (int)weightOfs + i * 20, 0, $"M2TextureWeight[{i}].alpha"));
+
+        var (transformCount, transformOfs) = CheckedArray(d, 0x60, 60, "M2TextureTransform definitions");
+        TextureTransforms = new TextureTransform[transformCount];
+        for (var i = 0; i < transformCount; i++)
+        {
+            var o = (int)transformOfs + i * 60;
+            TextureTransforms[i] = new TextureTransform(
+                M2Track.Read(d, o, 0, $"M2TextureTransform[{i}].translation"),
+                M2Track.Read(d, o + 20, 0, $"M2TextureTransform[{i}].rotation"),
+                M2Track.Read(d, o + 40, 0, $"M2TextureTransform[{i}].scaling"));
+        }
+
         // Materials: 4 bytes each (flags u16, blending mode u16). https://wowdev.wiki/M2#Render_flags_and_blending_modes
-        var (matCount, matOfs) = Arr(d, 112);
+        var (matCount, matOfs) = CheckedArray(d, 0x70, 4, "M2Material definitions");
         Materials = new Material[matCount];
         for (var i = 0; i < matCount; i++)
         {
@@ -128,9 +165,10 @@ sealed class M2Model : IM2Skeleton
         }
 
         // Texture combos (a.k.a. texture lookup): maps a batch's textureComboIndex to a texture index.
-        var (comboCount, comboOfs) = Arr(d, 128);
-        TextureCombos = new ushort[comboCount];
-        for (var i = 0; i < comboCount; i++) TextureCombos[i] = BinaryPrimitives.ReadUInt16LittleEndian(d[((int)comboOfs + i * 2)..]);
+        TextureCombos = ReadLookup(d, 0x80, "texture combo lookup");
+        TextureCoordCombos = ReadLookup(d, 0x88, "texture coordinate combo lookup");
+        TextureWeightCombos = ReadLookup(d, 0x90, "texture weight combo lookup");
+        TextureTransformCombos = ReadLookup(d, 0x98, "texture transform combo lookup");
 
         // Attachments: 40 bytes each (id, bone, unknown, position, animate_attached track).
         var (attCount, attOfs) = Arr(d, 240);
@@ -157,6 +195,22 @@ sealed class M2Model : IM2Skeleton
     public int ParticleCount, ParticleOfs, ParticleStride;
 
     static (uint count, uint ofs) Arr(ReadOnlySpan<byte> d, int at) => (U32(d, at), U32(d, at + 4));
+    static (uint count, uint ofs) CheckedArray(ReadOnlySpan<byte> d, int at, int stride, string diagnostic)
+    {
+        M2Bin.Require(d, at, 8, $"{diagnostic} header");
+        var array = Arr(d, at);
+        M2Bin.RequireArray(d, (int)array.ofs, array.count, stride, diagnostic);
+        return array;
+    }
+
+    static ushort[] ReadLookup(ReadOnlySpan<byte> d, int at, string diagnostic)
+    {
+        var (count, ofs) = CheckedArray(d, at, 2, diagnostic);
+        var values = new ushort[count];
+        for (var i = 0; i < count; i++)
+            values[i] = BinaryPrimitives.ReadUInt16LittleEndian(d[((int)ofs + i * 2)..]);
+        return values;
+    }
     internal static uint U32(ReadOnlySpan<byte> d, int at) => BinaryPrimitives.ReadUInt32LittleEndian(d[at..]);
     static int I32(ReadOnlySpan<byte> d, int at) => BinaryPrimitives.ReadInt32LittleEndian(d[at..]);
     static float F32(ReadOnlySpan<byte> d, int at) => BinaryPrimitives.ReadSingleLittleEndian(d[at..]);
@@ -168,7 +222,20 @@ sealed class M2Model : IM2Skeleton
 sealed class M2Skin
 {
     public record Submesh(ushort SkinSectionId, ushort Level, ushort VertexStart, ushort VertexCount, int TriangleStart, int TriangleCount);
-    public record Batch(byte Flags, sbyte Priority, ushort ShaderId, ushort SkinSectionIndex, ushort MaterialIndex, ushort MaterialLayer, ushort TextureCount, ushort TextureComboIndex);
+    public record Batch(
+        byte Flags,
+        sbyte Priority,
+        ushort ShaderId,
+        ushort SkinSectionIndex,
+        ushort GeosetIndex,
+        ushort ColorIndex,
+        ushort MaterialIndex,
+        ushort MaterialLayer,
+        ushort TextureCount,
+        ushort TextureComboIndex,
+        ushort TextureCoordComboIndex,
+        ushort TextureWeightComboIndex,
+        ushort TextureTransformComboIndex);
 
     public ushort[] Indices = [];   // skin vertex list -> global M2 vertex index
     public ushort[] Triangles = []; // triangle corners, each an index into Indices
@@ -180,12 +247,14 @@ sealed class M2Skin
     public static M2Skin Parse(byte[] data)
     {
         ReadOnlySpan<byte> d = data;
+        M2Bin.Require(d, 0, 44, ".skin header");
         if (M2Model.U32(d, 0) != SKIN) throw new InvalidDataException("Not a .skin file (bad magic)");
         var s = new M2Skin();
         s.Indices = U16s(d, 4);
         s.Triangles = U16s(d, 12);
 
         var (smCount, smOfs) = (M2Model.U32(d, 28), M2Model.U32(d, 32));
+        M2Bin.RequireArray(d, (int)smOfs, smCount, 48, ".skin submeshes");
         s.Submeshes = new Submesh[smCount];
         for (var i = 0; i < smCount; i++)
         {
@@ -196,11 +265,16 @@ sealed class M2Skin
         }
 
         var (bCount, bOfs) = (M2Model.U32(d, 36), M2Model.U32(d, 40));
+        M2Bin.RequireArray(d, (int)bOfs, bCount, 24, ".skin batches");
         s.Batches = new Batch[bCount];
         for (var i = 0; i < bCount; i++)
         {
             var o = (int)bOfs + i * 24;
-            s.Batches[i] = new Batch(d[o], (sbyte)d[o + 1], U16(d, o + 2), U16(d, o + 4), U16(d, o + 10), U16(d, o + 12), U16(d, o + 14), U16(d, o + 16));
+            s.Batches[i] = new Batch(
+                d[o], (sbyte)d[o + 1], U16(d, o + 2), U16(d, o + 4),
+                U16(d, o + 6), U16(d, o + 8), U16(d, o + 10), U16(d, o + 12),
+                U16(d, o + 14), U16(d, o + 16), U16(d, o + 18), U16(d, o + 20),
+                U16(d, o + 22));
         }
         return s;
     }
@@ -208,7 +282,9 @@ sealed class M2Skin
     static ushort U16(ReadOnlySpan<byte> d, int at) => BinaryPrimitives.ReadUInt16LittleEndian(d[at..]);
     static ushort[] U16s(ReadOnlySpan<byte> d, int at)
     {
+        M2Bin.Require(d, at, 8, ".skin ushort array header");
         var (n, ofs) = (M2Model.U32(d, at), M2Model.U32(d, at + 4));
+        M2Bin.RequireArray(d, (int)ofs, n, 2, $".skin ushort array at header 0x{at:X}");
         var r = new ushort[n];
         for (var i = 0; i < n; i++) r[i] = U16(d, (int)ofs + i * 2);
         return r;

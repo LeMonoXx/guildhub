@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { extname, relative, resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
@@ -42,7 +42,13 @@ function localAssets(root: string): Plugin {
   };
 }
 
-const assetRoot = process.env.GUILDHUB_ASSET_ROOT;
+const localProofAssets = resolve(
+  import.meta.dirname,
+  "../model-baker/assets/proof/rogue-t2",
+);
+const assetRoot =
+  process.env.GUILDHUB_ASSET_ROOT ??
+  (existsSync(localProofAssets) ? localProofAssets : undefined);
 
 export default defineConfig({
   plugins: [react(), ...(assetRoot ? [localAssets(assetRoot)] : [])],

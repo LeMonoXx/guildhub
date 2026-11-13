@@ -2,7 +2,9 @@
 
 How a guild character becomes an animated 3D model on the site. Decision: [0008](../decisions/0008-character-models-gltf.md).
 
-Nothing here is built yet. Until the pipeline exists, character pages show the official render image from `characterMediaSummary`. That image stays the fallback afterwards.
+Milestone A now has a manual fixed-look baker and a standalone viewer. It deliberately has no
+Battle.net character integration, queue, or worker yet. Character pages continue to use the
+official render image until milestone B connects their snapshots to this pipeline.
 
 What we copy from Altrobe, what we leave, and the order to build it: [character rendering plan](character-rendering-plan.md).
 
@@ -161,7 +163,12 @@ Sharing the body, the item models, and the texture layers between characters is 
 
 ## 8. Budgets
 
-Targets, to be replaced with measurements once a real Forever character has been built.
+The first measured fixed bake used `wowf` build `1.60.1.70938`, human male defaults, robe
+`16820`, and weapon `19019`. Preparing 1,404 CDN indexes from an empty cache took about 62
+seconds. Reopening that cache and producing two models, 19 textures, Stand and EmoteWave took
+132 seconds. A cold end-to-end run is therefore about 3 minutes on the development machine;
+downloads and CDN retries make this variable. These are manual milestone-A measurements, not
+request-path latency.
 
 | Path                                               | Target                                                             |
 | -------------------------------------------------- | ------------------------------------------------------------------ |
@@ -171,6 +178,8 @@ Targets, to be replaced with measurements once a real Forever character has been
 | Missing item, shared bodies already converted      | one conversion, seconds, off the request                           |
 | New client build, first extraction                 | minutes, off the request, once per patch                           |
 | Battle.net calls caused by one page view           | zero when the snapshot is inside its freshness window              |
+| Fixed-look bake, warm CDN index cache              | 132 s measured; runs manually and off the request                  |
+| Fixed-look bake, empty CDN index cache             | about 3 min measured/derived; 1,404 indexes downloaded first       |
 
 ## 9. Where the code lives
 

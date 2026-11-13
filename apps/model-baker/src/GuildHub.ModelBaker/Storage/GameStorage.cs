@@ -51,6 +51,7 @@ public sealed class GameStorage : IGameFiles
     {
         Directory.CreateDirectory(tactCacheDir);
         var build = CreateCdnBuild(source, tactCacheDir);
+        build.Settings.AdditionalCDNs.AddRange(hosts);
         build.cdn.ProductDirectory = source.CdnPath;
         build.LoadConfigs(source.BuildConfig, source.CdnConfig);
         var archives = build.CDNConfig!.Values["archives"];

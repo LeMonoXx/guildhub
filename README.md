@@ -18,10 +18,13 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 `apps/api` is the server process. It checks its environment, loads the instance config, answers
 `/health/live` and `/health/ready`, uses PostgreSQL, and serves a cached guild profile and roster.
 `packages/contracts` is the shared problem, instance, and guild schema. `apps/battlenet-stub` fakes
-the Battle.net endpoints the API needs today. `apps/model-baker` contains the tested model-conversion
-skeleton. Battle.net login and the site UI are not built yet.
+the Battle.net endpoints the API needs today. `apps/model-baker` converts a manually selected fixed
+Forever look, and `apps/web` renders that look with Three.js. Battle.net login and real character
+pages are not built yet.
 
-The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web UI will be a React app in `apps/web`; it is not scaffolded yet. The verification commands stay the same when that package is added.
+The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The standalone
+Milestone-A viewer is React 19 and Vite; it intentionally has no guild-site routes or Armory
+integration yet.
 
 ## Verify
 
@@ -37,7 +40,7 @@ If `corepack enable` cannot write next to Node (Windows under `Program Files`), 
 
 `pnpm verify` checks formatting, lint, and import boundaries across the repo, then runs `typecheck`, `test`, and `build` in every workspace package that defines them. A new package under `apps/` or `packages/` joins by adding those scripts.
 
-Shared tool versions (TypeScript, Vitest, `@types/node`) live in the `catalog` in `pnpm-workspace.yaml`. pnpm installs no release younger than three days (`minimumReleaseAge`). Dependabot waits the same three days.
+Shared tool versions (TypeScript, Vitest, `@types/node`) live in the `catalog` in `pnpm-workspace.yaml`. pnpm installs no release younger than one day (`minimumReleaseAge`). Dependabot waits the same day.
 
 ## Run the API
 
@@ -51,3 +54,26 @@ The image listens on port 3000. Docker uses the `HEALTHCHECK` against `/health`.
 
 Logs are JSON on stdout. `OTEL_EXPORTER_OTLP_ENDPOINT` is optional; when set, the API exports traces
 and metrics to that OTLP endpoint. No collector is required to run the API.
+
+## Run the fixed character
+
+Bake the gitignored model assets from Blizzard's `wowf` CDN:
+
+```sh
+dotnet run --project apps/model-baker/src/GuildHub.ModelBaker.Cli -- bake-fixed
+```
+
+Then run the viewer against that output:
+
+```powershell
+$env:GUILDHUB_ASSET_ROOT="$PWD\apps\model-baker\assets\fixed"
+pnpm --filter @guildhub/web dev
+```
+
+For the Linux-container equivalent, the `model-baker` Compose profile writes the named asset volume
+and the web container serves it:
+
+```sh
+docker compose --profile models run --rm model-baker
+docker compose up --build web
+```

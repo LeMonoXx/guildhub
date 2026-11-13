@@ -16,7 +16,7 @@
     "build": "pnpm -r --if-present build",
     "check:no-game-content": "node scripts/check-no-game-content.mjs",
     "test:content-guard": "node --test scripts/check-no-game-content.test.mjs",
-    "boundaries": "depcruise apps/api/src apps/api/instrumentation-loader.mjs apps/battlenet-stub/src packages scripts --config .dependency-cruiser.cjs --validate",
+    "boundaries": "depcruise apps/api/src apps/api/instrumentation-loader.mjs apps/battlenet-stub/src apps/web/src packages scripts --config .dependency-cruiser.cjs --validate",
     "verify": "pnpm format:check && pnpm lint && pnpm check:no-game-content && pnpm boundaries && pnpm --filter @guildhub/api db:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

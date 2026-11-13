@@ -101,7 +101,7 @@ Today: `apps/api`, `apps/battlenet-stub`, `packages/contracts`, `instances/trace
 | Area                | Decision                                                             | Record                                                                                                     |
 | ------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Runtime             | Node 24 LTS, TypeScript strict, ESM                                  | —                                                                                                          |
-| Package manager     | pnpm 10 workspace, catalog for shared versions, 3-day release age    | —                                                                                                          |
+| Package manager     | pnpm 10 workspace, catalog for shared versions, 1-day release age    | —                                                                                                          |
 | API framework       | Hono on `@hono/node-server`                                          | [0001](decisions/0001-hono-bff.md)                                                                         |
 | Local orchestration | Aspire with a TypeScript AppHost                                     | [0002](decisions/0002-aspire-local-orchestration.md)                                                       |
 | Database            | PostgreSQL 18, Drizzle ORM, SQL migrations in the repo               | [0003](decisions/0003-postgres-drizzle.md)                                                                 |
@@ -171,7 +171,7 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 
 - Every change goes through `pnpm verify` locally and the `verify` workflow in CI.
 - `main` is always deployable. Images are built once in CI, tagged with the commit SHA, pushed to GHCR, and deployed by tag.
-- Dependencies are updated by Dependabot in groups, after a 3-day cooldown.
+- Dependencies are updated by Dependabot in groups, after a 1-day cooldown.
 
 ## 11. Roadmap
 

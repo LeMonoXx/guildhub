@@ -3,6 +3,10 @@
 **/node_modules/
 **/dist/
 **/coverage/
+apps/model-baker/assets/
+apps/model-baker/cache/
+apps/model-baker/**/bin/
+apps/model-baker/**/obj/
 .env
 .env.*
 !.env.example

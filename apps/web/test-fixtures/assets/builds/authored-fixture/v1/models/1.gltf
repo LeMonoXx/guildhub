@@ -1,0 +1,17 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "GuildHub authored CI fixture"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "authored_fixture_root"
+    }
+  ]
+}

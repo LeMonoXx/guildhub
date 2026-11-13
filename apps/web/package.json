@@ -1,0 +1,26 @@
+{
+  "name": "@guildhub/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/three": "^0.181.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "catalog:",
+    "vite": "^8.0.0",
+    "vitest": "catalog:"
+  }
+}

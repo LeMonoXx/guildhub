@@ -9,7 +9,7 @@ catalog:
 
 injectWorkspacePackages: true
 
-minimumReleaseAge: 4320
+minimumReleaseAge: 1440
 
 onlyBuiltDependencies:
   - esbuild

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "build": "authored-fixture",
+  "outputVersion": 1,
+  "look": {
+    "build": "authored-fixture",
+    "race": 0,
+    "sex": 0,
+    "modelFileDataId": 1,
+    "textures": [],
+    "layers": [],
+    "sections": [
+      {
+        "sectionType": 0,
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      }
+    ],
+    "sectionLayers": [
+      {
+        "sectionType": 0,
+        "textureType": 1,
+        "blendMode": 2
+      }
+    ],
+    "geosets": [0]
+  },
+  "items": [
+    {
+      "itemId": 1,
+      "name": "Authored Test Tunic",
+      "inventoryType": 5,
+      "equipSlot": 5,
+      "geosetGroup": [0, 0, 0, 0, 0, 0],
+      "helmHideGeosetGroups": [],
+      "models": [],
+      "bodyTextures": [],
+      "geosets": [],
+      "bodyReplaceableTextures": {},
+      "attachments": []
+    }
+  ],
+  "body": {
+    "path": "builds/authored-fixture/v1/models/1.gltf",
+    "fileDataId": 1
+  },
+  "bodyMetadata": "builds/authored-fixture/v1/models/1.json",
+  "animations": []
+}

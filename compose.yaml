@@ -49,5 +49,43 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - model-assets:/srv/assets:ro
+    read_only: true
+    tmpfs:
+      - /config
+      - /data
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  model-baker:
+    profiles:
+      - models
+    build:
+      context: .
+      dockerfile: apps/model-baker/Dockerfile
+    volumes:
+      - model-assets:/assets
+      - model-baker-cache:/cache
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
 volumes:
+  model-assets:
+  model-baker-cache:
   postgres:

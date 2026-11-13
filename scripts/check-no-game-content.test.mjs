@@ -5,6 +5,7 @@ import { findViolations, violationReason } from "./no-game-content-rules.mjs";
 
 test("rejects Blizzard model and table extensions case-insensitively", () => {
   for (const extension of [
+    "gltf",
     "glb",
     "BLP",
     "m2",
@@ -43,6 +44,33 @@ test("rejects generated images in model-baker asset paths", () => {
   ]) {
     assert.equal(violationReason(path), "generated model-baker image");
   }
+});
+
+test("allows only the named authored viewer model fixture", () => {
+  assert.equal(
+    violationReason(
+      "apps/web/test-fixtures/assets/builds/authored-fixture/v1/models/1.gltf",
+    ),
+    null,
+  );
+  assert.equal(
+    violationReason(
+      "apps/web/test-fixtures/assets/builds/authored-fixture/v1/textures/1.png",
+    ),
+    null,
+  );
+  assert.equal(
+    violationReason(
+      "apps/web/test-fixtures/assets/builds/real-build/v3/models/42.gltf",
+    ),
+    "game-content extension",
+  );
+  assert.equal(
+    violationReason(
+      "apps/web/test-fixtures/assets/builds/real-build/v3/textures/42.png",
+    ),
+    "generated viewer image",
+  );
 });
 
 test("allows pinned definitions and authored documentation images", () => {

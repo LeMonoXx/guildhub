@@ -81,23 +81,59 @@ interface ClipValue {
 }
 
 export class ClipBinding implements CommandBinding<CharacterHandle> {
-  private readonly selected = new WeakMap<CharacterHandle, string | number>();
+  private readonly playback = new WeakMap<
+    CharacterHandle,
+    {
+      animationGroup: string | number;
+      iteration: number;
+      elapsedMs: number;
+      localTimeMs: number;
+    }
+  >();
 
-  apply(target: CharacterHandle, command: FrameCommand): void {
+  apply(
+    target: CharacterHandle,
+    command: FrameCommand,
+    context: BindingContext,
+  ): void {
     const value = command.value as ClipValue;
-    if (this.selected.get(target) !== value.animationGroup) {
+    const previous = this.playback.get(target);
+    const groupChanged = previous?.animationGroup !== value.animationGroup;
+    const continuous =
+      previous !== undefined &&
+      previous.iteration === context.frame.iteration &&
+      context.frame.elapsedMs >= previous.elapsedMs;
+
+    if (groupChanged) {
       target.selectAnimationGroup(
         value.animationGroup,
         Math.max(0, value.crossfadeMs) / 1000,
       );
-      this.selected.set(target, value.animationGroup);
     }
-    target.setTime(Math.max(0, value.localTimeMs) / 1000);
+
+    if (continuous) {
+      target.update(
+        Math.max(
+          0,
+          groupChanged
+            ? value.localTimeMs
+            : value.localTimeMs - previous.localTimeMs,
+        ) / 1000,
+      );
+    } else {
+      target.setTime(Math.max(0, value.localTimeMs) / 1000);
+    }
+    this.playback.set(target, {
+      animationGroup: value.animationGroup,
+      iteration: context.frame.iteration,
+      elapsedMs: context.frame.elapsedMs,
+      localTimeMs: value.localTimeMs,
+    });
   }
 
   reset(): void {
-    // WeakMap entries vanish with their handles. Selection is deliberately
-    // retained across timeline loops when the first group is unchanged.
+    // WeakMap entries vanish with their handles. Loop iteration changes force
+    // one deterministic seek before incremental playback resumes.
   }
 }
 

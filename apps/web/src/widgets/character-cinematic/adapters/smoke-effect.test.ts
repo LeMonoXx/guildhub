@@ -41,6 +41,7 @@ describe("SmokeEffect", () => {
       position: effect.positionAttribute,
       opacity: effect.opacityAttribute,
       size: effect.sizeAttribute,
+      seed: effect.seedAttribute,
     };
     effect.apply(values, 1000);
     effect.reset();
@@ -50,6 +51,7 @@ describe("SmokeEffect", () => {
     expect(effect.positionAttribute).toBe(resources.position);
     expect(effect.opacityAttribute).toBe(resources.opacity);
     expect(effect.sizeAttribute).toBe(resources.size);
+    expect(effect.seedAttribute).toBe(resources.seed);
     effect.dispose();
   });
 

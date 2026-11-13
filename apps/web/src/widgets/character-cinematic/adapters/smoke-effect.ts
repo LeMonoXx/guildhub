@@ -10,32 +10,61 @@ export interface SmokeValues {
 const vertexShader = `
 attribute float particleOpacity;
 attribute float particleSize;
+attribute float particleSeed;
 varying float vOpacity;
 varying float vSeed;
 void main() {
   vOpacity = particleOpacity;
-  vSeed = fract(sin(dot(position.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  vSeed = particleSeed;
   vec4 view = modelViewMatrix * vec4(position, 1.0);
-  gl_PointSize = particleSize * (10.0 / max(1.0, -view.z));
+  gl_PointSize = particleSize * (12.0 / max(1.0, -view.z));
   gl_Position = projectionMatrix * view;
 }`;
 
 const fragmentShader = `
 varying float vOpacity;
 varying float vSeed;
+
+float random(vec2 point) {
+  return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 point) {
+  vec2 cell = floor(point);
+  vec2 local = fract(point);
+  vec2 blend = local * local * (3.0 - 2.0 * local);
+  return mix(
+    mix(random(cell), random(cell + vec2(1.0, 0.0)), blend.x),
+    mix(
+      random(cell + vec2(0.0, 1.0)),
+      random(cell + vec2(1.0, 1.0)),
+      blend.x
+    ),
+    blend.y
+  );
+}
+
+float fbm(vec2 point) {
+  float value = 0.0;
+  value += noise(point) * 0.5333;
+  point = point * 2.03 + 17.17;
+  value += noise(point) * 0.2667;
+  point = point * 2.01 + 9.23;
+  value += noise(point) * 0.1333;
+  point = point * 2.04 + 5.91;
+  value += noise(point) * 0.0667;
+  return value;
+}
+
 void main() {
-  vec2 center = gl_PointCoord - vec2(0.5);
-  float angle = atan(center.y, center.x);
-  float edge =
-    0.42 +
-    0.07 * sin(angle * 3.0 + vSeed * 6.28318) +
-    0.04 * sin(angle * 7.0 - vSeed * 12.56636);
-  float cloud = 1.0 - smoothstep(edge * 0.28, edge, length(center));
-  float grain =
-    0.78 +
-    0.22 * sin((gl_PointCoord.x + vSeed) * 19.0) *
-    sin((gl_PointCoord.y - vSeed) * 17.0);
-  gl_FragColor = vec4(0.3, 0.32, 0.36, cloud * grain * vOpacity * 0.36);
+  vec2 center = (gl_PointCoord - vec2(0.5)) * 2.0;
+  float detail = fbm(gl_PointCoord * 3.4 + vec2(vSeed * 11.0, vSeed * 7.0));
+  float distortedRadius = length(center) - (detail - 0.5) * 0.34;
+  float envelope = 1.0 - smoothstep(0.38, 1.02, distortedRadius);
+  float wisps = smoothstep(0.16, 0.86, detail);
+  float alpha = envelope * (0.48 + wisps * 0.52) * vOpacity * 0.24;
+  vec3 color = mix(vec3(0.16, 0.17, 0.2), vec3(0.34, 0.36, 0.4), detail);
+  gl_FragColor = vec4(color, alpha);
 }`;
 
 const randomSequence = (seed: number) => {
@@ -53,6 +82,7 @@ export class SmokeEffect {
   readonly positionAttribute: THREE.BufferAttribute;
   readonly opacityAttribute: THREE.BufferAttribute;
   readonly sizeAttribute: THREE.BufferAttribute;
+  readonly seedAttribute: THREE.BufferAttribute;
 
   private readonly origins: Float32Array;
   private readonly phases: Float32Array;
@@ -87,9 +117,11 @@ export class SmokeEffect {
     this.positionAttribute = new THREE.BufferAttribute(positions, 3);
     this.opacityAttribute = new THREE.BufferAttribute(opacities, 1);
     this.sizeAttribute = new THREE.BufferAttribute(sizes, 1);
+    this.seedAttribute = new THREE.BufferAttribute(this.phases, 1);
     this.geometry.setAttribute("position", this.positionAttribute);
     this.geometry.setAttribute("particleOpacity", this.opacityAttribute);
     this.geometry.setAttribute("particleSize", this.sizeAttribute);
+    this.geometry.setAttribute("particleSeed", this.seedAttribute);
     this.geometry.setDrawRange(0, 0);
     this.material = new THREE.ShaderMaterial({
       vertexShader,

@@ -17,9 +17,10 @@ import {
 const frame = (
   commands: readonly FrameCommand[],
   iteration = 0,
+  elapsedMs = 250,
 ): CinematicFrame => ({
-  timeMs: 250,
-  elapsedMs: 250,
+  timeMs: elapsedMs,
+  elapsedMs,
   iteration,
   atEnd: false,
   phase: {
@@ -64,34 +65,51 @@ describe("AnimationDirector", () => {
     expect(apply.mock.calls[0]?.[2].frame.timeMs).toBe(250);
   });
 
-  test("selects a clip only on change but seeks every absolute frame", () => {
+  test("seeks once, then advances clips and crossfades incrementally", () => {
     const selectAnimationGroup = vi.fn(() => true);
     const setTime = vi.fn();
+    const update = vi.fn();
     const character = {
       selectAnimationGroup,
       setTime,
+      update,
     } as unknown as CharacterHandle;
     const binding = new ClipBinding();
-    const clip = command("clip", "actor", {
+    const stand = command("clip", "actor", {
       animationGroup: "stand",
       crossfadeMs: 200,
       localTimeMs: 500,
     });
-    binding.apply(character, clip);
-    binding.apply(character, clip);
-    binding.apply(
-      character,
-      command("clip", "actor", {
-        animationGroup: "run",
-        crossfadeMs: 100,
-        localTimeMs: 250,
-      }),
-    );
+    const firstFrame = frame([stand], 0, 500);
+    binding.apply(character, stand, {
+      frame: firstFrame,
+      report: vi.fn(),
+    });
+    const nextStand = command("clip", "actor", {
+      animationGroup: "stand",
+      crossfadeMs: 200,
+      localTimeMs: 516,
+    });
+    binding.apply(character, nextStand, {
+      frame: frame([nextStand], 0, 516),
+      report: vi.fn(),
+    });
+    const run = command("clip", "actor", {
+      animationGroup: "run",
+      crossfadeMs: 100,
+      localTimeMs: 10,
+    });
+    binding.apply(character, run, {
+      frame: frame([run], 0, 526),
+      report: vi.fn(),
+    });
 
     expect(selectAnimationGroup).toHaveBeenCalledTimes(2);
     expect(selectAnimationGroup).toHaveBeenNthCalledWith(1, "stand", 0.2);
     expect(setTime).toHaveBeenNthCalledWith(1, 0.5);
-    expect(setTime).toHaveBeenCalledTimes(3);
+    expect(setTime).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenNthCalledWith(1, 0.016);
+    expect(update).toHaveBeenNthCalledWith(2, 0.01);
   });
 
   test("applies camera, light, and UI values", () => {

@@ -37,6 +37,20 @@ const initialUi: UiBindingState = {
   blur: 0,
 };
 
+const applyUiState = (element: HTMLElement, state: UiBindingState): void => {
+  element.style.setProperty("--cinematic-opacity", String(state.opacity));
+  element.style.setProperty(
+    "--cinematic-translate-x",
+    `${String(state.translation.x)}px`,
+  );
+  element.style.setProperty(
+    "--cinematic-translate-y",
+    `${String(state.translation.y)}px`,
+  );
+  element.style.setProperty("--cinematic-scale", String(state.scale));
+  element.style.setProperty("--cinematic-blur", `${String(state.blur)}px`);
+};
+
 const loadScene = async (
   source: string | CinematicScene,
 ): Promise<CinematicScene> => {
@@ -65,14 +79,15 @@ export function CharacterCinematic({
   previewTimeMs,
   ariaLabel = "Animated character introduction",
 }: CharacterCinematicProps) {
+  const root = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Loading character…");
-  const [ui, setUi] = useState<UiBindingState>(initialUi);
 
   useEffect(() => {
+    const element = root.current;
     const container = host.current;
-    if (!container) return;
+    if (!element || !container) return;
     const lifecycle = { disposed: false };
     const isDisposed = () => lifecycle.disposed;
     let frameRequest = 0;
@@ -104,7 +119,11 @@ export function CharacterCinematic({
         const targets = new BindingTargetRegistry();
         const bindings = createDefaultBindings();
         const audio = new AudioBindingState();
-        const uiTarget = { setState: setUi };
+        const uiTarget = {
+          setState(state: UiBindingState) {
+            applyUiState(element, state);
+          },
+        };
 
         rig.setActor(prepared.character);
         const targetInstallers = new Map<
@@ -233,15 +252,16 @@ export function CharacterCinematic({
   }, [assetBase, manifest, posterTimeMs, previewTimeMs, scene]);
 
   const style = {
-    "--cinematic-opacity": String(ui.opacity),
-    "--cinematic-translate-x": `${String(ui.translation.x)}px`,
-    "--cinematic-translate-y": `${String(ui.translation.y)}px`,
-    "--cinematic-scale": String(ui.scale),
-    "--cinematic-blur": `${String(ui.blur)}px`,
+    "--cinematic-opacity": String(initialUi.opacity),
+    "--cinematic-translate-x": `${String(initialUi.translation.x)}px`,
+    "--cinematic-translate-y": `${String(initialUi.translation.y)}px`,
+    "--cinematic-scale": String(initialUi.scale),
+    "--cinematic-blur": `${String(initialUi.blur)}px`,
   } as CSSProperties;
 
   return (
     <section
+      ref={root}
       className="cinematic"
       data-state={status}
       style={style}

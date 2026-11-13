@@ -87,20 +87,20 @@ Audio cues are part of the schema from version 1 but the first rogue proof does 
 The first scene uses a human male rogue, class ID 4, HD models, Bloodfang Armor, and two daggers:
 
 1. Black initial frame while all assets are prewarmed.
-2. The rogue runs from darkness as camera and key light reveal him.
-3. The character settles into a combat pose.
-4. A use/cast clip triggers a deterministic authored smoke bomb.
+2. The rogue starts invisible far behind the stage and runs continuously toward the camera.
+3. Perspective and authored scale make him grow without a pose or animation pause.
+4. Authored smoke builds around the still-running character without a smoke-bomb body clip.
 5. Character visibility reaches zero inside the smoke.
 6. Smoke, lights, and page treatment fade to the exact initial frame.
-7. The engine resets without reallocating assets and loops.
+7. The engine resets without reallocating assets and loops immediately.
 
 WoW item particles and material tracks continue throughout. Authored smoke is renderer-owned,
 seeded, and seekable so CI and loop reset do not depend on a spell visual kit.
 
-The current Forever human-male skeleton provides Stand, Run, Ready1H, SpellCastOmni, StealthWalk,
-StealthStand, UseStandingLoop, UseStandingStart, and UseStandingEnd for this proof. SpellCast and
-Emerge are requested by the preset but diagnosed and skipped because this skeleton does not expose
-them.
+The bake preset provides Stand, Run, Ready1H, SpellCastOmni, StealthWalk, StealthStand,
+UseStandingLoop, UseStandingStart, and UseStandingEnd. The scene intentionally keeps Run active
+until the vanish so clip changes cannot interrupt the approach. SpellCast and Emerge are requested
+by the preset but diagnosed and skipped because this skeleton does not expose them.
 
 ## 7. Authoring and visual proof
 
@@ -117,8 +117,8 @@ pnpm --filter @guildhub/web dev
 
 The default route plays the loop; `?viewer=1` retains the free viewer. `?frame=<milliseconds>`
 renders a deterministic, non-playing frame for authoring and visual regression evidence. The
-defined proof checkpoints are 0 (dark start), 1600 (run-in), 6990 (smoke-covered pre-vanish), 8000
-(post-vanish smoke), and 12000 (exact reset). The 0 and 12000 screenshots must be byte-identical
+defined proof checkpoints are 0 (dark start), 250 (far reveal), 2000 (approach), 5900
+(smoke-covered pre-vanish), 6000 (vanish), and 8000 (exact reset). The 0 and 8000 screenshots must be byte-identical
 when captured at the same viewport.
 
 The web image builds the contracts package before the app. Mount the ignored proof output at

@@ -110,7 +110,7 @@ export class SmokeEffect {
     for (let index = 0; index < capacity; index += 1) {
       const offset = index * 3;
       this.origins[offset] = (random() * 2 - 1) * 0.65;
-      this.origins[offset + 1] = random() * 2.2 - 0.25;
+      this.origins[offset + 1] = random() * 1.8 - 0.45;
       this.origins[offset + 2] = (random() * 2 - 1) * 0.65;
       this.phases[index] = random();
     }

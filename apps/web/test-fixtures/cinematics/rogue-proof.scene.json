@@ -22,14 +22,14 @@
     { "id": "throw", "timeMs": 4000 },
     { "id": "smoke", "timeMs": 4300 },
     { "id": "covered", "timeMs": 5300 },
-    { "id": "vanish", "timeMs": 5600 },
+    { "id": "vanish", "timeMs": 5700 },
     { "id": "fade", "timeMs": 6000 }
   ],
   "phases": [
     { "id": "prewarm", "startMs": 0, "endMs": 250 },
     { "id": "approach", "startMs": 250, "endMs": 4300 },
-    { "id": "smoke", "startMs": 4300, "endMs": 5600 },
-    { "id": "vanish", "startMs": 5600, "endMs": 6800 },
+    { "id": "smoke", "startMs": 4300, "endMs": 5700 },
+    { "id": "vanish", "startMs": 5700, "endMs": 6800 },
     { "id": "reset", "startMs": 6800, "endMs": 8000 }
   ],
   "tracks": [
@@ -134,7 +134,7 @@
           "value": {
             "position": { "x": -0.2, "y": 0, "z": 0 },
             "rotation": { "x": 0, "y": 0, "z": 0 },
-            "scale": { "x": 0.98, "y": 0.98, "z": 0.98 }
+            "scale": { "x": 0.94, "y": 0.94, "z": 0.94 }
           }
         },
         {
@@ -154,7 +154,7 @@
       "keyframes": [
         { "timeMs": 0, "value": false },
         { "timeMs": 250, "value": true },
-        { "timeMs": 5600, "value": false },
+        { "timeMs": 5700, "value": false },
         { "timeMs": 8000, "value": false }
       ]
     },

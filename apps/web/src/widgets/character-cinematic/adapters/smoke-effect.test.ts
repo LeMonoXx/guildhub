@@ -55,6 +55,28 @@ describe("SmokeEffect", () => {
     effect.dispose();
   });
 
+  test("keeps the dense cloud low around the character", () => {
+    const effect = new SmokeEffect(424242, 256);
+    effect.apply(
+      {
+        density: 1,
+        drift: { x: 0, y: 0, z: 0 },
+        size: 64,
+        opacity: 1,
+      },
+      0,
+    );
+    const positions = effect.positionAttribute.array as Float32Array;
+    const yPositions = Array.from(
+      { length: effect.capacity },
+      (_, index) => positions[index * 3 + 1] ?? 0,
+    );
+
+    expect(Math.min(...yPositions)).toBeLessThan(0);
+    expect(Math.max(...yPositions)).toBeLessThan(1.96);
+    effect.dispose();
+  });
+
   test("disposes resources once", () => {
     const effect = new SmokeEffect(1, 4);
     const geometry = vi.spyOn(effect.geometry, "dispose");

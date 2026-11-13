@@ -64,7 +64,27 @@ Crossing the loop duration performs one hard reset and retains only the remainde
 
 The stage may provide real frame deltas, but it never advances subsystems independently.
 
-## 5. Scene data
+## 5. Layered character animation
+
+A character has one base animation and zero or more independently addressed overlays. An overlay
+never replaces or pauses the base clip. Scene clip values may declare an overlay with a stable
+layer ID, animation group, semantic mask, weight, and fade duration.
+
+The animation controller implements overlays as follows:
+
+- the base clip continues on its original clock and mixer action;
+- the overlay clip is filtered to the bones selected by its semantic mask;
+- the filtered clip is converted to an additive clip relative to its authored first frame;
+- filtered clips and mixer actions are cached and owned by the animation controller;
+- `update`, deterministic `setTime`, `reset`, fades, and disposal include every active layer.
+
+Masks are skeleton semantics, not scene-specific bone lists. `upper-body` resolves from the
+exported spine key-bone metadata and includes its descendants. New masks extend the mask registry
+and its contract tests; they do not add class, character, or scene conditionals to the cinematic
+engine. This allows running attacks, casts, emotes, item use, and future facial layers to share the
+same mechanism.
+
+## 6. Scene data
 
 A versioned contract describes:
 
@@ -82,7 +102,7 @@ binding. Adding another intro normally adds a scene document and a bake configur
 
 Audio cues are part of the schema from version 1 but the first rogue proof does not play sound.
 
-## 6. Rogue proof
+## 7. Rogue proof
 
 The first scene uses a human male rogue, class ID 4, HD models, Bloodfang Armor, and two daggers:
 
@@ -105,7 +125,7 @@ metadata instead of character-specific bone numbers, so layered actions remain r
 supported skeletons. SpellCast and Emerge are requested by the preset but diagnosed and skipped
 because this skeleton does not expose them.
 
-## 7. Authoring and visual proof
+## 8. Authoring and visual proof
 
 `apps/web/test-fixtures/cinematics/rogue-proof.scene.json` is authored data and may be committed.
 The generated character assets under `apps/model-baker/assets/` are ignored and must never be
@@ -121,7 +141,7 @@ pnpm --filter @guildhub/web dev
 The default route plays the loop; `?viewer=1` retains the free viewer. `?frame=<milliseconds>`
 renders a deterministic, non-playing frame for authoring and visual regression evidence. The
 defined proof checkpoints are 0 (dark start), 250 (far reveal), 2000 (approach), 4000
-(running throw), 5300 (full smoke coverage), 5599 (covered pre-vanish), 5600 (vanish), and 8000
+(running throw), 5300 (full smoke coverage), 5699 (covered pre-vanish), 5700 (vanish), and 8000
 (exact reset).
 The actor remains visible until the opaque cloud is established. The 0 and 8000 screenshots must
 be byte-identical when captured at the same viewport.
@@ -129,13 +149,14 @@ be byte-identical when captured at the same viewport.
 The web image builds the contracts package before the app. Mount the ignored proof output at
 `/srv/assets` to repeat the same checkpoints in the Linux container.
 
-## 8. Architecture fitness gates
+## 9. Architecture fitness gates
 
 Before a new track or intro is accepted:
 
 - a new kind is registered without editing the cinematic evaluation loop;
 - baker track exporters have synthetic binary fixtures and GLB assertions;
 - `setTime` and `reset` reproduce the same sampled state across repeated loops;
+- layered actions preserve the base clip outside their semantic mask;
 - asset requests deduplicate while in flight;
 - disposal is idempotent and touches each owned GPU resource once;
 - React imports no Three.js outside the character widget boundary;

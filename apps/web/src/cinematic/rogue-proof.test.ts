@@ -41,8 +41,8 @@ describe("rogue proof scene", () => {
     const beforeThrow = timeline.evaluate(3950);
     const throwing = timeline.evaluate(4200);
     const smoke = timeline.evaluate(4700);
-    const covered = timeline.evaluate(5599);
-    const vanished = timeline.evaluate(5600);
+    const covered = timeline.evaluate(5699);
+    const vanished = timeline.evaluate(5700);
     const endpoint = timeline.poster(timeline.scene.durationMs);
 
     expect(initial.phase.id).toBe("prewarm");

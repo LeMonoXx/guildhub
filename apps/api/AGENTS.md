@@ -1,0 +1,29 @@
+# apps/api
+
+Rules for the API. The root [`AGENTS.md`](../../AGENTS.md) applies too. The full design is in [`docs/architecture/backend.md`](../../docs/architecture/backend.md).
+
+## Current state
+
+`src/app.ts` (Hono app with `GET /health`), `src/env.ts` (zod env schema), `src/index.ts` (server, graceful shutdown). When the first module lands, these move to `src/platform/` and `src/main.ts` as described in the backend architecture.
+
+## Import rules (summary)
+
+```text
+main.ts / worker.ts   -> anything (composition root)
+modules/<m>/http      -> own application, `import type` from own domain, packages/contracts, platform/http, platform/kernel
+modules/<m>/infrastructure -> own application ports, own domain, platform/db, platform/observability, platform/kernel, libraries
+modules/<m>/application    -> own domain, platform/kernel, other modules' index.ts only
+modules/<m>/domain         -> own domain, platform/kernel — nothing else
+platform/*            -> platform/*, libraries — never modules/*
+```
+
+- No `process.env` outside `platform/config`. No `console.*` outside `main.ts` lifecycle lines; use the logger.
+- No `Date.now()` / `new Date()` in domain or application; use the `Clock` port.
+- Route handlers call one use case and map the result. No queries, no Battle.net calls, no business rules in handlers.
+- Drizzle row types and Battle.net response types never leave `infrastructure`.
+
+## Tests
+
+- `*.test.ts` next to the code, run by `pnpm --filter @guildhub/api test`.
+- `*.int.test.ts` for database tests (Testcontainers, needs Docker).
+- Every use case: one test per outcome in its error union plus the success path.

@@ -4,6 +4,14 @@ GuildHub is a platform for a World of Warcraft: Forever guild site. One install 
 
 Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wired into the platform.
 
+## Architecture and rules
+
+- [North star](docs/north-star.md): the target system, principles, data, security, roadmap
+- [Backend](docs/architecture/backend.md), [frontend](docs/architecture/frontend.md), and [error model](docs/architecture/errors.md)
+- [Development, local stack, and agents](docs/development.md)
+- [Standards register](docs/standards.md) and [decision records](docs/decisions/)
+- [`AGENTS.md`](AGENTS.md): working rules for coding agents and humans
+
 ## What runs today
 
 `apps/api` is the server process. It checks its environment and answers `GET /health`. Battle.net login, the guild roster, and the site UI are not built yet.

@@ -187,7 +187,7 @@ Each phase ends with `pnpm verify` for the TypeScript, and `dotnet test` for the
 
 ### Milestone A. One character on screen, locally and on the server
 
-The baker is a command, not a job queue. The page reads a fixed look JSON from the asset store. No `apps/api` character module, no pg-boss, no Armory.
+The baker is a command, not a job queue. The page reads a fixed look JSON from the asset store. No `apps/api` character module, no pg-boss, no Armory. Aspire is not part of this milestone. Locally, `dotnet test` and `dotnet run` are enough to see the character. The server runs the baker image and the page under Docker, which is also how we check that the same image works on the machine before it is copied up.
 
 1. **Baker skeleton.** New `apps/model-baker`. Copy `Convert/`, `Storage/CdnSource.cs`, `Tables/`, and the `.dbd` files at the pinned WoWDBDefs commit. Add the game-content check. `dotnet test` passes without a network. No API, no web.
 2. **Bake one fixed look.** Run the baker once against the CDN for one race and sex, the default customization, and a small fixed outfit (one chest, one weapon is enough). Write the glTF, the PNG layers, and a `look.json` into the asset store, gitignored. Record the timings into [character rendering §8](character-rendering.md), replacing the estimates. Which items are in the outfit does not matter.

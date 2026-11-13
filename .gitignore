@@ -5,3 +5,10 @@ coverage/
 .env.*
 !.env.example
 *.tsbuildinfo
+
+# Model baker build products and generated game content
+apps/model-baker/**/bin/
+apps/model-baker/**/obj/
+apps/model-baker/assets/
+apps/model-baker/cache/
+apps/model-baker/output/

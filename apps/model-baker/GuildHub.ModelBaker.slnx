@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GuildHub.ModelBaker.Cli/GuildHub.ModelBaker.Cli.csproj" />
+    <Project Path="src/GuildHub.ModelBaker/GuildHub.ModelBaker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GuildHub.ModelBaker.Tests/GuildHub.ModelBaker.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -2,3 +2,4 @@ dist/
 node_modules/
 coverage/
 pnpm-lock.yaml
+apps/model-baker/src/GuildHub.ModelBaker/Definitions/manifest.json

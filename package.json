@@ -11,9 +11,11 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm test:content-guard && pnpm -r --if-present test",
     "build": "pnpm -r --if-present build",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check:no-game-content": "node scripts/check-no-game-content.mjs",
+    "test:content-guard": "node --test scripts/check-no-game-content.test.mjs",
+    "verify": "pnpm format:check && pnpm lint && pnpm check:no-game-content && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

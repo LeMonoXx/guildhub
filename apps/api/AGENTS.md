@@ -4,7 +4,7 @@ Rules for the API. The root [`AGENTS.md`](../../AGENTS.md) applies too. The full
 
 ## Current state
 
-`src/app.ts` (Hono app with `GET /health`), `src/env.ts` (zod env schema), `src/index.ts` (server, graceful shutdown). When the first module lands, these move to `src/platform/` and `src/main.ts` as described in the backend architecture.
+`src/index.ts` is the composition root. Shared HTTP, env, instance loading, kernel, and observability live under `src/platform/`. Feature modules land under `src/modules/` when they exist.
 
 ## Import rules (summary)
 

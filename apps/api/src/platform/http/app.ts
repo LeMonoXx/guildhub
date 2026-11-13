@@ -7,8 +7,9 @@ import { Hono } from "hono";
 import { requestId, type RequestIdVariables } from "hono/request-id";
 import { routePath } from "hono/route";
 import type { Logger } from "pino";
+import { internalError, notFoundError, problemResponse } from "./problems.js";
 
-type AppEnv = StructuredLoggerEnv<Logger> & {
+export type AppEnv = StructuredLoggerEnv<Logger> & {
   Variables: RequestIdVariables;
 };
 
@@ -67,7 +68,14 @@ export function createApp(config: AppConfig): Hono<AppEnv> {
       },
     }),
   );
+
   app.get("/health", (context) => context.json({ status: "ok" }));
+
+  app.notFound((context) => problemResponse(context, notFoundError()));
+  app.onError((error, context) => {
+    config.logger.error({ module: "http", err: error }, "unhandled error");
+    return problemResponse(context, internalError());
+  });
 
   return app;
 }

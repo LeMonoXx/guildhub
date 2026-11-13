@@ -7,13 +7,14 @@
     "instrumentation-loader.mjs"
   ],
   "scripts": {
-    "dev": "node --import ./instrumentation-loader.mjs --import tsx --watch src/index.ts",
+    "dev": "pnpm --filter @guildhub/contracts build && node --import ./instrumentation-loader.mjs --import tsx --watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "start": "node --import ./instrumentation-loader.mjs dist/index.js",
     "test": "vitest run"
   },
   "dependencies": {
+    "@guildhub/contracts": "workspace:*",
     "@hono/node-server": "^2.1.6",
     "@hono/otel": "^1.3.0",
     "@hono/structured-logger": "^1.0.0",

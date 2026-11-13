@@ -1,4 +1,5 @@
-import { readEnv } from "./env.js";
+import { readEnv } from "./platform/config/env.js";
+import { loadInstanceConfig } from "./platform/config/instance.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 
 const env = readEnv(process.env);
@@ -6,10 +7,11 @@ const telemetry = startTelemetry({
   endpoint: env.OTEL_EXPORTER_OTLP_ENDPOINT,
   serviceName: env.OTEL_SERVICE_NAME,
 });
+const instance = await loadInstanceConfig(env.INSTANCE_DIR);
 const [{ createLogger }, { serve }, { createApp }] = await Promise.all([
   import("./platform/observability/logger.js"),
   import("@hono/node-server"),
-  import("./app.js"),
+  import("./platform/http/app.js"),
 ]);
 const logger = createLogger({
   level: env.LOG_LEVEL,
@@ -24,7 +26,12 @@ const server = serve(
   { fetch: app.fetch, hostname: "0.0.0.0", port: env.PORT },
   (info) => {
     logger.info(
-      { module: "lifecycle", port: info.port, telemetry: telemetry.enabled },
+      {
+        module: "lifecycle",
+        port: info.port,
+        instance: instance.slug,
+        telemetry: telemetry.enabled,
+      },
       "API listening",
     );
   },

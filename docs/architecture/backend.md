@@ -31,7 +31,7 @@ apps/api/
       ...
 ```
 
-Today the code is `src/app.ts`, `src/env.ts`, `src/index.ts`. They move into `platform/` and `main.ts` when the first module lands.
+Today the composition root is `src/index.ts`. Shared HTTP, config, kernel, and observability already live under `src/platform/`. Feature modules land under `src/modules/` when they exist.
 
 ## 2. Layers and what they may import
 

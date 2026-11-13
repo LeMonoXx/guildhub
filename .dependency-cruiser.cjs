@@ -78,7 +78,7 @@ module.exports = {
         path: "^(apps|packages)/",
         pathNot: [
           "[.](?:int[.])?test[.](?:js|mjs|cjs|ts)$",
-          "^apps/[^/]+/(?:drizzle[.]config[.]ts|vitest[.]config[.]ts)$",
+          "(^|/)(?:drizzle|vitest)[.]config[.]ts$",
         ],
       },
       to: {
@@ -102,7 +102,10 @@ module.exports = {
       name: "contracts-only-zod",
       comment: "packages/contracts may depend on zod and Node builtins only.",
       severity: "error",
-      from: { path: "^packages/contracts/" },
+      from: {
+        path: "^packages/contracts/",
+        pathNot: ["[.](?:int[.])?test[.]ts$", "(^|/)vitest[.]config[.]ts$"],
+      },
       to: {
         pathNot: "^packages/contracts/",
         dependencyTypesNot: ["npm", "core", "type-only"],

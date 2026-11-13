@@ -15,10 +15,11 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 
 ## What runs today
 
-`apps/api` is the server process. It checks its environment and answers `GET /health`.
-`apps/model-baker` contains the tested model-conversion skeleton. Both emit structured logs and
-support OTLP when an endpoint is configured. Battle.net login, the guild roster, and the site UI are
-not built yet.
+`apps/api` is the server process. It checks its environment, loads the instance config, and answers
+`GET /health`. `packages/contracts` is the shared problem and instance schema. `apps/model-baker`
+contains the tested model-conversion skeleton. Both executables emit structured logs and support
+OTLP when an endpoint is configured. Battle.net login, the guild roster, and the site UI are not
+built yet.
 
 The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web UI will be a React app in `apps/web`; it is not scaffolded yet. The verification commands stay the same when that package is added.
 

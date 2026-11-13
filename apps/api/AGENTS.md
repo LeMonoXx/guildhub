@@ -17,7 +17,8 @@ modules/<m>/domain         -> own domain, platform/kernel — nothing else
 platform/*            -> platform/*, libraries — never modules/*
 ```
 
-- No `process.env` outside `platform/config`. No `console.*` outside `main.ts` lifecycle lines; use the logger.
+- No `process.env` outside `platform/config` or the composition root. No `console.*`; use the
+  structured logger. Follow `docs/architecture/observability.md`.
 - No `Date.now()` / `new Date()` in domain or application; use the `Clock` port.
 - Route handlers call one use case and map the result. No queries, no Battle.net calls, no business rules in handlers.
 - Drizzle row types and Battle.net response types never leave `infrastructure`.

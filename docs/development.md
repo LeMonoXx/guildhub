@@ -12,6 +12,11 @@ docker compose up --build         # API image
 
 Everything below is the target. Sections say when a step depends on a roadmap item.
 
+Today, the API and model baker already emit structured JSON logs. Setting
+`OTEL_EXPORTER_OTLP_ENDPOINT` enables their OTLP traces and metrics. Leaving it unset is supported:
+no collector is required for `pnpm verify`, `dotnet test`, or normal process health. See
+[observability](architecture/observability.md).
+
 ## 2. One command for the whole stack: Aspire
 
 GuildHub uses **Aspire** with a **TypeScript AppHost** (`apphost/apphost.ts`) for local orchestration. Aspire 13.2+ supports a TypeScript AppHost with no .NET SDK in our toolchain; the Aspire CLI manages its orchestration engine. It needs Node 24 and Docker (or Podman).
@@ -64,7 +69,12 @@ What this gives us:
 - The **Aspire Dashboard**: resource states, console logs, structured logs, traces, and metrics over OpenTelemetry for every process.
 - The **Battle.net stub** by default. Switching to the real Battle.net is one AppHost parameter, with the client ID and secret stored as Aspire user secrets (never in the repo).
 
-Why not only Docker Compose: Compose has no telemetry dashboard, no health-ordered startup of local processes with reload, and no agent interface. Aspire publishes Compose for production anyway (see [decision 0007](decisions/0007-deployment-compose-linux.md)).
+Why not only Docker Compose: Compose has no telemetry dashboard, no health-ordered startup of local
+processes with reload, and no agent interface. Aspire publishes Compose for production anyway (see
+[decision 0007](decisions/0007-deployment-compose-linux.md)).
+
+Aspire injects its OTLP endpoint into each resource. Application images contain only SDKs and
+exporters; they do not contain the dashboard or a telemetry database.
 
 ## 3. Battle.net stub (`apps/battlenet-stub`)
 

@@ -53,6 +53,11 @@ A deploy does not run the model baker, does not download game files, and does no
 
 Secrets (`BATTLENET_CLIENT_SECRET`, `SESSION_SECRET`, the database password) live only in the server's `.env`, mode 600, owner root. They are not GitHub secrets. The only GitHub secrets for deploy are the SSH key and, if GHCR is private, a read token for the deploy user.
 
+Every container writes structured logs to stdout. Docker's configured log driver handles retention.
+No OpenTelemetry collector or vendor sink ships with the first deployment. If the host later gains
+one, set `OTEL_EXPORTER_OTLP_ENDPOINT` and the standard resource attributes; the application images
+already export traces and metrics. A missing sink never affects health.
+
 ## 4. How the server is opened
 
 Nothing new is exposed to the internet.

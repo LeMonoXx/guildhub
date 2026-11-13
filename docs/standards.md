@@ -21,3 +21,17 @@ The external standards GuildHub follows, and where each one applies. Where peopl
 | IDs                    | IETF RFC 9562 UUID version 7                                      | Primary keys of our own tables                                             |
 | Versioning             | Semantic Versioning 2.0.0                                         | Packages, if we ever publish one; image tags use commit SHAs               |
 | Containers             | OCI Image Format                                                  | Built images                                                               |
+
+## Implementation rule
+
+A standard is implemented through the platform or a maintained reference-quality package whenever
+one exists. GuildHub does not write its own OAuth protocol, Problem Details format, trace
+propagation, OTLP encoding, request-ID middleware, database/file-format parser, retry framework, or
+similar generic infrastructure.
+
+Project code may configure those implementations and enforce GuildHub-specific policy. A custom
+implementation needs a documented gap analysis: which platform APIs and packages were checked, why
+they do not fit, and how compatibility is tested. Current justified exceptions are the specialized
+WoW M2/BLP conversion inherited with tests and attribution from Altrobe/wow.export, and the
+repository-specific game-content guard. DBCD parses table files and TACTSharp reads CDN storage; we
+do not replace either.

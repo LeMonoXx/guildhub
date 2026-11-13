@@ -20,4 +20,7 @@ Use Aspire with a TypeScript AppHost in `apphost/` as the single way to run the 
 - One command (`aspire run`) for the full stack. No hand-maintained local `.env` with ports and connection strings.
 - Developers and agents need the Aspire CLI and Docker in addition to Node and pnpm. The AppHost stays TypeScript. The model baker is a .NET project, so the .NET 10 SDK is needed to test and build it. Aspire does not need that SDK to orchestrate.
 - CI does not depend on Aspire for unit and integration tests (Testcontainers covers the database), so an Aspire problem cannot block merges.
+- Application processes own instrumentation, correlated JSON logs, and OTLP exporters. Aspire is
+  a local sink, not a runtime dependency. Production may leave the OTLP endpoint unset until an
+  operator chooses a backend; application health and logging do not depend on one.
 - Aspire moves fast. Pin the CLI and integration versions, and update them deliberately.

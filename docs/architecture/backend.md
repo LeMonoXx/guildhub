@@ -184,11 +184,23 @@ See [errors](errors.md). In short: domain and application return typed errors as
 
 ## 8. Logging and telemetry
 
-- Logs are JSON lines through pino, never `console.log` outside `main.ts` startup and shutdown messages.
-- Every log line carries `traceId`, `spanId`, and the module name. Request logs carry method, route pattern (not the raw URL with IDs), status, and duration.
+- The shared signal, resource, privacy, sampling, and metric-cardinality contract is
+  [observability](observability.md). This section adds API-specific rules.
+- Logs are JSON lines through pino; operational code never uses `console.*`.
+- OpenTelemetry's Pino instrumentation adds `trace_id`, `span_id`, and `trace_flags`; application
+  code does not implement correlation itself. Every application log also names its module.
+- Hono's `requestId`, `@hono/structured-logger`, and `@hono/otel` own request IDs, lifecycle
+  timing, route-aware logs, and server spans. Request logs carry method, route pattern (not the raw
+  URL with IDs), status, and duration.
 - Never log tokens, cookies, `Authorization` headers, secrets, or full Battle.net responses. pino `redact` paths enforce this.
 - Levels: `error` for failed requests (5xx) and failed jobs, `warn` for degraded behaviour (stale cache served, upstream retry), `info` for lifecycle events, `debug` for development only.
-- OpenTelemetry auto-instrumentation covers HTTP in and out and Postgres. Use cases that matter get their own spans named `<module>.<use-case>`.
+- OpenTelemetry starts before Hono and the Node HTTP server are imported. Auto-instrumentation
+  covers HTTP in and out and, once present, Postgres. Use cases that matter get spans named
+  `<module>.<use-case>`.
+- `OTEL_EXPORTER_OTLP_ENDPOINT` enables OTLP traces and metrics. Without it, the API still emits
+  correlated JSON logs and never retries a nonexistent collector.
+- Startup, shutdown, and telemetry flush use the same logger. Health-probe request logs are
+  `debug`, so the default production log does not fill with probes.
 
 ## 9. Testing
 

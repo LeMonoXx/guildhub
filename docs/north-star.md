@@ -8,6 +8,7 @@ Detailed rules live in:
 
 - [Backend architecture](architecture/backend.md)
 - [Frontend architecture](architecture/frontend.md)
+- [Observability](architecture/observability.md)
 - [Error model](architecture/errors.md) (shared by backend and frontend)
 - [Development, local stack, and agents](development.md)
 - [Standards register](standards.md)
@@ -39,7 +40,10 @@ These decide conflicts. Earlier principles win over later ones.
 4. **One way to do each thing.** One command for local start, one for verification, one error format, one way to call the API from the frontend.
 5. **Runs locally without secrets.** The full stack, including login, runs against a Battle.net stub. Developers and agents need no real credentials for day-to-day work.
 6. **Observable by default.** Every request has a trace. Logs are structured and correlated to it. Humans and agents read the same data.
-7. **Boring, current technology.** We pick maintained, mainstream tools. We do not pin to outdated majors, and we do not run release candidates without a decision record.
+7. **Standards and maintained packages before custom infrastructure.** We configure established
+   implementations instead of rebuilding protocols, parsers, middleware, or plumbing. Custom code
+   is for GuildHub's domain and documented gaps, not for undifferentiated infrastructure.
+8. **Boring, current technology.** We pick maintained, mainstream tools. We do not pin to outdated majors, and we do not run release candidates without a decision record.
 
 ## 3. System overview (target)
 
@@ -61,7 +65,9 @@ flowchart LR
 - A worker process (same codebase as the API, different entry point) refreshes Battle.net data through jobs stored in Postgres (pg-boss). There is no Redis.
 - The server's existing reverse proxy terminates TLS and routes one hostname by path. GuildHub speaks HTTP on the Docker network and does not bind ports 80 or 443. Web and API share that hostname, so there is no CORS and the session cookie stays `SameSite=Lax`. See [deployment](deployment.md).
 
-Today: only `apps/api` exists, with `GET /health`.
+Today: `apps/api` serves `GET /health`; `apps/model-baker` has its tested converter skeleton.
+Both emit structured logs and are OTLP-ready. The web, database, worker, and Aspire AppHost are not
+built yet.
 
 ## 4. Repository layout (target)
 
@@ -100,7 +106,7 @@ Today: `apps/api` only. The other folders are created when their first code land
 | Errors              | RFC 9457 Problem Details with stable error codes                     | [0004](decisions/0004-problem-details.md)                                                                  |
 | Auth                | Battle.net OAuth via `arctic`, server-side sessions in Postgres      | [0005](decisions/0005-battlenet-oauth-bff-sessions.md)                                                     |
 | Frontend            | React 19, Vite, TanStack Router, Query, and Form                     | [0006](decisions/0006-frontend-framework.md)                                                               |
-| Observability       | OpenTelemetry SDK, pino logs, Aspire Dashboard                       | [0002](decisions/0002-aspire-local-orchestration.md)                                                       |
+| Observability       | OTel traces/metrics over OTLP; correlated JSON logs on stdout        | [architecture](architecture/observability.md), [0002](decisions/0002-aspire-local-orchestration.md)        |
 | Deployment          | Compose on the existing Linux host, HTTP behind its proxy, CD by SHA | [0007](decisions/0007-deployment-compose-linux.md), [0009](decisions/0009-deploy-behind-existing-proxy.md) |
 | Character models    | glTF played by Three.js, baked and cached off the request            | [0008](decisions/0008-character-models-gltf.md)                                                            |
 
@@ -169,7 +175,8 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 1. Enforce layer and module boundaries with `dependency-cruiser` in `pnpm verify`.
 2. Add `packages/contracts` with the problem model and the instance config schema; add `instances/traceless`.
 3. Add the Aspire AppHost with Postgres, the API, the migrator, and the Battle.net stub. Replace `compose.yaml` with `aspire publish` output.
-4. Add OpenTelemetry and pino to the API; split `/health` into `/health/live` and `/health/ready`.
+4. Complete the observability rollout as each process lands; split `/health` into `/health/live`
+   and `/health/ready`.
 5. Guild module: roster from Battle.net, cached, `GET /api/guild` and `GET /api/guild/roster`.
 6. Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.
 7. Identity module: Battle.net login, sessions, `GET /api/me`.

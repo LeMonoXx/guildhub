@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
+
 namespace GuildHub.ModelBaker.Cli;
 
 public static class CliApplication
@@ -28,5 +31,17 @@ public static class CliApplication
 
 public static class Program
 {
-    public static int Main(string[] args) => CliApplication.Run(args, Console.Out, Console.Error);
+    public static int Main(string[] args)
+    {
+        using var observability = Observability.Create();
+        using var activity = Observability.Activities.StartActivity("baker.cli");
+        var exitCode = CliApplication.Run(args, Console.Out, Console.Error);
+        if (exitCode != 0)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, "invalid command");
+            observability.LoggerFactory.CreateLogger("GuildHub.ModelBaker.Cli")
+                .LogWarning("Baker command rejected with exit code {ExitCode}", exitCode);
+        }
+        return exitCode;
+    }
 }

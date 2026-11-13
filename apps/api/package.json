@@ -3,18 +3,29 @@
   "private": true,
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "instrumentation-loader.mjs"
   ],
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "node --import ./instrumentation-loader.mjs --import tsx --watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node --import ./instrumentation-loader.mjs dist/index.js",
     "test": "vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",
+    "@hono/otel": "^1.3.0",
+    "@hono/structured-logger": "^1.0.0",
+    "@opentelemetry/api": "^1.10.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.301.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.301.0",
+    "@opentelemetry/instrumentation": "0.301.1",
+    "@opentelemetry/instrumentation-pino": "0.71.0",
+    "@opentelemetry/sdk-metrics": "3.1.0",
+    "@opentelemetry/sdk-node": "0.301.0",
     "hono": "^4.13.17",
+    "pino": "^10.4.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

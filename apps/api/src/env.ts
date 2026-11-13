@@ -4,6 +4,11 @@ const schema = z.object({
   BATTLENET_CLIENT_ID: z.string().min(1),
   BATTLENET_CLIENT_SECRET: z.string().min(1),
   BATTLENET_REDIRECT_URI: z.url(),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+    .default("info"),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
+  OTEL_SERVICE_NAME: z.string().min(1).default("guildhub-api"),
   SESSION_SECRET: z.string().min(32),
   PORT: z
     .string()

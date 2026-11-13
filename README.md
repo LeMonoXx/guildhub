@@ -7,7 +7,7 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 ## Architecture and rules
 
 - [North star](docs/north-star.md): the target system, principles, data, security, roadmap
-- [Backend](docs/architecture/backend.md), [frontend](docs/architecture/frontend.md), [error model](docs/architecture/errors.md), [character rendering](docs/architecture/character-rendering.md), and its [implementation plan](docs/architecture/character-rendering-plan.md)
+- [Backend](docs/architecture/backend.md), [frontend](docs/architecture/frontend.md), [observability](docs/architecture/observability.md), [error model](docs/architecture/errors.md), [character rendering](docs/architecture/character-rendering.md), and its [implementation plan](docs/architecture/character-rendering-plan.md)
 - [Development, local stack, and agents](docs/development.md)
 - [Deployment](docs/deployment.md): later, onto the existing Linux host behind its proxy
 - [Standards register](docs/standards.md) and [decision records](docs/decisions/)
@@ -15,7 +15,10 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 
 ## What runs today
 
-`apps/api` is the server process. It checks its environment and answers `GET /health`. Battle.net login, the guild roster, and the site UI are not built yet.
+`apps/api` is the server process. It checks its environment and answers `GET /health`.
+`apps/model-baker` contains the tested model-conversion skeleton. Both emit structured logs and
+support OTLP when an endpoint is configured. Battle.net login, the guild roster, and the site UI are
+not built yet.
 
 The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web UI will be a React app in `apps/web`; it is not scaffolded yet. The verification commands stay the same when that package is added.
 
@@ -44,3 +47,6 @@ docker compose up --build
 ```
 
 The image listens on port 3000. Docker uses the `HEALTHCHECK` against `/health`. The container runs as a non-root user on a read-only filesystem. On `SIGTERM` it closes open connections and exits with code 0.
+
+Logs are JSON on stdout. `OTEL_EXPORTER_OTLP_ENDPOINT` is optional; when set, the API exports traces
+and metrics to that OTLP endpoint. No collector is required to run the API.

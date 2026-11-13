@@ -47,7 +47,9 @@ describe("guild lineup scene", () => {
     );
     expect(behind).toBeDefined();
     expect(kneeler.slot.z).toBeGreaterThan(behind?.slot.z ?? 0);
-    expect(Math.abs(kneeler.slot.x - (behind?.slot.x ?? 0))).toBeGreaterThan(0.25);
+    expect(Math.abs(kneeler.slot.x - (behind?.slot.x ?? 0))).toBeGreaterThan(
+      0.25,
+    );
   });
 
   test("walks actors in slowly from the sides and the back with a locomotion overlay", async () => {
@@ -125,7 +127,10 @@ describe("guild lineup scene", () => {
       join(import.meta.dirname, "build-lineup-scene.ts"),
       "utf8",
     );
-    const troop = readFileSync(join(import.meta.dirname, "arrange-troop.ts"), "utf8");
+    const troop = readFileSync(
+      join(import.meta.dirname, "arrange-troop.ts"),
+      "utf8",
+    );
     expect(source).not.toMatch(/member\.name\s*===/);
     expect(source).not.toMatch(/if\s*\(\s*member\.slug/);
     expect(troop).not.toMatch(/member\.name\s*===/);

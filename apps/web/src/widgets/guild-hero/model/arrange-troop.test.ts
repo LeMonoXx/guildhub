@@ -58,12 +58,12 @@ describe("arrangeTroop", () => {
 
     const behind = places.find((place) => place.member.slug === "tauren");
     expect(behind).toBeDefined();
-    expect(Math.abs((kneelers[0]?.slot.x ?? 0) - (behind?.slot.x ?? 0))).toBeGreaterThan(
-      0.25,
-    );
-    expect(Math.abs((kneelers[0]?.slot.x ?? 0) - (behind?.slot.x ?? 0))).toBeLessThan(
-      1,
-    );
+    expect(
+      Math.abs((kneelers[0]?.slot.x ?? 0) - (behind?.slot.x ?? 0)),
+    ).toBeGreaterThan(0.25);
+    expect(
+      Math.abs((kneelers[0]?.slot.x ?? 0) - (behind?.slot.x ?? 0)),
+    ).toBeLessThan(1);
     expect(kneelers[0]?.slot.z).toBeGreaterThan(behind?.slot.z ?? 0);
     expect(isLargeRace(behind?.member.raceId ?? "")).toBe(true);
     expect(isSmallRace(kneelers[0]?.member.raceId ?? "")).toBe(true);
@@ -73,9 +73,15 @@ describe("arrangeTroop", () => {
     const members = (await createFixtureGuildSource().getFeaturedMembers())
       .members;
     const places = arrangeTroop(
-      members.slice(0, 4).map((member, index) =>
-        withRace(member, index % 2 === 0 ? "1" : "3", `medium-${String(index)}`),
-      ),
+      members
+        .slice(0, 4)
+        .map((member, index) =>
+          withRace(
+            member,
+            index % 2 === 0 ? "1" : "3",
+            `medium-${String(index)}`,
+          ),
+        ),
     );
 
     expect(places.some((place) => place.kneels)).toBe(false);
@@ -102,7 +108,9 @@ describe("arrangeTroop", () => {
 
     expect(kneeler.member.raceId).toBe("7");
     expect(behind?.member.raceId).toBe("4");
-    expect(Math.abs(kneeler.slot.x - (behind?.slot.x ?? 0))).toBeGreaterThan(0.25);
+    expect(Math.abs(kneeler.slot.x - (behind?.slot.x ?? 0))).toBeGreaterThan(
+      0.25,
+    );
     expect(
       places.some(
         (place) =>

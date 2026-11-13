@@ -179,11 +179,13 @@ const separatePlaces = (places: readonly TroopPlace[]): TroopPlace[] => {
 export const arrangeTroop = (
   members: readonly FeaturedMember[],
 ): readonly TroopPlace[] => {
-  const ranked: Ranked[] = members.slice(0, maxFeatured).map((member, order) => ({
-    member,
-    order,
-    stature: raceStature(member.raceId),
-  }));
+  const ranked: Ranked[] = members
+    .slice(0, maxFeatured)
+    .map((member, order) => ({
+      member,
+      order,
+      stature: raceStature(member.raceId),
+    }));
   if (ranked.length === 0) return [];
 
   const large = ranked.filter((person) => isLargeRace(person.member.raceId));
@@ -219,8 +221,7 @@ export const arrangeTroop = (
         !isSmallRace(person.member.raceId),
     )
     .sort(
-      (left, right) =>
-        right.stature - left.stature || left.order - right.order,
+      (left, right) => right.stature - left.stature || left.order - right.order,
     );
   for (const person of mediums) {
     if (back.length <= front.length) back.push(person);
@@ -254,14 +255,8 @@ export const arrangeTroop = (
   const kneelX =
     behind === undefined
       ? undefined
-      : behind.slot.x +
-        offsetSign(behind.slot.x, backXs) * kneelSideOffset;
-  const frontXs = staggeredFrontXs(
-    front.length,
-    backXs,
-    kneelX,
-    frontWidth,
-  );
+      : behind.slot.x + offsetSign(behind.slot.x, backXs) * kneelSideOffset;
+  const frontXs = staggeredFrontXs(front.length, backXs, kneelX, frontWidth);
 
   front.forEach((person, index) => {
     const x = frontXs[index] ?? 0;

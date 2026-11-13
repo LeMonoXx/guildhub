@@ -1,0 +1,159 @@
+.viewer {
+  position: relative;
+  height: min(80vh, 48rem);
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-radius: 1rem;
+  background: var(--color-raised);
+}
+
+.viewer canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+}
+
+.notice {
+  min-height: 1.5em;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.cinematic {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 68%, #17101f 0, #08070c 30%, #000 72%), #000;
+}
+
+.cinematic[data-variant="embedded"] {
+  min-height: 0;
+  height: 100%;
+  background: transparent;
+}
+
+.cinematic::before,
+.cinematic::after {
+  position: absolute;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+}
+
+.cinematic::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, #000 0, transparent 18%, transparent 82%, #000 100%),
+    linear-gradient(0deg, #000 0, transparent 32%, rgb(0 0 0 / 42%) 100%);
+  box-shadow: inset 0 0 12rem 2rem #000;
+}
+
+.cinematic[data-variant="embedded"]::before,
+.cinematic[data-variant="embedded"]::after {
+  display: none;
+}
+
+.cinematic::after {
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: clamp(1rem, 4vw, 2.5rem);
+  width: clamp(5rem, 12vw, 8rem);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8f72a8 45%, transparent);
+  opacity: calc(var(--cinematic-opacity, 0) * 0.65);
+}
+
+.cinematic-stage {
+  position: relative;
+  z-index: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% 72%, rgb(69 38 79 / 20%), transparent 34%),
+    #000;
+  opacity: var(--cinematic-opacity, 1);
+  filter: blur(var(--cinematic-blur, 0));
+  transform: translate(
+      var(--cinematic-translate-x, 0),
+      var(--cinematic-translate-y, 0)
+    )
+    scale(var(--cinematic-scale, 1));
+}
+
+.cinematic[data-variant="embedded"] .cinematic-stage {
+  min-height: 0;
+  height: 100%;
+  background: transparent;
+}
+
+.cinematic:not([data-state="ready"]) .cinematic-stage {
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
+.cinematic-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background: #000;
+}
+
+.cinematic[data-variant="embedded"] .cinematic-stage canvas {
+  min-height: 0;
+}
+
+.cinematic-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #bcb2c5;
+  background: #000;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.cinematic[data-variant="embedded"] .cinematic-status {
+  background: transparent;
+}
+
+.cinematic > .notice {
+  position: absolute;
+  z-index: 2;
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: clamp(1.5rem, 5vw, 3rem);
+  max-width: min(28rem, calc(100vw - 2rem));
+  margin: 0;
+  color: rgb(205 195 214 / 58%);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.cinematic > .notice.error {
+  color: var(--color-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-stage {
+    filter: none;
+    transform: none;
+  }
+}

@@ -17,14 +17,15 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 
 `apps/api` is the server process. It checks its environment, loads the instance config, answers
 `/health/live` and `/health/ready`, uses PostgreSQL, and serves a cached guild profile and roster.
-`packages/contracts` is the shared problem, instance, and guild schema. `apps/battlenet-stub` fakes
-the Battle.net endpoints the API needs today. `apps/model-baker` converts a manually selected fixed
-Forever look, and `apps/web` renders that look with Three.js. Battle.net login and real character
-pages are not built yet.
+`packages/contracts` is the shared problem, instance, guild, and character-presentation schema.
+`apps/battlenet-stub` fakes the Battle.net endpoints the API needs today. `apps/model-baker`
+converts a manually selected fixed Forever look. `apps/web` is the bilingual guild portal (home,
+members, character detail) with an adaptive shared character stage and retained cinematic/viewer
+lab routes. Fixture adapters stand in for the later `/api/guild` swap. Battle.net login and live
+Armory character pages are not built yet.
 
-The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The standalone
-Milestone-A viewer is React 19 and Vite; it intentionally has no guild-site routes or Armory
-integration yet.
+The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web app is React 19,
+Vite, TanStack Router, and TanStack Query.
 
 ## Verify
 

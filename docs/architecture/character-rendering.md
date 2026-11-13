@@ -157,7 +157,14 @@ Sharing the body, the item models, and the texture layers between characters is 
 
 **Character page, look not built yet.** The API enqueues the job and returns `pending` with `renderUrl`. The page shows the official render and refetches the character query with backoff (2 s, 4 s, 8 s, then every 15 s, giving up after 2 min). Only the open character page polls. The roster never polls.
 
-**Roster and hero.** Official render images only. Three.js is loaded by the character route alone, so the landing page does not pay for it. This keeps the initial-JavaScript budget in the frontend architecture.
+**Roster.** Official facts and (when present) official render images. The member index does not
+import Three.js.
+
+**Guild home.** One optional shared multi-actor WebGL stage on capable devices, cloning the current
+look through a single `AssetStore` and a single renderer. Mobile viewports, missing WebGL, and
+`prefers-reduced-motion: reduce` keep a static editorial composition that occupies the same layout
+box. Three.js is an async chunk, not part of the initial `/` or `/members` graph. See
+[decision 0010](../decisions/0010-adaptive-shared-character-stage.md).
 
 **First time after a Forever patch.** The build-check job notices the new build and re-indexes. Shared assets extract in the background. Looks rebuild lazily, or all of them proactively while the roster is this small. Visitors keep seeing the previous model or the official render.
 
@@ -185,15 +192,15 @@ request-path latency.
 
 Follows [backend architecture](backend.md). The heavy code is isolated so the API image stays small and read-only.
 
-| Piece                                                                    | Home                                                                                                                                         |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Character snapshot, look hash, model status, `GET /api/characters/:slug` | `apps/api`, module `character`                                                                                                               |
-| Ports: `LookSource`, `ModelBuildQueue`, `ModelAssetStore`                | `character/application`                                                                                                                      |
-| Battle.net adapter, Drizzle status table, enqueueing the job             | `character/infrastructure` in the API                                                                                                        |
-| Indexing, M2 to glTF, BLP to PNG                                         | `apps/model-baker`, a .NET tool copied from Altrobe. Its own image and a writable asset volume. See the [plan](character-rendering-plan.md). |
-| Job transport                                                            | pg-boss, the same Postgres. The API enqueues; only the model worker runs these handlers                                                      |
-| Contracts: the `model` object and the manifest schema                    | `packages/contracts`                                                                                                                         |
-| Viewer                                                                   | `apps/web`, slice `widgets/character-model`. Three.js is imported only there, and the route loads it lazily                                  |
+| Piece                                                                    | Home                                                                                                                                                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Character snapshot, look hash, model status, `GET /api/characters/:slug` | `apps/api`, module `character`                                                                                                                                     |
+| Ports: `LookSource`, `ModelBuildQueue`, `ModelAssetStore`                | `character/application`                                                                                                                                            |
+| Battle.net adapter, Drizzle status table, enqueueing the job             | `character/infrastructure` in the API                                                                                                                              |
+| Indexing, M2 to glTF, BLP to PNG                                         | `apps/model-baker`, a .NET tool copied from Altrobe. Its own image and a writable asset volume. See the [plan](character-rendering-plan.md).                       |
+| Job transport                                                            | pg-boss, the same Postgres. The API enqueues; only the model worker runs these handlers                                                                            |
+| Contracts: the `model` object and the manifest schema                    | `packages/contracts`                                                                                                                                               |
+| Viewer                                                                   | `apps/web`, slice `widgets/character-model`. Three.js is imported only there and in cinematic adapters. Character detail and the capable home stage load it lazily |
 
 `apps/model-baker` is .NET. It does not import the API. The API never parses M2, BLP, or CASC, and it never links the baker. They meet at Postgres (the job queue) and the asset store. The implementation order is the [plan](character-rendering-plan.md).
 

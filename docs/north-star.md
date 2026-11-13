@@ -67,10 +67,13 @@ flowchart LR
 
 Today: `apps/api` serves `/health/live` and `/health/ready`, loads a validated instance config,
 talks to PostgreSQL, and serves a cached guild profile and roster from Battle.net.
-`packages/contracts` holds the problem catalog, instance schema, and guild HTTP contracts.
-`instances/traceless` is the first instance. `apps/battlenet-stub` fakes client-credentials and
-guild endpoints. `apphost/` starts Postgres, migrate, API, and the stub. `apps/model-baker` has its
-tested converter skeleton. The web app and worker are not built yet.
+`packages/contracts` holds the problem catalog, instance schema, guild HTTP contracts, and
+character-presentation schemas for the portal slice. `instances/traceless` is the first instance.
+`apps/battlenet-stub` fakes client-credentials and guild endpoints. `apphost/` starts Postgres,
+migrate, API, and the stub. `apps/model-baker` has its tested converter skeleton. `apps/web` is a
+React SPA with the guild home, member directory, character detail, and retained cinematic lab
+routes. Home may mount one lazy shared multi-actor WebGL stage on capable devices; mobile and
+reduced-motion keep a static composition. The worker is not built yet.
 
 ## 4. Repository layout (target)
 
@@ -94,7 +97,7 @@ Rules:
 - `packages/*` are libraries. `apps/web` and `apps/api` both use `packages/contracts`. `contracts` depends only on `zod`.
 - `instances/*` is data, validated against the schema in `packages/contracts` at API startup. The web app receives it via `GET /api/instance`.
 
-Today: `apps/api`, `apps/battlenet-stub`, `packages/contracts`, `instances/traceless`, and `apphost/` exist. `apps/web` is created when the frontend lands.
+Today: `apps/api`, `apps/web`, `apps/battlenet-stub`, `packages/contracts`, `instances/traceless`, and `apphost/` exist.
 
 ## 5. Technology decisions
 
@@ -111,7 +114,7 @@ Today: `apps/api`, `apps/battlenet-stub`, `packages/contracts`, `instances/trace
 | Frontend            | React 19, Vite, TanStack Router, Query, and Form                     | [0006](decisions/0006-frontend-framework.md)                                                               |
 | Observability       | OTel traces/metrics over OTLP; correlated JSON logs on stdout        | [architecture](architecture/observability.md), [0002](decisions/0002-aspire-local-orchestration.md)        |
 | Deployment          | Compose on the existing Linux host, HTTP behind its proxy, CD by SHA | [0007](decisions/0007-deployment-compose-linux.md), [0009](decisions/0009-deploy-behind-existing-proxy.md) |
-| Character models    | glTF played by Three.js, baked and cached off the request            | [0008](decisions/0008-character-models-gltf.md)                                                            |
+| Character models    | glTF played by Three.js, baked and cached off the request            | [0008](decisions/0008-character-models-gltf.md), [0010](decisions/0010-adaptive-shared-character-stage.md) |
 
 ## 6. Data
 
@@ -182,8 +185,11 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 4. ~~Complete the observability rollout as each process lands; split `/health` into `/health/live`
    and `/health/ready`.~~ Done.
 5. ~~Guild module: roster from Battle.net, cached, `GET /api/guild` and `GET /api/guild/roster`.~~ Done.
-6. Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.
+6. ~~Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.~~
+   Done for the first portal slice: home, members, character detail, fixture-backed queries, and
+   an adaptive shared stage. Styling is CSS custom properties (decision 0010 companion in
+   [frontend architecture](architecture/frontend.md) §8). Identity and live Battle.net pages remain.
 7. Identity module: Battle.net login, sessions, `GET /api/me`.
 8. Character module and pages (official renders), then guild extensions.
-9. Character model pipeline, in the order of the [plan](architecture/character-rendering-plan.md): first one fixed look, rendered locally and on the server, then the Battle.net join for real gear. Official renders stay the fallback.
+9. Character model pipeline, in the order of the [plan](architecture/character-rendering-plan.md): first one fixed look, rendered locally and on the server, then the Battle.net join for real gear. Official renders stay the fallback. The home lineup already clones the current fixed look; it does not skip this pipeline.
 10. Production server, when the first version exists: join the host's proxy, backups, the CD workflow in [deployment](deployment.md).

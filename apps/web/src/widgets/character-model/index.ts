@@ -1,5 +1,6 @@
 export { CharacterModelViewer } from "./ui/CharacterModelViewer";
 export type { CharacterHandle } from "./model/character-handle";
+export { AssetStore } from "./lib/asset-store";
 export {
   prepareCharacter,
   type PrepareCharacterOptions,

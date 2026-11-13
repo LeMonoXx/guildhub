@@ -1,7 +1,7 @@
 import { createReadStream, existsSync } from "node:fs";
 import { extname, relative, resolve } from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, type Plugin } from "vitest/config";
 
 const contentTypes: Record<string, string> = {
   ".glb": "model/gltf-binary",
@@ -56,5 +56,9 @@ export default defineConfig({
   build: {
     assetsDir: "static",
     sourcemap: true,
+  },
+  test: {
+    setupFiles: ["./src/test/setup.ts"],
+    environment: "node",
   },
 });

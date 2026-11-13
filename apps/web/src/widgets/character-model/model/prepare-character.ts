@@ -1,4 +1,5 @@
 import type { FixedLookManifest } from "../../../types";
+import { AssetStore } from "../lib/asset-store";
 import { buildCharacter } from "./assemble-character";
 import type { CharacterModelHandle } from "./character-handle";
 import { dress } from "./dress";
@@ -7,6 +8,7 @@ export interface PrepareCharacterOptions {
   readonly manifest: string | FixedLookManifest;
   readonly assetBase: string;
   readonly fetch?: typeof fetch;
+  readonly sharedAssets?: AssetStore;
 }
 
 export interface PreparedCharacter {
@@ -66,6 +68,7 @@ export async function prepareCharacter(
         asset(`${modelDirectory}${String(id)}.${extension}`),
       texture: (id) => asset(`${textureDirectory}${String(id)}.png`),
     },
+    options.sharedAssets,
   );
   return { character, manifest };
 }

@@ -1,0 +1,184 @@
+.wordmark {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-gold);
+  font-family: var(--font-fantasy);
+  font-size: clamp(3rem, 12vw, 8.5rem);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.wordmark-text {
+  display: inline-block;
+  animation: wordmark-reveal 1.15s var(--ease-out) both;
+}
+
+.guild-tagline,
+.eyebrow {
+  margin: 0.6rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.guild-masthead,
+.guild-about,
+.members-page header,
+.character-profile {
+  margin-bottom: clamp(1.5rem, 4vw, 3rem);
+}
+
+.guild-stats,
+.character-facts,
+.roster-filter {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.guild-stats dt,
+.character-facts dt,
+.roster-filter span {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.guild-stats dd,
+.character-facts dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.4rem;
+}
+
+.guild-hero {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+.guild-hero-stage {
+  position: relative;
+  aspect-ratio: 16 / 7;
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  background:
+    radial-gradient(circle at 50% 80%, rgb(200 162 74 / 0.08), transparent 42%),
+    #000;
+}
+
+.guild-hero-cast {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guild-hero-member {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0.7rem;
+  border-top: 1px solid var(--member-accent, var(--color-gold));
+  background: var(--color-panel);
+}
+
+.guild-hero-member span {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.reveal-name {
+  display: inline-block;
+  animation: name-reveal 0.7s var(--ease-out) both;
+  text-decoration: none;
+}
+
+.roster-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--color-hairline);
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.roster-table th,
+.roster-table td {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--color-hairline);
+  text-align: left;
+}
+
+.character-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.character-stage {
+  min-height: min(70vh, 38rem);
+  border: 1px solid var(--color-hairline);
+  background: #000;
+}
+
+.character-surname {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.character-placeholder,
+.guild-about {
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+@media (max-width: 56.24rem) {
+  .guild-hero-cast {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guild-hero-stage {
+    aspect-ratio: 4 / 5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordmark-text,
+  .reveal-name {
+    animation: none;
+  }
+}
+
+@keyframes wordmark-reveal {
+  from {
+    letter-spacing: 0.4em;
+    opacity: 0;
+    transform: translateY(0.45em);
+  }
+
+  to {
+    letter-spacing: 0.16em;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes name-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

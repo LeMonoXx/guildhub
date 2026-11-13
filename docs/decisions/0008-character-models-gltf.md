@@ -11,7 +11,7 @@ The conversion we would design already exists. [Altrobe](https://github.com/Clou
 
 ## Decision
 
-Bake Forever game data into glTF and PNG off the request, serve them as immutable cached files, and play them with Three.js on the character page only. The browser composites the body texture from cached layers. The official render image is the fallback and the roster image. A look hash joins a character's Battle.net appearance and gear to those files, so a visit never waits on a build.
+Bake Forever game data into glTF and PNG off the request, serve them as immutable cached files, and play them with Three.js. The character page always owns a single-character stage. The guild home may additionally mount one lazy shared multi-actor stage on capable devices; that amendment is [decision 0010](0010-adaptive-shared-character-stage.md). The browser composites the body texture from cached layers. The official render image is the fallback and the roster image. A look hash joins a character's Battle.net appearance and gear to those files, so a visit never waits on a build.
 
 Game bytes are not committed and not fetched live by the browser. The baker reads Blizzard's CDN once per build and writes our asset store. Table definitions from WoWDBDefs are community format files and may be vendored. The rule and the file list are in the [plan](../architecture/character-rendering-plan.md).
 

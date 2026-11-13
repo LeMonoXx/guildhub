@@ -66,8 +66,8 @@ module.exports = {
       name: "not-to-spec",
       comment: "Production code must not import a test file.",
       severity: "error",
-      from: { pathNot: "[.](?:int[.])?test[.](?:js|mjs|cjs|ts)$" },
-      to: { path: "[.](?:int[.])?test[.](?:js|mjs|cjs|ts)$" },
+      from: { pathNot: "[.](?:int[.])?test[.](?:js|mjs|cjs|ts|tsx)$" },
+      to: { path: "[.](?:int[.])?test[.](?:js|mjs|cjs|ts|tsx)$" },
     },
     {
       name: "not-to-dev-dep",
@@ -77,8 +77,9 @@ module.exports = {
       from: {
         path: "^(apps|packages)/",
         pathNot: [
-          "[.](?:int[.])?test[.](?:js|mjs|cjs|ts)$",
+          "[.](?:int[.])?test[.](?:js|mjs|cjs|ts|tsx)$",
           "(^|/)(?:drizzle|vitest(?:[.]int)?)[.]config[.]ts$",
+          "^apps/web/src/test/",
         ],
       },
       to: {
@@ -137,6 +138,69 @@ module.exports = {
       to: {
         path: "(^|/)three(?:/|$)",
       },
+    },
+    {
+      name: "web-fsd-layer-order",
+      comment:
+        "Feature-Sliced Design layers may import only from layers below them.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/(pages|widgets|features|entities|shared)/",
+      },
+      to: {
+        path: "^apps/web/src/app/",
+      },
+    },
+    {
+      name: "web-fsd-widgets-not-from-pages",
+      comment: "Widgets may not import pages.",
+      severity: "error",
+      from: { path: "^apps/web/src/widgets/" },
+      to: { path: "^apps/web/src/pages/" },
+    },
+    {
+      name: "web-fsd-features-isolation",
+      comment: "Features may not import pages or widgets.",
+      severity: "error",
+      from: { path: "^apps/web/src/features/" },
+      to: { path: "^apps/web/src/(?:pages|widgets)/" },
+    },
+    {
+      name: "web-fsd-entities-isolation",
+      comment: "Entities may not import pages, widgets, or features.",
+      severity: "error",
+      from: { path: "^apps/web/src/entities/" },
+      to: { path: "^apps/web/src/(?:pages|widgets|features)/" },
+    },
+    {
+      name: "web-fsd-shared-isolation",
+      comment: "Shared may not import any Feature-Sliced layer above it.",
+      severity: "error",
+      from: { path: "^apps/web/src/shared/" },
+      to: {
+        path: "^apps/web/src/(?:app|pages|widgets|features|entities)/",
+      },
+    },
+    {
+      name: "web-fsd-widget-slices",
+      comment:
+        "Widget slices do not import each other, except the cinematic widget's public use of the character model.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/widgets/([^/]+)/",
+        pathNot: "^apps/web/src/widgets/character-cinematic/",
+      },
+      to: {
+        path: "^apps/web/src/widgets/",
+        pathNot: "^apps/web/src/widgets/$1/",
+      },
+    },
+    {
+      name: "web-pages-skip-fixtures",
+      comment: "Pages load data through entity queries, never fixture files.",
+      severity: "error",
+      from: { path: "^apps/web/src/(?:app|pages)/" },
+      to: { path: "/fixtures/" },
     },
     {
       name: "web-cinematic-core-is-pure",

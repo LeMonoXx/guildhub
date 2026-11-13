@@ -45,7 +45,8 @@ Every resource has exactly one owner:
 - An animation controller owns mixers, clips, actions, crossfades, and animation time.
 - An effect system owns particle/effect instances.
 - A character handle composes model instances, animation controllers, and effects.
-- A stage owns the renderer, scene, camera, lights, and the currently displayed character handle.
+- A stage owns the renderer, scene, camera, lights, and the actor handles currently on it. A home
+  lineup uses one stage and one shared asset store for every cloned look.
 - A cinematic engine owns only its clock and compiled bindings, never GPU resources.
 
 `dispose` is idempotent. Shared geometry, material, and texture objects are disposed once, by the

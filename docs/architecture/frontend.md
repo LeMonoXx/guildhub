@@ -1,9 +1,11 @@
 # Frontend architecture (`apps/web`)
 
 `apps/web` is a React app ([decision 0006](../decisions/0006-frontend-framework.md)); section 8
-lists the stack and React-specific rules. Its first vertical slice is the standalone character
-viewer. The reusable animation and intro boundaries are defined in
-[character cinematics](character-cinematics.md).
+lists the stack and React-specific rules. Its first portal slice is the bilingual guild home,
+member directory, and character detail, with retained cinematic/viewer lab routes. The reusable
+animation and intro boundaries are defined in [character cinematics](character-cinematics.md).
+The guild home may mount one lazy shared multi-actor WebGL stage on capable devices
+([decision 0010](../decisions/0010-adaptive-shared-character-stage.md)).
 
 The web app is a static single-page app built by Vite. It is served by Caddy on the same origin as the API.
 
@@ -45,8 +47,10 @@ apps/web/
   src/
     app/
     pages/
-      guild/             /            hero + roster
+      guild/             /            hero + guild copy
+      members/           /members     searchable roster
       character/         /characters/:slug
+      lab/               /lab/*       cinematic and viewer proofs
       me/                /me          own characters (needs login)
       not-found/
     widgets/
@@ -93,8 +97,8 @@ apps/web/
 - **Accessibility:** WCAG 2.2 level AA. Semantic HTML first; ARIA only where HTML has no element. Every interactive element works with the keyboard and has a visible focus. Item tooltips open on hover **and** on focus, and close with `Escape`.
 - **Internationalisation:** locales `de` and `en` (BCP 47 tags). Dates, numbers, and relative times are formatted with `Intl`, in the user's locale and time zone. No user-visible string is hard-coded in a component.
 - **Loading:** skeletons for content areas, never full-page spinners after the first paint. Show cached data while refetching.
-- **Images:** character renders and item icons come from Battle.net media URLs via the API, with fixed width and height to avoid layout shift, and lazy loading below the fold. The animated model, when it exists, replaces the render on the character page only and is loaded lazily. See [character rendering](character-rendering.md).
-- **Performance budgets:** LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 on a mid-range phone. Route-level code splitting. Initial JavaScript ≤ 200 kB compressed.
+- **Images:** character renders and item icons come from Battle.net media URLs via the API, with fixed width and height to avoid layout shift, and lazy loading below the fold. Character detail loads one live character stage lazily. The guild home may replace its static hero composition with one shared multi-actor stage on capable devices; mobile and reduced-motion keep the static composition. See [character rendering](character-rendering.md) and [decision 0010](../decisions/0010-adaptive-shared-character-stage.md).
+- **Performance budgets:** LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 on a mid-range phone. Route-level code splitting. Initial JavaScript ≤ 200 kB compressed, excluding the lazy Three.js stage chunk.
 - **Security:** no `dangerouslySetInnerHTML` / `[innerHTML]` with API data. External scripts (for example Wowhead tooltips) only from hosts allowed by the CSP.
 
 ## 7. Testing
@@ -131,4 +135,7 @@ React rules:
 - Route files in `app/routes/` stay thin: params validation, loader, and rendering the page from `pages/`. Business UI lives in the layers.
 - Context is for app-wide concerns provided in `app` (query client, i18n, theme). Not for passing data between features.
 
-Open for the scaffold step: the styling approach and the headless UI primitives (for dialogs, menus, tooltips). Both are recorded as decisions when `apps/web` is created.
+Styling for this slice is semantic CSS custom properties and vanilla CSS. There is no utility
+framework in the bundle. Headless UI primitives for dialogs, menus, and tooltips remain open until
+a component needs them; native HTML covers the portal navigation, locale switcher, and roster
+filters.

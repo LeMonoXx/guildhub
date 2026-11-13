@@ -27,7 +27,7 @@ export class StageRig {
     disconnect(): void;
   };
   private readonly controls?: OrbitControls;
-  private actor?: CharacterHandle;
+  private readonly actors = new Map<string, CharacterHandle>();
   private disposed = false;
 
   constructor(
@@ -77,18 +77,36 @@ export class StageRig {
     this.scene.add(light);
   }
 
-  setActor(actor: CharacterHandle): void {
+  addActor(id: string, actor: CharacterHandle): void {
     if (this.disposed) {
       actor.dispose();
       return;
     }
-    if (this.actor === actor) return;
-    if (this.actor) {
-      this.actorRoot.remove(this.actor.root);
-      this.actor.dispose();
+    const existing = this.actors.get(id);
+    if (existing === actor) return;
+    if (existing) {
+      this.actorRoot.remove(existing.root);
+      existing.dispose();
     }
-    this.actor = actor;
+    this.actors.set(id, actor);
     this.actorRoot.add(actor.root);
+  }
+
+  setActor(actor: CharacterHandle): void {
+    this.clearActors();
+    this.addActor("actor", actor);
+  }
+
+  clearActors(): void {
+    for (const actor of this.actors.values()) {
+      this.actorRoot.remove(actor.root);
+      actor.dispose();
+    }
+    this.actors.clear();
+  }
+
+  actorCount(): number {
+    return this.actors.size;
   }
 
   setCamera(
@@ -118,7 +136,7 @@ export class StageRig {
 
   render(): void {
     if (this.disposed) return;
-    this.actor?.faceCamera(this.camera);
+    for (const actor of this.actors.values()) actor.faceCamera(this.camera);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -133,8 +151,7 @@ export class StageRig {
     this.disposed = true;
     this.observer.disconnect();
     this.controls?.dispose();
-    this.actor?.dispose();
-    this.actor = undefined;
+    this.clearActors();
     this.renderer.dispose();
     this.canvas.remove();
   }

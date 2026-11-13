@@ -1,43 +1,34 @@
-import type { CinematicScene, CinematicTrack } from "@guildhub/contracts";
+import type { CinematicScene } from "@guildhub/contracts";
 import {
   compileTimeline,
   type CinematicFrame,
   type CinematicTimeline,
 } from "../../../cinematic";
+import type { PrepareCharacterOptions } from "../../character-model";
 import {
-  prepareCharacter,
-  type PrepareCharacterOptions,
-} from "../../character-model";
-import {
-  AnimationDirector,
-  AudioBindingState,
-  BindingTargetRegistry,
-  createDefaultBindings,
-  type UiBindingState,
-} from "../adapters/animation-director";
-import { SmokeEffect } from "../adapters/smoke-effect";
-import { StageRig } from "../adapters/stage-rig";
+  initialUiState,
+  mountCinematicStage,
+} from "../adapters/mount-cinematic-stage";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 type Status = "loading" | "ready" | "error";
 
 export interface CharacterCinematicProps {
   readonly scene: string | CinematicScene;
-  readonly manifest: PrepareCharacterOptions["manifest"];
+  readonly manifest?: PrepareCharacterOptions["manifest"];
   readonly assetBase: string;
   readonly posterTimeMs?: number;
   readonly previewTimeMs?: number;
   readonly ariaLabel?: string;
+  readonly variant?: "page" | "embedded";
+  readonly loadingLabel?: string;
+  readonly readyLabel?: string;
 }
 
-const initialUi: UiBindingState = {
-  opacity: 0,
-  translation: { x: 0, y: 0, z: 0 },
-  scale: 1,
-  blur: 0,
-};
-
-const applyUiState = (element: HTMLElement, state: UiBindingState): void => {
+const applyUiState = (
+  element: HTMLElement,
+  state: ReturnType<typeof initialUiState>,
+): void => {
   element.style.setProperty("--cinematic-opacity", String(state.opacity));
   element.style.setProperty(
     "--cinematic-translate-x",
@@ -78,11 +69,14 @@ export function CharacterCinematic({
   posterTimeMs,
   previewTimeMs,
   ariaLabel = "Animated character introduction",
+  variant = "page",
+  loadingLabel = "Loading character…",
+  readyLabel = "Character ready",
 }: CharacterCinematicProps) {
   const root = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>("loading");
-  const [message, setMessage] = useState("Loading character…");
+  const [message, setMessage] = useState(loadingLabel);
 
   useEffect(() => {
     const element = root.current;
@@ -92,147 +86,59 @@ export function CharacterCinematic({
     const isDisposed = () => lifecycle.disposed;
     let frameRequest = 0;
     let previousTimestamp: number | undefined;
-    const effects: SmokeEffect[] = [];
-    const rig = new StageRig(container, { orbitControls: false });
+    let disposeMounted = (): void => {
+      /* filled after the stage mounts */
+    };
     const reducedMotion = matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    void Promise.allSettled([
-      loadScene(scene),
-      prepareCharacter({ manifest, assetBase }),
-    ])
-      .then(async ([sceneResult, characterResult]) => {
-        if (sceneResult.status === "rejected") {
-          if (characterResult.status === "fulfilled")
-            characterResult.value.character.dispose();
-          throw sceneResult.reason;
-        }
-        if (characterResult.status === "rejected") throw characterResult.reason;
-        const sceneData = sceneResult.value;
-        const prepared = characterResult.value;
+    void loadScene(scene)
+      .then(async (sceneData) => {
+        if (isDisposed()) return;
+        const mounted = await mountCinematicStage({
+          container,
+          scene: sceneData,
+          assetBase,
+          manifest,
+          uiTarget: {
+            setState(state) {
+              applyUiState(element, state);
+            },
+          },
+          report: (text) => {
+            console.warn(text);
+          },
+        });
         if (isDisposed()) {
-          prepared.character.dispose();
+          mounted.dispose();
           return;
         }
-        const timeline = compileTimeline(sceneData);
-        const targets = new BindingTargetRegistry();
-        const bindings = createDefaultBindings();
-        const audio = new AudioBindingState();
-        const uiTarget = {
-          setState(state: UiBindingState) {
-            applyUiState(element, state);
-          },
+        disposeMounted = () => {
+          mounted.dispose();
         };
-
-        rig.setActor(prepared.character);
-        const targetInstallers = new Map<
-          string,
-          (track: CinematicTrack) => void
-        >([
-          [
-            "clip",
-            (track) => {
-              targets.register(track.kind, track.target, prepared.character);
-            },
-          ],
-          [
-            "transform",
-            (track) => {
-              targets.register(
-                track.kind,
-                track.target,
-                prepared.character.root,
-              );
-            },
-          ],
-          [
-            "visibility",
-            (track) => {
-              targets.register(
-                track.kind,
-                track.target,
-                prepared.character.root,
-              );
-            },
-          ],
-          [
-            "camera",
-            (track) => {
-              targets.register(track.kind, track.target, rig);
-            },
-          ],
-          [
-            "light",
-            (track) => {
-              const declaration = timeline.scene.declarations.find(
-                ({ id }) => id === track.target,
-              );
-              const lightName =
-                declaration?.kind === "asset"
-                  ? declaration.asset
-                  : track.target;
-              const light = rig.lights.get(lightName);
-              if (light) targets.register(track.kind, track.target, light);
-            },
-          ],
-          [
-            "ui",
-            (track) => {
-              targets.register(track.kind, track.target, uiTarget);
-            },
-          ],
-          [
-            "smoke",
-            (track) => {
-              const smokeTrack = track as Extract<
-                CinematicTrack,
-                { kind: "smoke" }
-              >;
-              const smoke = new SmokeEffect(smokeTrack.seed);
-              effects.push(smoke);
-              rig.effectRoot.add(smoke.points);
-              targets.register(track.kind, track.target, smoke);
-            },
-          ],
-          [
-            "audio",
-            (track) => {
-              targets.register(track.kind, track.target, audio);
-            },
-          ],
-        ]);
-        for (const track of timeline.scene.tracks)
-          targetInstallers.get(track.kind)?.(track);
-        const director = new AnimationDirector(
-          bindings,
-          targets,
-          (diagnostic) => {
-            console.warn(`[cinematic] ${diagnostic}`);
-          },
-        );
-
-        await rig.prewarm();
+        const timeline = compileTimeline(sceneData);
+        await mounted.rig.prewarm();
         if (isDisposed()) return;
-        for (const notice of prepared.character.notices)
-          console.warn(`[character] ${notice}`);
         setStatus("ready");
-        setMessage("Character ready");
+        setMessage(readyLabel);
 
         if (reducedMotion || previewTimeMs !== undefined) {
-          director.apply(timeline.poster(previewTimeMs ?? posterTimeMs));
-          rig.render();
+          mounted.director.apply(
+            timeline.poster(previewTimeMs ?? posterTimeMs),
+          );
+          mounted.rig.render();
           return;
         }
 
-        director.apply(timeline.play());
-        rig.render();
+        mounted.director.apply(timeline.play());
+        mounted.rig.render();
         const animate = (timestamp: number) => {
           const delta =
             previousTimestamp === undefined ? 0 : timestamp - previousTimestamp;
           previousTimestamp = timestamp;
-          director.apply(timeline.tick(Math.max(0, delta)));
-          rig.render();
+          mounted.director.apply(timeline.tick(Math.max(0, delta)));
+          mounted.rig.render();
           frameRequest = requestAnimationFrame(animate);
         };
         frameRequest = requestAnimationFrame(animate);
@@ -246,17 +152,24 @@ export function CharacterCinematic({
     return () => {
       lifecycle.disposed = true;
       cancelAnimationFrame(frameRequest);
-      for (const effect of effects) effect.dispose();
-      rig.dispose();
+      disposeMounted();
     };
-  }, [assetBase, manifest, posterTimeMs, previewTimeMs, scene]);
+  }, [
+    assetBase,
+    loadingLabel,
+    manifest,
+    posterTimeMs,
+    previewTimeMs,
+    readyLabel,
+    scene,
+  ]);
 
   const style = {
-    "--cinematic-opacity": String(initialUi.opacity),
-    "--cinematic-translate-x": `${String(initialUi.translation.x)}px`,
-    "--cinematic-translate-y": `${String(initialUi.translation.y)}px`,
-    "--cinematic-scale": String(initialUi.scale),
-    "--cinematic-blur": `${String(initialUi.blur)}px`,
+    "--cinematic-opacity": String(initialUiState().opacity),
+    "--cinematic-translate-x": `${String(initialUiState().translation.x)}px`,
+    "--cinematic-translate-y": `${String(initialUiState().translation.y)}px`,
+    "--cinematic-scale": String(initialUiState().scale),
+    "--cinematic-blur": `${String(initialUiState().blur)}px`,
   } as CSSProperties;
 
   return (
@@ -264,6 +177,7 @@ export function CharacterCinematic({
       ref={root}
       className="cinematic"
       data-state={status}
+      data-variant={variant}
       style={style}
       aria-busy={status === "loading"}
     >
@@ -279,9 +193,11 @@ export function CharacterCinematic({
           </div>
         )}
       </div>
-      <p className={status === "error" ? "notice error" : "notice"}>
-        {message}
-      </p>
+      {variant === "page" && (
+        <p className={status === "error" ? "notice error" : "notice"}>
+          {message}
+        </p>
+      )}
     </section>
   );
 }

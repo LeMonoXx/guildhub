@@ -20,14 +20,15 @@
     { "id": "prewarm", "timeMs": 0 },
     { "id": "approach", "timeMs": 250 },
     { "id": "smoke", "timeMs": 4500 },
-    { "id": "vanish", "timeMs": 6000 },
-    { "id": "fade", "timeMs": 6200 }
+    { "id": "covered", "timeMs": 5700 },
+    { "id": "vanish", "timeMs": 6200 },
+    { "id": "fade", "timeMs": 6600 }
   ],
   "phases": [
     { "id": "prewarm", "startMs": 0, "endMs": 250 },
     { "id": "approach", "startMs": 250, "endMs": 4500 },
-    { "id": "smoke", "startMs": 4500, "endMs": 6000 },
-    { "id": "vanish", "startMs": 6000, "endMs": 7000 },
+    { "id": "smoke", "startMs": 4500, "endMs": 6200 },
+    { "id": "vanish", "startMs": 6200, "endMs": 7000 },
     { "id": "reset", "startMs": 7000, "endMs": 8000 }
   ],
   "tracks": [
@@ -94,7 +95,7 @@
           }
         },
         {
-          "timeMs": 6000,
+          "timeMs": 6200,
           "easing": "ease-in",
           "value": {
             "position": { "x": 0.2, "y": 0, "z": 0 },
@@ -119,7 +120,7 @@
       "keyframes": [
         { "timeMs": 0, "value": false },
         { "timeMs": 250, "value": true },
-        { "timeMs": 6000, "value": false },
+        { "timeMs": 6200, "value": false },
         { "timeMs": 8000, "value": false }
       ]
     },
@@ -137,7 +138,7 @@
           }
         },
         {
-          "timeMs": 6000,
+          "timeMs": 6200,
           "value": {
             "position": { "x": 5.15, "y": 1.45, "z": 0 },
             "target": { "x": 0, "y": 1.2, "z": 0 },
@@ -277,7 +278,7 @@
           }
         },
         {
-          "timeMs": 6000,
+          "timeMs": 6200,
           "value": {
             "opacity": 1,
             "translation": { "x": 0, "y": 0, "z": 0 },
@@ -331,21 +332,31 @@
           }
         },
         {
-          "timeMs": 5200,
+          "timeMs": 5100,
           "easing": "ease-out",
           "value": {
-            "density": 0.82,
+            "density": 0.78,
             "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
-            "size": 34,
-            "opacity": 0.92
+            "size": 40,
+            "opacity": 0.95
           }
         },
         {
-          "timeMs": 6000,
+          "timeMs": 5700,
+          "easing": "ease-out",
           "value": {
             "density": 1,
             "drift": { "x": 0.018, "y": 0.03, "z": -0.01 },
-            "size": 52,
+            "size": 96,
+            "opacity": 1
+          }
+        },
+        {
+          "timeMs": 6400,
+          "value": {
+            "density": 1,
+            "drift": { "x": 0.022, "y": 0.038, "z": -0.012 },
+            "size": 112,
             "opacity": 1
           }
         },
@@ -353,10 +364,10 @@
           "timeMs": 7000,
           "easing": "ease-in",
           "value": {
-            "density": 0.45,
+            "density": 0.55,
             "drift": { "x": 0.026, "y": 0.045, "z": -0.014 },
-            "size": 68,
-            "opacity": 0.18
+            "size": 124,
+            "opacity": 0.45
           }
         },
         {

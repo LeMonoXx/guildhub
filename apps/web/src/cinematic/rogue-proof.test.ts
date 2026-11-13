@@ -38,8 +38,9 @@ describe("rogue proof scene", () => {
     const timeline = compileTimeline(loadScene());
     const initial = timeline.evaluate(0);
     const runIn = timeline.evaluate(1600);
-    const smoke = timeline.evaluate(5200);
-    const vanished = timeline.evaluate(6000);
+    const smoke = timeline.evaluate(5100);
+    const covered = timeline.evaluate(6199);
+    const vanished = timeline.evaluate(6200);
     const endpoint = timeline.poster(timeline.scene.durationMs);
 
     expect(initial.phase.id).toBe("prewarm");
@@ -63,12 +64,18 @@ describe("rogue proof scene", () => {
 
     expect(smoke.phase.id).toBe("smoke");
     expect(command(smoke, "smoke")?.value).toMatchObject({
-      density: 0.82,
-      size: 34,
-      opacity: 0.92,
+      density: 0.78,
+      size: 40,
+      opacity: 0.95,
     });
     expect(command(smoke, "clip")?.value).toMatchObject({
       animationGroup: "Run",
+    });
+
+    expect(command(covered, "visibility")?.value).toBe(true);
+    expect(command(covered, "smoke")?.value).toMatchObject({
+      density: 1,
+      opacity: 1,
     });
 
     expect(vanished.phase.id).toBe("vanish");

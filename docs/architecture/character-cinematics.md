@@ -117,9 +117,10 @@ pnpm --filter @guildhub/web dev
 
 The default route plays the loop; `?viewer=1` retains the free viewer. `?frame=<milliseconds>`
 renders a deterministic, non-playing frame for authoring and visual regression evidence. The
-defined proof checkpoints are 0 (dark start), 250 (far reveal), 2000 (approach), 5900
-(smoke-covered pre-vanish), 6000 (vanish), and 8000 (exact reset). The 0 and 8000 screenshots must be byte-identical
-when captured at the same viewport.
+defined proof checkpoints are 0 (dark start), 250 (far reveal), 2000 (approach), 5700
+(full smoke coverage), 6199 (covered pre-vanish), 6200 (vanish), and 8000 (exact reset).
+The actor remains visible until the opaque cloud is established. The 0 and 8000 screenshots must
+be byte-identical when captured at the same viewport.
 
 The web image builds the contracts package before the app. Mount the ignored proof output at
 `/srv/assets` to repeat the same checkpoints in the Linux container.

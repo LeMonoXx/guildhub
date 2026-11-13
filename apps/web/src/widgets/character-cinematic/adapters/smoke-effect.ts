@@ -62,8 +62,10 @@ void main() {
   float distortedRadius = length(center) - (detail - 0.5) * 0.34;
   float envelope = 1.0 - smoothstep(0.38, 1.02, distortedRadius);
   float wisps = smoothstep(0.16, 0.86, detail);
-  float alpha = envelope * (0.48 + wisps * 0.52) * vOpacity * 0.24;
-  vec3 color = mix(vec3(0.16, 0.17, 0.2), vec3(0.34, 0.36, 0.4), detail);
+  float core = 1.0 - smoothstep(0.0, 0.62, distortedRadius);
+  float coverage = max(envelope * (0.48 + wisps * 0.52), core * 0.92);
+  float alpha = coverage * vOpacity * 0.72;
+  vec3 color = mix(vec3(0.07, 0.08, 0.1), vec3(0.26, 0.28, 0.32), detail);
   gl_FragColor = vec4(color, alpha);
 }`;
 
@@ -108,7 +110,7 @@ export class SmokeEffect {
     for (let index = 0; index < capacity; index += 1) {
       const offset = index * 3;
       this.origins[offset] = random() * 2 - 1;
-      this.origins[offset + 1] = random() * 0.8;
+      this.origins[offset + 1] = random() * 2.4;
       this.origins[offset + 2] = random() * 2 - 1;
       this.phases[index] = random();
     }

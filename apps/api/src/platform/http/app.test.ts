@@ -14,15 +14,28 @@ function app() {
   });
 }
 
-describe("GET /health", () => {
+describe("GET /health/live", () => {
   it("reports the process as ok", async () => {
-    const response = await app().request("/health");
+    const response = await app().request("/health/live");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-request-id")).toMatch(
       /^[0-9a-f]{8}-[0-9a-f-]{27}$/,
     );
     await expect(response.json()).resolves.toEqual({ status: "ok" });
+  });
+
+  it("keeps /health as a live alias", async () => {
+    const response = await app().request("/health");
+    expect(response.status).toBe(200);
+  });
+});
+
+describe("GET /health/ready", () => {
+  it("is not ready when no database is configured", async () => {
+    const response = await app().request("/health/ready");
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ status: "not_ready" });
   });
 });
 

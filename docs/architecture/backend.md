@@ -168,7 +168,7 @@ No module reads `process.env`. No module creates its own database pool or HTTP c
 - Methods and status codes follow RFC 9110: `GET` is safe and cacheable, `POST` creates or triggers, `PUT`/`PATCH` update, `DELETE` removes. `201` with `Location` on create, `204` when there is no body.
 - Cached Battle.net reads send `Cache-Control` and an `ETag`, and include `fetchedAt` in the body so the UI can show freshness.
 - No API version prefix while the only client is our own web app, deployed together with the API. If an external client appears, introduce `/api/v1` with a decision record.
-- Health: `GET /health/live` (process is up) and `GET /health/ready` (database reachable, migrations applied). Neither needs auth; neither leaks details.
+- Health: `GET /health/live` (process is up) and `GET /health/ready` (database reachable, migrations applied). `GET /health` remains a live alias. Neither needs auth; neither leaks details.
 
 ## 6. Authentication and sessions
 

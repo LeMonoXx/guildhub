@@ -78,7 +78,7 @@ module.exports = {
         path: "^(apps|packages)/",
         pathNot: [
           "[.](?:int[.])?test[.](?:js|mjs|cjs|ts)$",
-          "(^|/)(?:drizzle|vitest)[.]config[.]ts$",
+          "(^|/)(?:drizzle|vitest(?:[.]int)?)[.]config[.]ts$",
         ],
       },
       to: {

@@ -1,5 +1,6 @@
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
+import { createDatabase } from "./platform/db/client.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 
 const env = readEnv(process.env);
@@ -8,6 +9,7 @@ const telemetry = startTelemetry({
   serviceName: env.OTEL_SERVICE_NAME,
 });
 const instance = await loadInstanceConfig(env.INSTANCE_DIR);
+const database = createDatabase(env.DATABASE_URL);
 const [{ createLogger }, { serve }, { createApp }] = await Promise.all([
   import("./platform/observability/logger.js"),
   import("@hono/node-server"),
@@ -20,6 +22,7 @@ const logger = createLogger({
 const app = createApp({
   logger,
   serviceName: env.OTEL_SERVICE_NAME,
+  database,
 });
 
 const server = serve(
@@ -57,6 +60,15 @@ function shutdown(signal: NodeJS.Signals): void {
 async function finishShutdown(error?: Error): Promise<void> {
   if (error !== undefined) {
     logger.error({ module: "lifecycle", err: error }, "server close failed");
+  }
+  try {
+    await database.close();
+  } catch (closeError) {
+    logger.error(
+      { module: "lifecycle", err: closeError },
+      "database close failed",
+    );
+    error ??= new Error("database close failed");
   }
   try {
     await telemetry.shutdown();

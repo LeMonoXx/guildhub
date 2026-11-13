@@ -7,6 +7,12 @@ import { Hono } from "hono";
 import { requestId, type RequestIdVariables } from "hono/request-id";
 import { routePath } from "hono/route";
 import type { Logger } from "pino";
+import {
+  migrationsAreApplied,
+  pingDatabase,
+  type Database,
+} from "../db/client.js";
+import { hasCommittedMigrations } from "../db/migrations-folder.js";
 import { internalError, notFoundError, problemResponse } from "./problems.js";
 
 export type AppEnv = StructuredLoggerEnv<Logger> & {
@@ -16,6 +22,7 @@ export type AppEnv = StructuredLoggerEnv<Logger> & {
 export interface AppConfig {
   readonly logger: Logger;
   readonly serviceName: string;
+  readonly database?: Database;
 }
 
 export function createApp(config: AppConfig): Hono<AppEnv> {
@@ -69,7 +76,26 @@ export function createApp(config: AppConfig): Hono<AppEnv> {
     }),
   );
 
+  app.get("/health/live", (context) => context.json({ status: "ok" }));
   app.get("/health", (context) => context.json({ status: "ok" }));
+  app.get("/health/ready", async (context) => {
+    if (config.database === undefined) {
+      return context.json({ status: "not_ready" }, 503);
+    }
+    try {
+      await pingDatabase(config.database);
+      if (
+        hasCommittedMigrations() &&
+        !(await migrationsAreApplied(config.database))
+      ) {
+        return context.json({ status: "not_ready" }, 503);
+      }
+      return context.json({ status: "ok" });
+    } catch (error) {
+      config.logger.warn({ module: "health", err: error }, "readiness failed");
+      return context.json({ status: "not_ready" }, 503);
+    }
+  });
 
   app.notFound((context) => problemResponse(context, notFoundError()));
   app.onError((error, context) => {

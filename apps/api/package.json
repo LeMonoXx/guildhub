@@ -4,6 +4,7 @@
   "type": "module",
   "files": [
     "dist",
+    "drizzle",
     "instrumentation-loader.mjs"
   ],
   "scripts": {
@@ -11,7 +12,12 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "start": "node --import ./instrumentation-loader.mjs dist/index.js",
-    "test": "vitest run"
+    "migrate": "node --import ./instrumentation-loader.mjs dist/migrate.js",
+    "dev:migrate": "tsx src/migrate.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
+    "test": "vitest run",
+    "test:int": "vitest run --config vitest.int.config.ts"
   },
   "dependencies": {
     "@guildhub/contracts": "workspace:*",
@@ -25,12 +31,16 @@
     "@opentelemetry/instrumentation-pino": "0.71.0",
     "@opentelemetry/sdk-metrics": "3.1.0",
     "@opentelemetry/sdk-node": "0.301.0",
+    "drizzle-orm": "1.0.0-rc.5",
     "hono": "^4.13.17",
     "pino": "^10.4.0",
+    "postgres": "4.1.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "catalog:",
+    "drizzle-kit": "1.0.0-rc.5",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"

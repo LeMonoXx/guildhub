@@ -4,7 +4,7 @@ Rules for the API. The root [`AGENTS.md`](../../AGENTS.md) applies too. The full
 
 ## Current state
 
-`src/index.ts` is the composition root. Shared HTTP, env, instance loading, kernel, and observability live under `src/platform/`. Feature modules land under `src/modules/` when they exist.
+`src/index.ts` is the HTTP composition root and `src/migrate.ts` is the one-shot migrator. Shared HTTP, env, instance loading, database, kernel, and observability live under `src/platform/`. Feature modules land under `src/modules/` when they exist.
 
 ## Import rules (summary)
 

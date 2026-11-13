@@ -1,4 +1,34 @@
 services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: guildhub
+      POSTGRES_PASSWORD: guildhub
+      POSTGRES_DB: guildhub
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guildhub -d guildhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command:
+      ["node", "--import", "./instrumentation-loader.mjs", "dist/migrate.js"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://guildhub:guildhub@postgres:5432/guildhub
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   api:
     build:
       context: .
@@ -7,9 +37,17 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgres://guildhub:guildhub@postgres:5432/guildhub
     read_only: true
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
+
+volumes:
+  postgres:

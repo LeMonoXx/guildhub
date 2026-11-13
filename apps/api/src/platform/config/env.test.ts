@@ -5,6 +5,7 @@ const valid = {
   BATTLENET_CLIENT_ID: "id",
   BATTLENET_CLIENT_SECRET: "secret",
   BATTLENET_REDIRECT_URI: "http://localhost:3000/auth/callback",
+  DATABASE_URL: "postgres://guildhub:guildhub@127.0.0.1:5432/guildhub",
   INSTANCE_DIR: "/tmp/instance",
   SESSION_SECRET: "x".repeat(32),
 };

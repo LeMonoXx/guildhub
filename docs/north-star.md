@@ -65,10 +65,11 @@ flowchart LR
 - A worker process (same codebase as the API, different entry point) refreshes Battle.net data through jobs stored in Postgres (pg-boss). There is no Redis.
 - The server's existing reverse proxy terminates TLS and routes one hostname by path. GuildHub speaks HTTP on the Docker network and does not bind ports 80 or 443. Web and API share that hostname, so there is no CORS and the session cookie stays `SameSite=Lax`. See [deployment](deployment.md).
 
-Today: `apps/api` serves `GET /health` and loads a validated instance config; `packages/contracts`
-holds the problem catalog and instance schema; `instances/traceless` is the first instance.
-`apps/model-baker` has its tested converter skeleton. Both executables emit structured logs and are
-OTLP-ready. The web, database, worker, and Aspire AppHost are not built yet.
+Today: `apps/api` serves `/health/live` and `/health/ready`, loads a validated instance config, and
+talks to PostgreSQL. `packages/contracts` holds the problem catalog and instance schema.
+`instances/traceless` is the first instance. `apps/battlenet-stub` fakes client-credentials and
+guild endpoints. `apphost/` starts Postgres, migrate, API, and the stub. `apps/model-baker` has its
+tested converter skeleton. The web app and worker are not built yet.
 
 ## 4. Repository layout (target)
 
@@ -92,7 +93,7 @@ Rules:
 - `packages/*` are libraries. `apps/web` and `apps/api` both use `packages/contracts`. `contracts` depends only on `zod`.
 - `instances/*` is data, validated against the schema in `packages/contracts` at API startup. The web app receives it via `GET /api/instance`.
 
-Today: `apps/api`, `packages/contracts`, and `instances/traceless` exist. The other folders are created when their first code lands.
+Today: `apps/api`, `apps/battlenet-stub`, `packages/contracts`, `instances/traceless`, and `apphost/` exist. `apps/web` is created when the frontend lands.
 
 ## 5. Technology decisions
 
@@ -175,9 +176,10 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
 
 1. ~~Enforce layer and module boundaries with `dependency-cruiser` in `pnpm verify`.~~ Done.
 2. ~~Add `packages/contracts` with the problem model and the instance config schema; add `instances/traceless`.~~ Done.
-3. Add the Aspire AppHost with Postgres, the API, the migrator, and the Battle.net stub. Replace `compose.yaml` with `aspire publish` output.
-4. Complete the observability rollout as each process lands; split `/health` into `/health/live`
-   and `/health/ready`.
+3. ~~Add the Aspire AppHost with Postgres, the API, the migrator, and the Battle.net stub.~~ Done.
+   `compose.yaml` remains the production stand-in until `aspire publish` output is committed.
+4. ~~Complete the observability rollout as each process lands; split `/health` into `/health/live`
+   and `/health/ready`.~~ Done.
 5. Guild module: roster from Battle.net, cached, `GET /api/guild` and `GET /api/guild/roster`.
 6. Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.
 7. Identity module: Battle.net login, sessions, `GET /api/me`.

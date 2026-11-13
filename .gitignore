@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+.aspire/
 .env
 .env.*
 !.env.example

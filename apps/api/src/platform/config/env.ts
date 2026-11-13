@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 const schema = z.object({
+  BATTLENET_API_BASE_URL: z.url().optional(),
   BATTLENET_CLIENT_ID: z.string().min(1),
   BATTLENET_CLIENT_SECRET: z.string().min(1),
   BATTLENET_REDIRECT_URI: z.url(),
+  DATABASE_URL: z.string().min(1),
   INSTANCE_DIR: z.string().min(1),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])

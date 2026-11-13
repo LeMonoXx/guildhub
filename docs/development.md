@@ -7,15 +7,20 @@ corepack enable pnpm
 pnpm install
 pnpm verify            # format, lint, boundaries, types, tests, build
 pnpm --filter @guildhub/api dev   # API with reload on :3000 (needs .env)
-docker compose up --build         # API image
+docker compose up --build         # Postgres, migrate, API
+aspire run                        # full local stack (API, Postgres, stub, dashboard)
 ```
 
 Everything below is the target. Sections say when a step depends on a roadmap item.
 
-Today, the API and model baker already emit structured JSON logs. Setting
+Today, the API, migrator, and model baker emit structured JSON logs. Setting
 `OTEL_EXPORTER_OTLP_ENDPOINT` enables their OTLP traces and metrics. Leaving it unset is supported:
 no collector is required for `pnpm verify`, `dotnet test`, or normal process health. See
 [observability](architecture/observability.md).
+
+Local processes that stay up: API, PostgreSQL, and the Battle.net stub. The migrator is a one-shot
+process. Aspire's dashboard is development tooling and is not deployed. Production for this stage is
+API plus PostgreSQL, with migrate running once per deploy.
 
 ## 2. One command for the whole stack: Aspire
 

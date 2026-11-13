@@ -38,9 +38,11 @@ describe("rogue proof scene", () => {
     const timeline = compileTimeline(loadScene());
     const initial = timeline.evaluate(0);
     const runIn = timeline.evaluate(1600);
-    const smoke = timeline.evaluate(5100);
-    const covered = timeline.evaluate(6199);
-    const vanished = timeline.evaluate(6200);
+    const beforeThrow = timeline.evaluate(3950);
+    const throwing = timeline.evaluate(4200);
+    const smoke = timeline.evaluate(4700);
+    const covered = timeline.evaluate(5599);
+    const vanished = timeline.evaluate(5600);
     const endpoint = timeline.poster(timeline.scene.durationMs);
 
     expect(initial.phase.id).toBe("prewarm");
@@ -62,11 +64,24 @@ describe("rogue proof scene", () => {
     expect(approach.position.x).toBeLessThan(-5);
     expect(approach.scale.x).toBeLessThan(0.5);
 
+    expect(command(throwing, "clip")?.value).toMatchObject({
+      animationGroup: "UseStandingStart",
+    });
+    const beforeThrowTransform = command(beforeThrow, "transform")?.value as {
+      position: { x: number };
+    };
+    const throwingTransform = command(throwing, "transform")?.value as {
+      position: { x: number };
+    };
+    expect(throwingTransform.position.x).toBeGreaterThan(
+      beforeThrowTransform.position.x,
+    );
+
     expect(smoke.phase.id).toBe("smoke");
     expect(command(smoke, "smoke")?.value).toMatchObject({
-      density: 0.78,
-      size: 40,
-      opacity: 0.95,
+      density: 0.7,
+      size: 34,
+      opacity: 0.9,
     });
     expect(command(smoke, "clip")?.value).toMatchObject({
       animationGroup: "Run",
@@ -94,7 +109,7 @@ describe("rogue proof scene", () => {
   });
 
   test("uses a stable visible approach frame for reduced motion", () => {
-    const poster = compileTimeline(loadScene()).poster(4300);
+    const poster = compileTimeline(loadScene()).poster(3800);
 
     expect(poster.phase.id).toBe("approach");
     expect(command(poster, "visibility")?.value).toBe(true);

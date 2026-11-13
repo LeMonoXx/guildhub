@@ -19,17 +19,18 @@
   "markers": [
     { "id": "prewarm", "timeMs": 0 },
     { "id": "approach", "timeMs": 250 },
-    { "id": "smoke", "timeMs": 4500 },
-    { "id": "covered", "timeMs": 5700 },
-    { "id": "vanish", "timeMs": 6200 },
-    { "id": "fade", "timeMs": 6600 }
+    { "id": "throw", "timeMs": 4000 },
+    { "id": "smoke", "timeMs": 4300 },
+    { "id": "covered", "timeMs": 5300 },
+    { "id": "vanish", "timeMs": 5600 },
+    { "id": "fade", "timeMs": 6000 }
   ],
   "phases": [
     { "id": "prewarm", "startMs": 0, "endMs": 250 },
-    { "id": "approach", "startMs": 250, "endMs": 4500 },
-    { "id": "smoke", "startMs": 4500, "endMs": 6200 },
-    { "id": "vanish", "startMs": 6200, "endMs": 7000 },
-    { "id": "reset", "startMs": 7000, "endMs": 8000 }
+    { "id": "approach", "startMs": 250, "endMs": 4300 },
+    { "id": "smoke", "startMs": 4300, "endMs": 5600 },
+    { "id": "vanish", "startMs": 5600, "endMs": 6800 },
+    { "id": "reset", "startMs": 6800, "endMs": 8000 }
   ],
   "tracks": [
     {
@@ -43,6 +44,32 @@
             "animationGroup": "Run",
             "id": "animation-5",
             "crossfadeMs": 0,
+            "playback": {
+              "rate": 1,
+              "loop": true,
+              "clampWhenFinished": false
+            }
+          }
+        },
+        {
+          "timeMs": 4000,
+          "value": {
+            "animationGroup": "UseStandingStart",
+            "id": "animation-128",
+            "crossfadeMs": 100,
+            "playback": {
+              "rate": 1,
+              "loop": false,
+              "clampWhenFinished": true
+            }
+          }
+        },
+        {
+          "timeMs": 4650,
+          "value": {
+            "animationGroup": "Run",
+            "id": "animation-5",
+            "crossfadeMs": 100,
             "playback": {
               "rate": 1,
               "loop": true,
@@ -95,12 +122,12 @@
           }
         },
         {
-          "timeMs": 6200,
+          "timeMs": 5600,
           "easing": "ease-in",
           "value": {
-            "position": { "x": 0.2, "y": 0, "z": 0 },
+            "position": { "x": -0.2, "y": 0, "z": 0 },
             "rotation": { "x": 0, "y": 0, "z": 0 },
-            "scale": { "x": 1.18, "y": 1.18, "z": 1.18 }
+            "scale": { "x": 0.98, "y": 0.98, "z": 0.98 }
           }
         },
         {
@@ -120,7 +147,7 @@
       "keyframes": [
         { "timeMs": 0, "value": false },
         { "timeMs": 250, "value": true },
-        { "timeMs": 6200, "value": false },
+        { "timeMs": 5600, "value": false },
         { "timeMs": 8000, "value": false }
       ]
     },
@@ -138,11 +165,11 @@
           }
         },
         {
-          "timeMs": 6200,
+          "timeMs": 5600,
           "value": {
-            "position": { "x": 5.15, "y": 1.45, "z": 0 },
-            "target": { "x": 0, "y": 1.2, "z": 0 },
-            "fov": 32
+            "position": { "x": 5.3, "y": 1.42, "z": 0 },
+            "target": { "x": -0.2, "y": 1.18, "z": 0 },
+            "fov": 33
           }
         },
         {
@@ -186,7 +213,7 @@
           }
         },
         {
-          "timeMs": 6500,
+          "timeMs": 6200,
           "easing": "ease-in",
           "value": {
             "position": { "x": 3.5, "y": 5, "z": 2.5 },
@@ -235,7 +262,7 @@
           }
         },
         {
-          "timeMs": 6800,
+          "timeMs": 6500,
           "easing": "ease-in",
           "value": {
             "position": { "x": -2, "y": 2.5, "z": -3 },
@@ -278,7 +305,7 @@
           }
         },
         {
-          "timeMs": 6200,
+          "timeMs": 5600,
           "value": {
             "opacity": 1,
             "translation": { "x": 0, "y": 0, "z": 0 },
@@ -323,7 +350,7 @@
           }
         },
         {
-          "timeMs": 4500,
+          "timeMs": 4300,
           "value": {
             "density": 0,
             "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
@@ -332,46 +359,46 @@
           }
         },
         {
-          "timeMs": 5100,
+          "timeMs": 4700,
           "easing": "ease-out",
           "value": {
-            "density": 0.78,
+            "density": 0.7,
             "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },
-            "size": 40,
-            "opacity": 0.95
+            "size": 34,
+            "opacity": 0.9
           }
         },
         {
-          "timeMs": 5700,
+          "timeMs": 5300,
           "easing": "ease-out",
           "value": {
             "density": 1,
             "drift": { "x": 0.018, "y": 0.03, "z": -0.01 },
-            "size": 96,
+            "size": 64,
             "opacity": 1
           }
         },
         {
-          "timeMs": 6400,
+          "timeMs": 5800,
           "value": {
             "density": 1,
             "drift": { "x": 0.022, "y": 0.038, "z": -0.012 },
-            "size": 112,
+            "size": 72,
             "opacity": 1
           }
         },
         {
-          "timeMs": 7000,
+          "timeMs": 6600,
           "easing": "ease-in",
           "value": {
             "density": 0.55,
             "drift": { "x": 0.026, "y": 0.045, "z": -0.014 },
-            "size": 124,
+            "size": 84,
             "opacity": 0.45
           }
         },
         {
-          "timeMs": 7800,
+          "timeMs": 7400,
           "value": {
             "density": 0,
             "drift": { "x": 0.012, "y": 0.022, "z": -0.008 },

@@ -89,7 +89,8 @@ The first scene uses a human male rogue, class ID 4, HD models, Bloodfang Armor,
 1. Black initial frame while all assets are prewarmed.
 2. The rogue starts invisible far behind the stage and runs continuously toward the camera.
 3. Perspective and authored scale make him grow without a pose or animation pause.
-4. Authored smoke builds around the still-running character without a smoke-bomb body clip.
+4. A short `UseStandingStart` throw phrase crossfades over the uninterrupted approach transform,
+   returns directly to `Run`, and starts the authored smoke.
 5. Character visibility reaches zero inside the smoke.
 6. Smoke, lights, and page treatment fade to the exact initial frame.
 7. The engine resets without reallocating assets and loops immediately.
@@ -98,9 +99,10 @@ WoW item particles and material tracks continue throughout. Authored smoke is re
 seeded, and seekable so CI and loop reset do not depend on a spell visual kit.
 
 The bake preset provides Stand, Run, Ready1H, SpellCastOmni, StealthWalk, StealthStand,
-UseStandingLoop, UseStandingStart, and UseStandingEnd. The scene intentionally keeps Run active
-until the vanish so clip changes cannot interrupt the approach. SpellCast and Emerge are requested
-by the preset but diagnosed and skipped because this skeleton does not expose them.
+UseStandingLoop, UseStandingStart, and UseStandingEnd. The scene uses `UseStandingStart` as a brief
+throw gesture while the independent transform track continues the approach, then immediately
+crossfades back to `Run`. SpellCast and Emerge are requested by the preset but diagnosed and
+skipped because this skeleton does not expose them.
 
 ## 7. Authoring and visual proof
 
@@ -117,8 +119,9 @@ pnpm --filter @guildhub/web dev
 
 The default route plays the loop; `?viewer=1` retains the free viewer. `?frame=<milliseconds>`
 renders a deterministic, non-playing frame for authoring and visual regression evidence. The
-defined proof checkpoints are 0 (dark start), 250 (far reveal), 2000 (approach), 5700
-(full smoke coverage), 6199 (covered pre-vanish), 6200 (vanish), and 8000 (exact reset).
+defined proof checkpoints are 0 (dark start), 250 (far reveal), 2000 (approach), 4000
+(running throw), 5300 (full smoke coverage), 5599 (covered pre-vanish), 5600 (vanish), and 8000
+(exact reset).
 The actor remains visible until the opaque cloud is established. The 0 and 8000 screenshots must
 be byte-identical when captured at the same viewport.
 

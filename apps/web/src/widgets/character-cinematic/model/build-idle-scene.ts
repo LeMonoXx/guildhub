@@ -31,7 +31,7 @@ export const idleCamera = (figureHeight: number) => {
 };
 
 /** The belt line and the crown, as shares of the standing height. */
-const bustSpan = { bottom: 0.4, top: 1.38 } as const;
+const bustSpan = { bottom: 0.48, top: 1.05 } as const;
 
 /** Frames the figure from the belt up, as for a portrait. */
 export const bustCamera = (figureHeight: number) => {

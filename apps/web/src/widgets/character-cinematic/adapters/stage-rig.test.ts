@@ -104,4 +104,64 @@ describe("StageRig", () => {
     expect(firstDispose).toHaveBeenCalledTimes(1);
     expect(secondDispose).toHaveBeenCalledTimes(1);
   });
+
+  const fittingRig = (width: number) => {
+    const renderer = {
+      domElement: {
+        parentElement: null,
+        setAttribute: vi.fn(),
+        remove: vi.fn(),
+      },
+      setPixelRatio: vi.fn(),
+      setSize: vi.fn(),
+      render: vi.fn(),
+      dispose: vi.fn(),
+      outputColorSpace: "",
+    } as unknown as THREE.WebGLRenderer;
+    const container = {
+      clientWidth: 800,
+      clientHeight: 450,
+      append: vi.fn(),
+    } as unknown as HTMLElement;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(width, 2, 0.5));
+    body.position.y = 1;
+    const otherHairstyle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 6, 0.5));
+    otherHairstyle.visible = false;
+    const root = new THREE.Group();
+    root.scale.setScalar(1.2);
+    root.add(body, otherHairstyle);
+    const rig = new StageRig(container, {
+      renderer,
+      resizeObserver: () => ({ observe: vi.fn(), disconnect: vi.fn() }),
+    });
+    rig.addActor("actor", {
+      root,
+      box: new THREE.Box3(),
+      faceCamera: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as CharacterHandle);
+    const pose = () => {
+      rig.setCamera({ x: 0, y: 1, z: 3 }, { x: 0, y: 0.5, z: 0 }, 30);
+    };
+    pose();
+    rig.fitCameraTo(1);
+    pose();
+    return rig;
+  };
+
+  test("fits the camera to the crown the visible meshes draw", () => {
+    const rig = fittingRig(0.5);
+    expect(rig.camera.position.y).toBeCloseTo(2);
+    expect(rig.camera.position.z).toBeCloseTo(6);
+    expect(rig.cameraTarget.y).toBeCloseTo(1);
+    rig.dispose();
+  });
+
+  test("steps back along the view, not up, for a body too broad for the frame", () => {
+    const rig = fittingRig(8);
+    expect(rig.cameraTarget.y).toBeCloseTo(1);
+    expect(rig.camera.position.z).toBeGreaterThan(6);
+    expect(rig.camera.position.z).toBeLessThanOrEqual(6 * 1.6 + 1e-6);
+    rig.dispose();
+  });
 });

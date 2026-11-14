@@ -122,6 +122,26 @@ describe("mapTalentTrees", () => {
     });
     expect(tree?.nodes[1]?.nextDescription).toBeUndefined();
   });
+
+  it("leaves out retired talents listed below the seventh tier", () => {
+    const placed = {
+      id: 1,
+      talentId: 1,
+      name: "Hawk Eye",
+      row: 7,
+      column: 2,
+      rankDescriptions: [""],
+      requires: [],
+    };
+    const retired = { ...placed, id: 2, talentId: 2, row: 63, column: 4 };
+    const [tree] = mapTalentTrees(
+      [{ specId: 363, name: "Marksmanship", nodes: [placed, retired] }],
+      {},
+      (id) => `/icons/${String(id)}`,
+    );
+    expect(tree?.rows).toBe(7);
+    expect(tree?.nodes.map((node) => node.id)).toEqual([1]);
+  });
 });
 
 describe("treeColumns", () => {

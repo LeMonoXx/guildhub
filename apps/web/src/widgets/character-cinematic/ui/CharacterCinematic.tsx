@@ -28,6 +28,8 @@ export interface CharacterCinematicProps {
   readonly readyLabel?: string;
   /** Live adjustments applied to every frame, in order. */
   readonly decorators?: readonly FrameDecorator[];
+  /** Scale the scene's camera to the loaded actor's real crown height. */
+  readonly fitToActorHeight?: number;
 }
 
 const noDecorators: readonly FrameDecorator[] = [];
@@ -81,6 +83,7 @@ export function CharacterCinematic({
   loadingLabel = "Loading character…",
   readyLabel = "Character ready",
   decorators = noDecorators,
+  fitToActorHeight,
 }: CharacterCinematicProps) {
   const root = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -138,6 +141,10 @@ export function CharacterCinematic({
         const show = (frame: CinematicFrame) => {
           mounted.director.apply(decorateFrame(frame, decoratorsRef.current));
         };
+        if (fitToActorHeight !== undefined) {
+          show(timeline.poster(posterTimeMs));
+          mounted.rig.fitCameraTo(fitToActorHeight);
+        }
 
         if (reducedMotion || previewTimeMs !== undefined) {
           show(timeline.poster(previewTimeMs ?? posterTimeMs));
@@ -170,6 +177,7 @@ export function CharacterCinematic({
     };
   }, [
     assetBase,
+    fitToActorHeight,
     loadingLabel,
     manifest,
     posterTimeMs,

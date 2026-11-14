@@ -5,7 +5,7 @@ import type {
 } from "@guildhub/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { lazy, Suspense, useRef, type ReactNode } from "react";
+import { lazy, Suspense, useMemo, useRef, type ReactNode } from "react";
 import {
   CharacterNotFoundError,
   characterQueries,
@@ -55,38 +55,47 @@ function CharacterBackdrop({
   const { t } = useLocale();
   const live =
     useMediaQuery(liveStageMediaQuery) && detail.model.status === "ready";
+  const figureHeight = raceHeight(detail.raceId);
+  const scene = useMemo(
+    () =>
+      buildCharacterIdleScene({
+        id: detail.slug,
+        manifest: detail.lookManifest,
+        figureHeight,
+        framing: "bust",
+      }),
+    [detail.slug, detail.lookManifest, figureHeight],
+  );
   return (
     <div
       className="character-backdrop"
       data-live={live}
       style={{ ["--hero-class" as string]: wowClassColorVar(detail.classId) }}
     >
-      <div className="character-backdrop-glow" aria-hidden="true" />
-      <FallbackImage
-        className="character-poster"
-        src={detail.renderUrl}
-        hidden={live}
-        fallback={null}
-      />
-      {live ? (
-        <Suspense fallback={null}>
-          <CharacterCinematic
-            scene={buildCharacterIdleScene({
-              id: detail.slug,
-              manifest: detail.lookManifest,
-              figureHeight: raceHeight(detail.raceId),
-              framing: "bust",
-            })}
-            manifest={detail.lookManifest}
-            posterUrl={detail.renderUrl}
-            assetBase="/assets/"
-            variant="embedded"
-            ariaLabel={t("character.stageLabel")}
-            loadingLabel={t("character.loading")}
-            readyLabel={t("status.ready")}
-          />
-        </Suspense>
-      ) : null}
+      <div className="character-backdrop-frame">
+        <div className="character-backdrop-glow" aria-hidden="true" />
+        <FallbackImage
+          className="character-poster"
+          src={detail.renderUrl}
+          hidden={live}
+          fallback={null}
+        />
+        {live ? (
+          <Suspense fallback={null}>
+            <CharacterCinematic
+              scene={scene}
+              fitToActorHeight={figureHeight}
+              manifest={detail.lookManifest}
+              posterUrl={detail.renderUrl}
+              assetBase="/assets/"
+              variant="embedded"
+              ariaLabel={t("character.stageLabel")}
+              loadingLabel={t("character.loading")}
+              readyLabel={t("status.ready")}
+            />
+          </Suspense>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -202,41 +211,43 @@ export function CharacterPage() {
 
   return (
     <article className="character-page">
-      <CharacterBackdrop detail={detail} />
       <DocumentTitle
         value={formatDocumentTitle(detail.name, guild.data?.name)}
       />
-      <CharacterHero character={detail} profile={available} />
-      {detail.published ? null : (
-        <p className="page-notice">{t("character.unpublished")}</p>
-      )}
-      {sections.length > 0 ? (
-        <>
-          <SectionNav
-            label={t("character.sectionNav")}
-            sections={sections.map((section) => section.link)}
-          />
-          {sections.map((section) => (
-            <PanelSection
-              key={section.link.id}
-              id={section.link.id}
-              eyebrow={section.eyebrow}
-              title={section.link.label}
-              lead={section.lead}
-            >
-              {section.body}
-            </PanelSection>
-          ))}
-        </>
-      ) : (
-        <>
-          {profile.isPending ? (
-            <StatusBlock>{t("character.profileLoading")}</StatusBlock>
-          ) : (
-            <p className="page-notice">{t("character.profileUnavailable")}</p>
-          )}
-        </>
-      )}
+      <div className="character-body">
+        <CharacterBackdrop detail={detail} />
+        <CharacterHero character={detail} profile={available} />
+        {detail.published ? null : (
+          <p className="page-notice">{t("character.unpublished")}</p>
+        )}
+        {sections.length > 0 ? (
+          <>
+            <SectionNav
+              label={t("character.sectionNav")}
+              sections={sections.map((section) => section.link)}
+            />
+            {sections.map((section) => (
+              <PanelSection
+                key={section.link.id}
+                id={section.link.id}
+                eyebrow={section.eyebrow}
+                title={section.link.label}
+                lead={section.lead}
+              >
+                {section.body}
+              </PanelSection>
+            ))}
+          </>
+        ) : (
+          <>
+            {profile.isPending ? (
+              <StatusBlock>{t("character.profileLoading")}</StatusBlock>
+            ) : (
+              <p className="page-notice">{t("character.profileUnavailable")}</p>
+            )}
+          </>
+        )}
+      </div>
     </article>
   );
 }

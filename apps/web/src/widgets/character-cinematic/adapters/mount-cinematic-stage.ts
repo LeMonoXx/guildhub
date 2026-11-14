@@ -77,7 +77,6 @@ export async function mountCinematicStage(
       for (const notice of prepared.character.notices)
         options.report?.(`[character] ${notice}`);
     }
-
     const targets = new BindingTargetRegistry();
     const installers = new Map<string, (track: CinematicTrack) => void>([
       [

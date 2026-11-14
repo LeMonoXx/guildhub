@@ -26,6 +26,34 @@ const verticalBleed = (container: HTMLElement) => {
   };
 };
 
+/**
+ * Posed world positions of the vertices the visible meshes actually draw.
+ * Bounding boxes and bones won't do: every geoset variant shares one vertex
+ * buffer and skeleton.
+ */
+const drawnVertices = (root: THREE.Object3D): THREE.Vector3[] => {
+  root.updateMatrixWorld(true);
+  const vertices: THREE.Vector3[] = [];
+  root.traverseVisible((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const geometry = object.geometry as THREE.BufferGeometry;
+    const count =
+      geometry.index?.count ?? geometry.getAttribute("position").count;
+    for (let i = 0; i < count; i += 1) {
+      const vertex = new THREE.Vector3();
+      object.getVertexPosition(geometry.index?.getX(i) ?? i, vertex);
+      vertices.push(vertex.applyMatrix4(object.matrixWorld));
+    }
+  });
+  return vertices;
+};
+
+/**
+ * Share of the frame's half width the framed body may fill; above one, as
+ * weapons and pauldrons may run off the edge.
+ */
+const widthShare = 1.2;
+
 export class StageRig {
   readonly scene = new THREE.Scene();
   readonly background = new THREE.Color(0x000000);
@@ -43,6 +71,9 @@ export class StageRig {
   };
   private readonly controls?: OrbitControls;
   private readonly actors = new Map<string, CharacterHandle>();
+  private cameraScale = 1;
+  /** How much further back along the view than the scaled pose. */
+  private cameraBack = 1;
   private disposed = false;
 
   constructor(
@@ -134,13 +165,52 @@ export class StageRig {
     return this.actors.size;
   }
 
+  /**
+   * Scales every camera pose about the floor origin so the framing written
+   * for a body `assumedHeight` tall (unscaled) holds whatever the body
+   * measures: by the posed crown height, and further out when the part of the
+   * body in frame is too broad for it, as with a tauren's hump.
+   * Call it once the scene's pose and camera are applied.
+   */
+  fitCameraTo(assumedHeight: number): void {
+    const actors = [...this.actors.values()];
+    const vertices = actors.flatMap(({ root }) => drawnVertices(root));
+    const scale = Math.max(...actors.map(({ root }) => root.scale.y), 1e-6);
+    const crown = Math.max(...vertices.map((vertex) => vertex.y)) / scale;
+    if (!(crown > 0) || !(assumedHeight > 0)) return;
+    const tall = crown / assumedHeight;
+    const reach = Math.tan(((this.camera.fov / 2) * Math.PI) / 180);
+    const distance =
+      this.camera.position.distanceTo(this.cameraTarget) /
+      (this.cameraScale * this.cameraBack);
+    const target = this.cameraTarget.y / this.cameraScale;
+    const frameBottom = (target - reach * distance) * tall;
+    const halfWidth = Math.max(
+      0,
+      ...vertices
+        .filter((vertex) => vertex.y >= frameBottom)
+        .map((vertex) => Math.abs(vertex.x)),
+    );
+    const framedHalfWidth = reach * distance * tall * this.camera.aspect;
+    this.cameraScale = Math.min(Math.max(tall, 0.5), 2);
+    this.cameraBack = Math.min(
+      Math.max(halfWidth / (framedHalfWidth * widthShare), 1),
+      1.6,
+    );
+  }
+
   setCamera(
     position: Readonly<{ x: number; y: number; z: number }>,
     target: Readonly<{ x: number; y: number; z: number }>,
     fov: number,
   ): void {
-    this.camera.position.set(position.x, position.y, position.z);
-    this.cameraTarget.set(target.x, target.y, target.z);
+    const scale = this.cameraScale;
+    this.cameraTarget.set(target.x * scale, target.y * scale, target.z * scale);
+    this.camera.position
+      .set(position.x * scale, position.y * scale, position.z * scale)
+      .sub(this.cameraTarget)
+      .multiplyScalar(this.cameraBack)
+      .add(this.cameraTarget);
     this.camera.fov = fov;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(this.cameraTarget);

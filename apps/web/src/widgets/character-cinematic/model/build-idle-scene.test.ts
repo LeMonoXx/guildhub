@@ -50,7 +50,7 @@ describe("buildCharacterIdleScene", () => {
       const distance = camera.position.z - camera.target.z;
       const halfView = Math.tan(((camera.fov / 2) * Math.PI) / 180) * distance;
       const height = figureHeight * 1.2;
-      expect(camera.target.y - halfView).toBeCloseTo(height * 0.4);
+      expect(camera.target.y - halfView).toBeCloseTo(height * 0.48);
       expect(camera.target.y + halfView).toBeGreaterThan(height);
     }
     const scene = buildCharacterIdleScene({

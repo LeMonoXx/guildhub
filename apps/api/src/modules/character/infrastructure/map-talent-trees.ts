@@ -19,8 +19,12 @@ export function mapTalentTrees(
   iconUrl: (iconId: number) => string,
 ): TalentTree[] {
   const learned = learnedOf(rawSpecializations);
-  const columns = treeColumns(layouts);
-  return layouts.map((layout) => {
+  const placed = layouts.map((layout) => ({
+    ...layout,
+    nodes: layout.nodes.filter((node) => node.row <= TREE_DEPTH),
+  }));
+  const columns = treeColumns(placed);
+  return placed.map((layout) => {
     const nodes = layout.nodes.map((node) =>
       nodeOf(
         { ...node, column: columns.get(node.id) ?? node.column },
@@ -46,6 +50,11 @@ export function mapTalentTrees(
 }
 
 const TREE_WIDTH = 4;
+/**
+ * Classic trees are seven tiers deep. The game data still lists a few
+ * retired talents far below that (row 63); the talent frame never shows them.
+ */
+const TREE_DEPTH = 7;
 /**
  * The game lays a class's three trees side by side on one grid, so the
  * second tree starts at column 7 and the third at column 14.

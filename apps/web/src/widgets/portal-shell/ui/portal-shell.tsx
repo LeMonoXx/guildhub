@@ -1,12 +1,13 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { LocaleSwitcher } from "../../../features/locale-switcher";
 import { useLocale } from "../../../shared/i18n";
-import { SkipLink } from "../../../shared/ui";
+import { NebulaFog, SkipLink } from "../../../shared/ui";
 
 export function PortalShell() {
   const { t } = useLocale();
   return (
     <div className="portal-shell">
+      <NebulaFog />
       <SkipLink href="#main">{t("nav.skip")}</SkipLink>
       <header className="portal-header">
         <nav className="portal-nav" aria-label={t("nav.primary")}>

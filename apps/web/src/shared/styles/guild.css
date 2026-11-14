@@ -16,7 +16,7 @@
  * the floating header, the masthead follows below it.
  */
 .guild-opening {
-  --faction-glow: rgb(200 162 74 / 0.22);
+  --faction-glow: rgb(var(--accent-deep-rgb) / 0.22);
   --stage-height: min(100svh, max(30rem, 125vw));
   /* Figures stepping forward may reach this far over the masthead. */
   --stage-bleed: calc(var(--stage-height) * 0.3);
@@ -25,11 +25,11 @@
 }
 
 .guild-opening[data-faction="horde"] {
-  --faction-glow: rgb(190 40 30 / 0.3);
+  --faction-glow: rgb(208 88 74 / 0.12);
 }
 
 .guild-opening[data-faction="alliance"] {
-  --faction-glow: rgb(50 100 220 / 0.3);
+  --faction-glow: rgb(90 130 210 / 0.12);
 }
 
 .opening-backdrop {
@@ -47,12 +47,12 @@
     ),
     radial-gradient(
       ellipse 45% 55% at 84% 14%,
-      rgb(200 162 74 / 0.14),
+      rgb(var(--accent-deep-rgb) / 0.14),
       transparent 70%
     ),
     radial-gradient(
       ellipse 70% 45% at 50% 62%,
-      rgb(60 40 80 / 0.22),
+      rgb(24 38 48 / 0.22),
       transparent 75%
     ),
     linear-gradient(180deg, transparent 55%, var(--color-obsidian));
@@ -69,7 +69,7 @@
   background:
     radial-gradient(
       ellipse 50% 22% at 50% 50%,
-      rgb(255 214 150 / 0.16),
+      rgb(var(--light-rgb) / 0.16),
       transparent 70%
     ),
     radial-gradient(
@@ -91,7 +91,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(232 199 122 / 0.35) 50%,
+    rgb(var(--accent-rgb) / 0.35) 50%,
     transparent
   );
 }
@@ -109,7 +109,11 @@
   width: 18%;
   height: 140%;
   transform-origin: top center;
-  background: linear-gradient(180deg, rgb(255 230 170 / 0.16), transparent 75%);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--light-rgb) / 0.16),
+    transparent 75%
+  );
   filter: blur(18px);
   animation: beam-sway 11s ease-in-out infinite alternate;
 }
@@ -195,13 +199,18 @@
 
 .guild-masthead .wordmark {
   font-size: clamp(2.6rem, 8vw, 7.5rem);
-  filter: drop-shadow(0 6px 24px rgb(200 162 74 / 0.3));
+  filter: drop-shadow(0 6px 24px rgb(var(--accent-deep-rgb) / 0.3));
 }
 
 /* The clip must sit on the animated span: its own layer hides the parent's text. */
 .guild-masthead .wordmark-text,
 .guild-hero-intro .wordmark-text {
-  background: linear-gradient(180deg, #fff6d8 0%, #e7c26a 45%, #8f6a1f 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-light) 0%,
+    var(--color-ink) 55%,
+    rgb(var(--fog-rgb)) 100%
+  );
   background-clip: text;
   color: transparent;
 }
@@ -234,16 +243,17 @@
 .guild-masthead .guild-stats > div {
   padding: 0.9rem 1.1rem;
   border: 1px solid var(--color-hairline);
-  border-radius: 12px;
+  border-radius: 3px;
   background: linear-gradient(
     160deg,
     rgb(255 255 255 / 0.035),
-    rgb(10 9 14 / 0.6)
+    rgb(6 9 13 / 0.6)
   );
 }
 
 .guild-masthead .guild-stats dd {
-  color: var(--color-gold);
+  color: var(--color-ink);
+  font-variant-numeric: lining-nums;
   font-family: var(--font-fantasy);
   font-size: clamp(1.4rem, 2.4vw, 2rem);
 }
@@ -291,11 +301,13 @@
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
-  color: var(--color-gold);
+  color: var(--color-ink);
   font-family: var(--font-fantasy);
-  font-size: clamp(4rem, 10vw, 7rem);
+  font-weight: 300;
+  font-variant-numeric: lining-nums;
+  font-size: clamp(4.5rem, 11vw, 8.5rem);
   line-height: 0.9;
-  text-shadow: 0 0 40px rgb(200 162 74 / 0.35);
+  text-shadow: 0 0 40px rgb(var(--accent-deep-rgb) / 0.35);
 }
 
 .pulse-members span:last-child {
@@ -328,8 +340,8 @@
   padding: 1rem 1.1rem;
   overflow: hidden;
   border: 1px solid var(--color-hairline);
-  border-radius: 10px;
-  background: rgb(10 9 14 / 0.8);
+  border-radius: 3px;
+  background: rgb(6 9 13 / 0.8);
   transition:
     transform 0.3s var(--ease-out),
     border-color 0.3s;
@@ -341,13 +353,17 @@
   width: 9rem;
   height: 9rem;
   border-radius: 50%;
-  background: radial-gradient(circle, rgb(200 162 74 / 0.18), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgb(var(--accent-deep-rgb) / 0.18),
+    transparent 70%
+  );
   content: "";
 }
 
 .pulse-tile:hover {
   transform: translateY(-3px);
-  border-color: rgb(232 199 122 / 0.35);
+  border-color: rgb(var(--accent-rgb) / 0.35);
 }
 
 .pulse-tile dt {
@@ -359,6 +375,7 @@
   margin: 0.3rem 0 0;
   color: var(--color-ink);
   font-family: var(--font-fantasy);
+  font-variant-numeric: lining-nums;
   font-size: 2.1rem;
 }
 
@@ -386,15 +403,17 @@
   gap: 0.35rem;
   padding: 1.6rem 1rem 1.2rem;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--champion-class) 40%, transparent);
-  border-radius: 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--champion-class) 30%, rgb(var(--fog-rgb) / 0.12));
+  border-radius: 999px 999px 3px 3px;
+  padding-top: 2.6rem;
   background:
     radial-gradient(
       ellipse 80% 70% at 50% 0%,
       color-mix(in srgb, var(--champion-class) 22%, transparent),
       transparent 70%
     ),
-    rgb(10 9 14 / 0.9);
+    rgb(6 9 13 / 0.9);
   text-align: center;
   transition:
     transform 0.35s var(--ease-out),
@@ -419,8 +438,13 @@
     100% 20%,
     100% 100%
   );
-  background: linear-gradient(180deg, #fff1b8, #c8a24a 60%, #7a5a18);
-  filter: drop-shadow(0 0 8px rgb(232 199 122 / 0.6));
+  background: linear-gradient(
+    180deg,
+    var(--color-light),
+    var(--color-gold) 60%,
+    var(--color-deep)
+  );
+  filter: drop-shadow(0 0 8px rgb(var(--accent-rgb) / 0.6));
 }
 
 .champion-card .eyebrow {
@@ -430,6 +454,8 @@
 .champion-value {
   margin: 0;
   font-family: var(--font-fantasy);
+  font-weight: 300;
+  font-variant-numeric: lining-nums;
   font-size: 2.4rem;
 }
 
@@ -540,7 +566,7 @@
 }
 
 .race-chips strong {
-  color: var(--color-gold);
+  color: var(--color-wisp);
 }
 
 .level-histogram {
@@ -570,8 +596,8 @@
   min-height: 3px;
   transform-origin: bottom;
   border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, #f1d58b, #8a6a24);
-  box-shadow: 0 0 16px rgb(200 162 74 / 0.3);
+  background: linear-gradient(180deg, var(--color-light), var(--color-deep));
+  box-shadow: 0 0 16px rgb(var(--accent-deep-rgb) / 0.3);
   animation: bar-rise 1.1s var(--ease-out) both var(--bar-delay);
 }
 
@@ -611,14 +637,14 @@
   padding: 1.1rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--dossier-class) 30%, transparent);
-  border-radius: 12px;
+  border-radius: 3px;
   background:
     radial-gradient(
       ellipse 70% 90% at 0% 0%,
       color-mix(in srgb, var(--dossier-class) 16%, transparent),
       transparent 70%
     ),
-    rgb(10 9 14 / 0.9);
+    rgb(6 9 13 / 0.9);
   text-decoration: none;
   transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
   transition:
@@ -661,9 +687,9 @@
   place-items: center;
   width: 4.6rem;
   height: 4.6rem;
-  border: 2px solid #c8a24a;
+  border: 1px solid color-mix(in srgb, var(--dossier-class) 60%, transparent);
   border-radius: 50%;
-  background: radial-gradient(circle, #2a2131, #050407);
+  background: radial-gradient(circle, #16222a, #04060a);
   box-shadow:
     0 0 0 2px #000,
     0 0 18px color-mix(in srgb, var(--dossier-class) 35%, transparent);
@@ -695,8 +721,9 @@
 }
 
 .dossier-name {
-  font-size: 1.1rem;
-  font-weight: 750;
+  font-family: var(--font-fantasy);
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 .dossier-surname {
@@ -778,7 +805,7 @@
 .boss-body h3 {
   margin: 0.1rem 0 0.4rem;
   font-family: var(--font-fantasy);
-  font-size: 1.35rem;
+  font-size: 1.6rem;
   font-weight: 500;
 }
 
@@ -793,7 +820,8 @@
   margin: 0;
   color: #ff8f6b;
   font-family: var(--font-fantasy);
-  font-size: 2rem;
+  font-variant-numeric: lining-nums;
+  font-size: 2.4rem;
 }
 
 .boss-kills span:last-child {
@@ -865,7 +893,7 @@
   background: linear-gradient(
     180deg,
     var(--color-gold),
-    rgb(200 162 74 / 0.05)
+    rgb(var(--accent-deep-rgb) / 0.05)
   );
   content: "";
 }
@@ -887,8 +915,8 @@
 }
 
 .timeline-node[data-kind="login"] {
-  border-color: var(--power-health);
-  box-shadow: 0 0 10px rgb(31 191 58 / 0.5);
+  border-color: var(--color-wisp);
+  box-shadow: 0 0 10px rgb(var(--accent-deep-rgb) / 0.5);
 }
 
 .timeline-card {
@@ -917,12 +945,12 @@
   align-items: center;
   gap: 0.35rem 0.75rem;
   padding: 0.35rem 0.25rem;
-  border-bottom: 1px dashed rgb(31 191 58 / 0.18);
+  border-bottom: 1px dashed rgb(var(--fog-rgb) / 0.18);
   font-size: 0.85rem;
 }
 
 .timeline-logins-label {
-  color: rgb(120 220 140 / 0.85);
+  color: var(--color-wisp);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -953,7 +981,7 @@
   width: 1rem;
   height: 1rem;
   left: -1.7rem;
-  background: radial-gradient(var(--color-gold), #6b4e12);
+  background: radial-gradient(var(--color-gold), var(--color-deep));
   animation: timeline-node-pulse 2.8s ease-in-out infinite;
 }
 
@@ -962,15 +990,15 @@
   flex-wrap: nowrap;
   gap: 1rem;
   padding: 0.9rem 1.1rem;
-  border-color: rgb(232 199 122 / 0.4);
+  border-color: rgb(var(--accent-rgb) / 0.4);
   background:
     linear-gradient(
       100deg,
-      rgb(200 162 74 / 0.16),
-      rgb(200 162 74 / 0.03) 55%,
+      rgb(var(--accent-deep-rgb) / 0.16),
+      rgb(var(--accent-deep-rgb) / 0.03) 55%,
       transparent
     ),
-    rgb(12 10 16 / 0.92);
+    rgb(8 12 16 / 0.92);
 }
 
 .timeline-achievement::after {
@@ -979,7 +1007,7 @@
   background: linear-gradient(
     105deg,
     transparent 35%,
-    rgb(255 230 160 / 0.12) 50%,
+    rgb(var(--light-rgb) / 0.12) 50%,
     transparent 65%
   );
   border-radius: inherit;
@@ -1000,10 +1028,14 @@
   place-items: center;
   width: 2.4rem;
   height: 2.4rem;
-  border: 1px solid rgb(232 199 122 / 0.55);
+  border: 1px solid rgb(var(--accent-rgb) / 0.55);
   border-radius: 50%;
   color: #ffe9a8;
-  background: radial-gradient(circle at 35% 30%, #7a5a1c, #1d150a 75%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--color-deep),
+    #1d150a 75%
+  );
   box-shadow: var(--glow-gold);
   font-size: 1.15rem;
 }
@@ -1063,7 +1095,7 @@
   bottom: 0;
   width: 1px;
   content: "";
-  background: rgb(232 199 122 / 0.25);
+  background: rgb(var(--accent-rgb) / 0.25);
   transform: translateX(50%);
 }
 
@@ -1079,7 +1111,7 @@
 }
 
 .skill-track-tier {
-  color: rgb(232 199 122 / 0.75);
+  color: rgb(var(--accent-rgb) / 0.75);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1123,7 +1155,7 @@
   );
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.22),
-    inset -1px 0 0 rgb(10 9 14 / 0.8);
+    inset -1px 0 0 rgb(6 9 13 / 0.8);
   transition: width 1.3s var(--ease-out) 0.15s;
 }
 
@@ -1142,7 +1174,7 @@
 
 .skill-track-tick[data-unlocked="true"] {
   width: 2px;
-  background: rgb(10 9 14 / 0.75);
+  background: rgb(6 9 13 / 0.75);
 }
 
 .skill-track-cap {
@@ -1151,8 +1183,8 @@
   bottom: -1px;
   left: calc(var(--skill-unlocked) * 100%);
   width: 1px;
-  background: rgb(255 248 230 / 0.9);
-  box-shadow: 0 0 4px rgb(255 248 230 / 0.6);
+  background: rgb(var(--light-rgb) / 0.9);
+  box-shadow: 0 0 4px rgb(var(--light-rgb) / 0.6);
   transform: translateX(-50%);
 }
 
@@ -1175,7 +1207,7 @@
 .timeline-more {
   justify-self: center;
   padding: 0.55rem 1.2rem;
-  border: 1px solid rgb(232 199 122 / 0.35);
+  border: 1px solid rgb(var(--accent-rgb) / 0.35);
   border-radius: 999px;
   color: var(--color-gold);
   background: none;
@@ -1189,23 +1221,23 @@
   gap: 1rem;
   margin-top: clamp(3rem, 7vw, 5rem);
   padding: clamp(2rem, 5vw, 3.5rem);
-  border: 1px solid rgb(232 199 122 / 0.2);
-  border-radius: 14px;
+  border: 1px solid rgb(var(--accent-rgb) / 0.2);
+  border-radius: 3px;
   background:
     radial-gradient(
       ellipse 60% 100% at 50% 0%,
-      rgb(200 162 74 / 0.14),
+      rgb(var(--accent-deep-rgb) / 0.14),
       transparent 70%
     ),
-    rgb(10 9 14 / 0.85);
+    rgb(6 9 13 / 0.85);
   text-align: center;
 }
 
 .guild-about h2 {
   margin: 0;
   font-family: var(--font-fantasy);
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  font-weight: 500;
+  font-size: clamp(2.6rem, 6vw, 4.5rem);
+  font-weight: 300;
 }
 
 .guild-about p {

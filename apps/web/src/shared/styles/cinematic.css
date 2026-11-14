@@ -81,7 +81,7 @@
   z-index: 0;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 50% 72%, rgb(69 38 79 / 20%), transparent 34%),
+    radial-gradient(ellipse at 50% 72%, rgb(26 40 50 / 20%), transparent 34%),
     #000;
   opacity: var(--cinematic-opacity, 1);
   filter: blur(var(--cinematic-blur, 0));

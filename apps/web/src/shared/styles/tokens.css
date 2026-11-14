@@ -1,14 +1,29 @@
 :root {
-  --color-obsidian: #07060a;
-  --color-raised: #121018;
-  --color-panel: rgb(18 16 24 / 0.62);
-  --color-ink: #f4efe6;
-  --color-muted: #b7b0a4;
-  --color-gold: #c8a24a;
-  --color-signal: #7d9a6a;
+  /*
+   * Nebelmoor: a cold, fog-lit night. Light replaces gold; the only warm or
+   * saturated colours left are the ones that come from the game (class and
+   * item quality colours).
+   */
+  --color-obsidian: #04060a;
+  --color-raised: #0b1015;
+  --color-panel: rgb(11 16 21 / 0.72);
+  --color-ink: #e6e1d6;
+  --color-muted: #a9b1b6;
+  /* The former gold accent: now pale fog light, used for titles and marks. */
+  --color-gold: #d6e2df;
+  --color-light: #f2fbf8;
+  --color-deep: #2f4f54;
+  --color-wisp: #7fd1c1;
+  --color-blood: #d0584a;
+  --color-signal: #7fd1c1;
   --color-danger: #ff9f9f;
-  --color-hairline: rgb(244 239 230 / 0.1);
-  --color-focus: #e8d7a3;
+  --color-hairline: rgb(159 179 191 / 0.12);
+  --color-focus: #bff3e9;
+  /* Channel triplets for translucent light: rgb(var(--accent-rgb) / 0.3). */
+  --accent-rgb: 191 243 233;
+  --accent-deep-rgb: 127 209 193;
+  --light-rgb: 223 247 242;
+  --fog-rgb: 159 179 191;
   /* Official WoW class colours. Always color names/labels via var(--class-<id>). */
   --class-1: #c79c6e;
   --class-2: #f58cba;
@@ -23,8 +38,11 @@
   --class-11: #ff7d0a;
   --class-12: #a330c9;
   --class-13: #33937f;
-  --font-display: "Segoe UI", system-ui, sans-serif;
-  --font-fantasy: Georgia, "Times New Roman", serif;
+  --font-display: Inter, "Segoe UI", system-ui, sans-serif;
+  /* Narrative serif, self-hosted in fonts.css; see decision 0011. */
+  --font-fantasy:
+    "Cormorant Garamond", Cormorant, "Palatino Linotype", "Book Antiqua",
+    Palatino, Georgia, serif;
   --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
   --space: 0.7rem;
   --header-gap: 0.6rem;

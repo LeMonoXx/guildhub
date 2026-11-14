@@ -30,7 +30,7 @@
     ),
     radial-gradient(
       ellipse 40% 30% at 30% 85%,
-      rgb(200 162 74 / 0.07),
+      rgb(var(--accent-deep-rgb) / 0.07),
       transparent 70%
     );
   content: "";
@@ -90,7 +90,7 @@
 
 .character-hero-title-badge {
   padding: 0.15rem 0.6rem;
-  border: 1px solid rgb(232 199 122 / 0.4);
+  border: 1px solid rgb(var(--accent-rgb) / 0.4);
   border-radius: 3px;
   color: var(--color-gold);
   font-size: 0.8rem;
@@ -141,9 +141,9 @@
   gap: 1px;
   margin: 0;
   overflow: hidden;
-  border: 1px solid rgb(232 199 122 / 0.2);
+  border: 1px solid rgb(var(--accent-rgb) / 0.2);
   border-radius: 8px;
-  background: rgb(232 199 122 / 0.14);
+  background: rgb(var(--accent-rgb) / 0.14);
   box-shadow: 0 18px 50px rgb(0 0 0 / 0.45);
 }
 
@@ -229,7 +229,7 @@
     ),
     radial-gradient(
       ellipse 60% 30% at 56% 100%,
-      rgb(200 162 74 / 0.12),
+      rgb(var(--accent-deep-rgb) / 0.12),
       transparent 70%
     );
   animation: stage-breathe 6s ease-in-out infinite;
@@ -338,7 +338,7 @@
     "weapons weapons weapons";
   gap: 0.9rem 1.25rem;
   padding: clamp(0.75rem, 2vw, 1.25rem);
-  border: 1px solid rgb(232 199 122 / 0.2);
+  border: 1px solid rgb(var(--accent-rgb) / 0.2);
   border-radius: 12px;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent),
@@ -440,8 +440,8 @@
 
 .paper-doll-slot > button:not(:disabled):hover,
 .paper-doll-slot > button:focus-visible {
-  border-color: rgb(232 199 122 / 0.35);
-  background: rgb(232 199 122 / 0.07);
+  border-color: rgb(var(--accent-rgb) / 0.35);
+  background: rgb(var(--accent-rgb) / 0.07);
   transform: translateX(3px);
 }
 
@@ -451,12 +451,20 @@
 
 .paper-doll-slot > button[aria-pressed="true"] {
   border-color: var(--color-gold);
-  background: linear-gradient(90deg, rgb(232 199 122 / 0.16), transparent);
-  box-shadow: 0 0 18px rgb(200 162 74 / 0.18);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--accent-rgb) / 0.16),
+    transparent
+  );
+  box-shadow: 0 0 18px rgb(var(--accent-deep-rgb) / 0.18);
 }
 
 .paper-doll-slot[data-side="right"] > button[aria-pressed="true"] {
-  background: linear-gradient(270deg, rgb(232 199 122 / 0.16), transparent);
+  background: linear-gradient(
+    270deg,
+    rgb(var(--accent-rgb) / 0.16),
+    transparent
+  );
 }
 
 .paper-doll-text {
@@ -599,7 +607,7 @@
   border-radius: 10px;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%),
-    rgb(10 9 14 / 0.82);
+    rgb(6 9 13 / 0.82);
   box-shadow: 0 12px 30px rgb(0 0 0 / 0.25);
 }
 
@@ -1196,11 +1204,11 @@
   place-items: center;
   width: 2.6rem;
   height: 2.6rem;
-  border: 2px solid var(--color-gold);
-  border-radius: 6px;
-  color: var(--color-gold);
-  background: radial-gradient(circle at 40% 30%, #3a2c14, #0b0805);
-  box-shadow: var(--glow-gold);
+  border: 1px solid rgb(var(--accent-rgb) / 0.4);
+  border-radius: 2px;
+  color: var(--color-light);
+  background: radial-gradient(circle at 40% 30%, #16262b, #04060a);
+  box-shadow: inset 0 0 0.9rem rgb(var(--accent-deep-rgb) / 0.18);
   font-family: var(--font-fantasy);
   font-size: 1.3rem;
 }
@@ -1313,9 +1321,9 @@
 .deeds-achievement-icon {
   width: 1.6rem;
   height: 1.6rem;
-  border: 1px solid rgb(232 199 122 / 0.6);
+  border: 1px solid rgb(var(--accent-rgb) / 0.6);
   border-radius: 4px;
-  box-shadow: 0 0 8px rgb(200 162 74 / 0.35);
+  box-shadow: 0 0 8px rgb(var(--accent-deep-rgb) / 0.35);
 }
 
 .deeds-timeline time,
@@ -1338,7 +1346,7 @@
   gap: 0.4rem;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  background: rgb(200 162 74 / calc(0.08 + var(--weight) * 0.22));
+  background: rgb(var(--accent-deep-rgb) / calc(0.08 + var(--weight) * 0.22));
   font-size: 0.78rem;
 }
 
@@ -1379,7 +1387,7 @@
 .quest-log {
   max-height: 16rem;
   overflow: auto;
-  scrollbar-color: rgb(200 162 74 / 0.4) transparent;
+  scrollbar-color: rgb(var(--accent-deep-rgb) / 0.4) transparent;
 }
 
 .quest-log li {
@@ -1440,7 +1448,7 @@
 .stat-tabs button[aria-selected="true"] {
   color: var(--color-ink);
   border-color: var(--color-gold);
-  background: rgb(200 162 74 / 0.14);
+  background: rgb(var(--accent-deep-rgb) / 0.14);
 }
 
 .stat-panel {
@@ -1509,8 +1517,8 @@
   height: 2rem;
   padding: 0 0.4rem;
   border-radius: 999px;
-  color: #1a1408;
-  background: linear-gradient(180deg, #f1d58b, #c8a24a);
+  color: var(--color-obsidian);
+  background: linear-gradient(180deg, var(--color-light), var(--color-gold));
   font-weight: 800;
 }
 

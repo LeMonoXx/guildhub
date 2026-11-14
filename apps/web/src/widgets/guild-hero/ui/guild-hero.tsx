@@ -1,6 +1,12 @@
 import type { FeaturedMember } from "@guildhub/contracts";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 import type { FrameDecorator } from "../../../cinematic";
 import {
@@ -8,8 +14,10 @@ import {
   wowClassColorVar,
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import { FallbackImage } from "../../../shared/ui";
+import { clearFogFigures } from "../../../shared/lib/fog-channel";
+import { FallbackImage, FogVeil } from "../../../shared/ui";
 import type { buildLineupScene } from "../model/build-lineup-scene";
+import { FogPresence } from "../model/fog-presence";
 import type { TroopPlace } from "../model/troop-place";
 import { useElementSize } from "../model/use-element-size";
 import { useLineupStage } from "../model/use-lineup-stage";
@@ -37,6 +45,21 @@ export function GuildHero({ members, renderLiveStage, intro }: GuildHeroProps) {
     () => lineup.framing.frameFor(aspect),
     [lineup.framing, aspect],
   );
+  // The fog reads where everyone stands; it watches the frame, never changes it.
+  const decorators = useMemo(
+    () => [
+      ...lineup.decorators,
+      new FogPresence(lineup.places, () => stageRef.current),
+    ],
+    [lineup.decorators, lineup.places],
+  );
+
+  useEffect(
+    () => () => {
+      clearFogFigures();
+    },
+    [],
+  );
 
   return (
     <section
@@ -50,7 +73,8 @@ export function GuildHero({ members, renderLiveStage, intro }: GuildHeroProps) {
             {intro}
           </div>
         ) : null}
-        {live ? renderLiveStage(lineup.scene, lineup.decorators) : null}
+        {live ? renderLiveStage(lineup.scene, decorators) : null}
+        {live ? <FogVeil className="guild-hero-veil" /> : null}
         {live ? (
           <HeroStageOverlay
             places={lineup.places}

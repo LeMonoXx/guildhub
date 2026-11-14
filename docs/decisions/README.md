@@ -35,3 +35,4 @@ What gets easier, what gets harder, what we must watch.
 | [0008](0008-character-models-gltf.md)           | Character models as cached glTF                   | Accepted |
 | [0009](0009-deploy-behind-existing-proxy.md)    | Deploy behind the host's existing proxy           | Accepted |
 | [0010](0010-adaptive-shared-character-stage.md) | Adaptive shared character stage on the guild home | Accepted |
+| [0011](0011-nebelmoor-visual-direction.md)      | Nebelmoor visual direction, page fog, typefaces   | Accepted |

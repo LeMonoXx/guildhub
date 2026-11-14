@@ -28,7 +28,7 @@ const spawn = (width: number, height: number, fresh: boolean): Ember => ({
 });
 
 /** Slow rising sparks on a 2D canvas; stops offscreen and for reduced motion. */
-export function Embers({ density = 5, color = "232 180 90" }: EmbersProps) {
+export function Embers({ density = 5, color = "191 243 233" }: EmbersProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

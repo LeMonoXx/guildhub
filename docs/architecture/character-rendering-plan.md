@@ -1,6 +1,8 @@
 # Character rendering plan
 
-The implementation plan for animated characters. The target behaviour is [character rendering](character-rendering.md). This file says which existing code to take, which to leave, and in what order. It is written for the agent that builds it.
+The implementation plan for animated characters. The target behaviour is [character rendering](character-rendering.md). This file says which existing code to take, which to leave, and in what order.
+
+**Status.** Milestone A (fixed look + viewer) and Milestone B (Armory join, look hash, character page, home troop, pg-boss, baker CLI) are in. Not in this drop: 3D in the roster table, a full item catalogue bake, login / "Me". The Altrobe copy notes below stay as the source map for the baker.
 
 Reviewed against Altrobe commit [`b864982c08d5ac735369bdd73cb9c7bb5ca4dfa7`](https://github.com/Cloudmancermedia/altrobe/commit/b864982c08d5ac735369bdd73cb9c7bb5ca4dfa7) (2026-11-12). Links below point at that commit. Read the file at that commit, not at `main`, which will have moved.
 

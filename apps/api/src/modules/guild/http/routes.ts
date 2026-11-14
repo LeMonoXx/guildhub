@@ -1,19 +1,39 @@
 import type { InstanceConfig } from "@guildhub/contracts";
 import {
+  featuredMembersResponseSchema,
   guildProfileResponseSchema,
   guildRosterResponseSchema,
 } from "@guildhub/contracts";
 import type { Hono } from "hono";
 import { problemResponse } from "../../../platform/http/problems.js";
 import type { AppEnv } from "../../../platform/http/app.js";
+import type { GetFeaturedMembers } from "../application/get-featured-members.js";
 import type { GetGuild } from "../application/get-guild.js";
 import type { GetGuildRoster } from "../application/get-guild-roster.js";
 import type { GuildView } from "../application/ports.js";
+import type { RosterMember } from "../domain/roster-member.js";
+import { selectFeaturedMembers } from "../application/featured.js";
+
+import {
+  presentMember,
+  toPublicRosterMember,
+} from "../application/present-member.js";
 
 export interface RegisterGuildDeps {
   readonly instance: InstanceConfig;
   readonly getGuild: GetGuild;
   readonly getGuildRoster: GetGuildRoster;
+  readonly getFeaturedMembers: GetFeaturedMembers;
+  readonly presentRosterMembers?: (
+    members: readonly RosterMember[],
+  ) =>
+    | readonly ReturnType<typeof toPublicRosterMember>[]
+    | Promise<readonly ReturnType<typeof toPublicRosterMember>[]>;
+  readonly presentFeaturedMembers?: (
+    members: readonly RosterMember[],
+  ) =>
+    | readonly ReturnType<typeof presentMember>[]
+    | Promise<readonly ReturnType<typeof presentMember>[]>;
   readonly onStaleCache: (kind: "profile" | "roster") => void;
 }
 
@@ -42,17 +62,31 @@ export function registerGuild(
     if (!result.ok) return problemResponse(context, result.error);
     if (result.value.stale) deps.onStaleCache("roster");
     setCacheHeaders(context, result.value);
+    const members = await Promise.resolve(
+      deps.presentRosterMembers?.(result.value.data) ??
+        result.value.data.map(toPublicRosterMember),
+    );
     return context.json(
       guildRosterResponseSchema.parse({
-        members: result.value.data.map((member) => ({
-          characterId: member.characterId,
-          name: member.name,
-          surname: member.surname,
-          level: member.level,
-          rankId: member.rankId,
-          classId: member.classId,
-          raceId: member.raceId,
-        })),
+        members,
+        fetchedAt: result.value.fetchedAt.toISOString(),
+        stale: result.value.stale,
+      }),
+    );
+  });
+
+  app.get("/api/guild/featured", async (context) => {
+    const result = await deps.getFeaturedMembers(guild);
+    if (!result.ok) return problemResponse(context, result.error);
+    if (result.value.stale) deps.onStaleCache("roster");
+    setCacheHeaders(context, result.value);
+    const members = await Promise.resolve(
+      deps.presentFeaturedMembers?.(result.value.data) ??
+        selectFeaturedMembers(result.value.data).map(presentMember),
+    );
+    return context.json(
+      featuredMembersResponseSchema.parse({
+        members,
         fetchedAt: result.value.fetchedAt.toISOString(),
         stale: result.value.stale,
       }),

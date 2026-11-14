@@ -35,3 +35,15 @@ it("requires an instance directory", () => {
 it("defaults the guild cache ttl", () => {
   expect(readEnv(valid).GUILD_CACHE_TTL_SECONDS).toBe(300);
 });
+
+it("defaults the character cache ttl and baker region", () => {
+  expect(readEnv(valid).CHARACTER_CACHE_TTL_SECONDS).toBe(900);
+  expect(readEnv(valid).BAKER_REGION).toBe("eu");
+  expect(readEnv(valid).ASSET_ROOT).toBeUndefined();
+});
+
+it("treats an empty Battle.net rewrite URL as unset", () => {
+  expect(
+    readEnv({ ...valid, BATTLENET_API_BASE_URL: "" }).BATTLENET_API_BASE_URL,
+  ).toBeUndefined();
+});

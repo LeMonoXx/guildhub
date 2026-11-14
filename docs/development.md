@@ -18,9 +18,10 @@ Today, the API, migrator, and model baker emit structured JSON logs. Setting
 no collector is required for `pnpm verify`, `dotnet test`, or normal process health. See
 [observability](architecture/observability.md).
 
-Local processes that stay up: API, PostgreSQL, and the Battle.net stub. The migrator is a one-shot
-process. Aspire's dashboard is development tooling and is not deployed. Production for this stage is
-API plus PostgreSQL, with migrate running once per deploy.
+Local processes that stay up: API, PostgreSQL, the Battle.net stub when opted in, and the model
+worker when the baker DLL exists. The migrator is a one-shot process. Aspire's dashboard is
+development tooling and is not deployed. Production for this stage is API, worker, and PostgreSQL,
+with migrate running once per deploy.
 
 ## 2. One command for the whole stack: Aspire
 
@@ -61,7 +62,11 @@ const api = await builder
   .withReference(battlenet)
   .waitForCompletion(migrate);
 
-await builder.addViteApp("web", "../apps/web").withReference(api).waitFor(api);
+await builder
+  .addViteApp("web", "../apps/web")
+  .withPnpm()
+  .withReference(api)
+  .waitFor(api);
 
 await builder.build().run();
 ```
@@ -72,7 +77,9 @@ What this gives us:
 - Migrations run before the API, every time.
 - Connection strings and URLs are injected as environment variables. Nobody edits ports or `.env` files for local runs.
 - The **Aspire Dashboard**: resource states, console logs, structured logs, traces, and metrics over OpenTelemetry for every process.
-- The **Battle.net stub** by default. Switching to the real Battle.net is one AppHost parameter, with the client ID and secret stored as Aspire user secrets (never in the repo).
+- The **real Battle.net API** when `BATTLENET_CLIENT_ID` and `BATTLENET_CLIENT_SECRET` are set
+  (from the repo-root `.env`, which the AppHost loads). The **Battle.net stub** is used when those
+  are missing, or when `BATTLENET_USE_STUB=1`. Never put credentials in the repo.
 
 Why not only Docker Compose: Compose has no telemetry dashboard, no health-ordered startup of local
 processes with reload, and no agent interface. Aspire publishes Compose for production anyway (see

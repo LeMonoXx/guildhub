@@ -175,6 +175,16 @@ public class LookResolverTests
     }
 
     [Fact]
+    public void BattleNetChoicesOverrideDefaultsAndMissingIdsKeepTheDefault()
+    {
+        var custom = new Dictionary<int, int> { [19] = 354, [20] = 99_999 };
+        var look = new LookResolver(Tables()).Resolve(Orc, Male, Warrior, ModelSet.Hd, _ => HdMesh, custom)!;
+        Assert.Equal(354, look.Choices.Single(c => c.OptionId == 19).ChoiceId);
+        Assert.Equal(385, look.Choices.Single(c => c.OptionId == 20).ChoiceId);
+        Assert.Contains(look.Notes, n => n.Contains("99999"));
+    }
+
+    [Fact]
     public void DefaultGeosetsFollowTheResetRuleWithEar702AndEveryChoiceElement()
     {
         var look = Look();

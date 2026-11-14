@@ -8,8 +8,8 @@ describe("character fixture queries", () => {
     const queries = characterQueries(createFixtureCharacterSource());
     const character = await queries.detail("shade").queryFn();
     expect(character.slug).toBe("shade");
-    expect(character.pose).toBe("Run");
-    expect(character.overlay?.id).toBe("throw");
+    expect(character.pose).toBe("Stand");
+    expect(character.lookManifest).toBe("/assets/looks/fixed/look.json");
   });
 
   test("diagnoses unknown slugs", async () => {

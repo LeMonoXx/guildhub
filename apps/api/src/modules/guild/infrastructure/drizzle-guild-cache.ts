@@ -4,6 +4,7 @@ import type { Database } from "../../../platform/db/client.js";
 import type { GuildCache } from "../application/ports.js";
 import type { GuildProfile } from "../domain/guild-profile.js";
 import type { GuildRef } from "../domain/guild-ref.js";
+import { assignCharacterSlug } from "../domain/character-slug.js";
 import { rankId, type RosterMember } from "../domain/roster-member.js";
 import { guildCache } from "./schema.js";
 
@@ -14,6 +15,7 @@ const profileSchema = z.object({
   faction: z.enum(["ALLIANCE", "HORDE", "NEUTRAL"]),
   achievementPoints: z.number().int(),
   memberCount: z.number().int(),
+  createdAt: z.iso.datetime().optional(),
 });
 
 const memberSchema = z.object({
@@ -24,6 +26,7 @@ const memberSchema = z.object({
   rankId: z.number().int(),
   classId: z.string().min(1),
   raceId: z.string().min(1),
+  slug: z.string().min(1).optional(),
 });
 
 export function makeDrizzleGuildCache(database: Database): GuildCache {
@@ -52,8 +55,20 @@ export function makeDrizzleGuildCache(database: Database): GuildCache {
         guild,
         fetchedAt: row.rosterFetchedAt,
         payload: parsed.data.map((member) => ({
-          ...member,
+          characterId: member.characterId,
+          name: member.name,
+          surname: member.surname,
+          level: member.level,
           rankId: rankId(member.rankId),
+          classId: member.classId,
+          raceId: member.raceId,
+          slug:
+            member.slug ??
+            assignCharacterSlug(
+              member.name,
+              member.surname,
+              member.characterId,
+            ),
         })),
       };
     },

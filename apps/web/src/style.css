@@ -1,4 +1,10 @@
 @import "./shared/styles/tokens.css";
+@import "./shared/styles/effects.css";
 @import "./shared/styles/shell.css";
 @import "./shared/styles/portal.css";
+@import "./shared/styles/wow.css";
+@import "./shared/styles/character.css";
+@import "./shared/styles/guild.css";
+@import "./shared/styles/history.css";
 @import "./shared/styles/cinematic.css";
+@import "./shared/styles/recipes.css";

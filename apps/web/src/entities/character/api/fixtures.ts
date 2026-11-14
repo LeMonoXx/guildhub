@@ -5,10 +5,9 @@ import {
 import { parseContract } from "../../../shared/api";
 
 const lookManifest = "/assets/looks/fixed/look.json";
-const cinematicScene = "/cinematics/rogue-proof.scene.json";
 const fetchedAt = "2026-11-13T18:00:00.000Z";
 
-const characters: readonly CharacterDetailResponse[] = [
+const characters: ReadonlyArray<Omit<CharacterDetailResponse, "model">> = [
   {
     characterId: "101",
     name: "Shade",
@@ -18,17 +17,10 @@ const characters: readonly CharacterDetailResponse[] = [
     classId: "4",
     raceId: "1",
     slug: "shade",
-    pose: "Run",
+    pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
-    overlay: {
-      id: "throw",
-      animationGroup: "UseStandingStart",
-      mask: "upper-body",
-      weight: 1,
-      fadeMs: 100,
-    },
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -44,7 +36,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -60,7 +52,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Ready1H",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -76,7 +68,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "StealthStand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -89,10 +81,10 @@ const characters: readonly CharacterDetailResponse[] = [
     classId: "4",
     raceId: "3",
     slug: "quiet",
-    pose: "Walk",
+    pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -105,10 +97,10 @@ const characters: readonly CharacterDetailResponse[] = [
     classId: "4",
     raceId: "7",
     slug: "trace",
-    pose: "Run",
+    pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -124,7 +116,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-2",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -140,7 +132,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-11",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -156,7 +148,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-8",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -172,7 +164,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-7",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -188,7 +180,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-5",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -204,7 +196,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-1",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -220,7 +212,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-9",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -236,7 +228,7 @@ const characters: readonly CharacterDetailResponse[] = [
     pose: "Stand",
     accent: "class-3",
     lookManifest,
-    cinematicScene,
+    published: true,
     fetchedAt,
     stale: false,
   },
@@ -247,6 +239,16 @@ export const fixtureCharacterBySlug = (
 ): CharacterDetailResponse | undefined => {
   const match = characters.find((character) => character.slug === slug);
   return match
-    ? parseContract(characterDetailResponseSchema, match)
+    ? parseContract(characterDetailResponseSchema, {
+        ...match,
+        renderUrl: `/api/characters/${match.slug}/render`,
+        model: {
+          status: "ready",
+          lookHash: "fixed",
+          clientBuild: "1.60.1.70938",
+          manifestUrl: match.lookManifest,
+          renderUrl: `/api/characters/${match.slug}/render`,
+        },
+      })
     : undefined;
 };

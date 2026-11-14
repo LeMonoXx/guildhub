@@ -1,5 +1,5 @@
-import { createFixtureCharacterSource } from "./fixture-source";
+import { createHttpCharacterSource } from "./http-source";
 import { characterQueries as createCharacterQueries } from "./queries";
 
-export const characterSource = createFixtureCharacterSource();
+export const characterSource = createHttpCharacterSource();
 export const characterQueries = createCharacterQueries(characterSource);

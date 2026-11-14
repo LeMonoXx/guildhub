@@ -28,6 +28,15 @@ describe("portal architecture", () => {
     }
   });
 
+  test("character page stands the member look, not the rogue proof", () => {
+    const page = production.find(
+      (file) => file.name === "pages/character/ui/character-page.tsx",
+    );
+    expect(page?.source).toContain("buildCharacterIdleScene");
+    expect(page?.source).not.toContain("rogue-proof");
+    expect(page?.source).not.toContain("cinematicScene");
+  });
+
   test("member routes stay free of the cinematic widget", () => {
     const members = production.filter((file) =>
       file.name.startsWith("pages/members/"),
@@ -35,6 +44,19 @@ describe("portal architecture", () => {
     expect(members.length).toBeGreaterThan(0);
     for (const { name, source } of members)
       expect(source, name).not.toContain("character-cinematic");
+  });
+
+  test("entity clients talk HTTP, not fixtures", () => {
+    const guild = production.find(
+      (file) => file.name === "entities/guild/api/client.ts",
+    );
+    const character = production.find(
+      (file) => file.name === "entities/character/api/client.ts",
+    );
+    expect(guild?.source).toContain("createHttpGuildSource");
+    expect(guild?.source).not.toContain("createFixtureGuildSource");
+    expect(character?.source).toContain("createHttpCharacterSource");
+    expect(character?.source).not.toContain("createFixtureCharacterSource");
   });
 
   test("shared i18n owns both locales", () => {

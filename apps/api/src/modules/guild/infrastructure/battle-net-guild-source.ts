@@ -4,6 +4,10 @@ import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok, type Result } from "../../../platform/kernel/result.js";
 import type { GuildSource, GuildSourceError } from "../application/ports.js";
 import type { GuildProfile } from "../domain/guild-profile.js";
+import {
+  assignCharacterSlug,
+  uniquifySlugs,
+} from "../domain/character-slug.js";
 import { rankId, type RosterMember } from "../domain/roster-member.js";
 import { guildEndpoint, guildRosterEndpoint } from "./wow-forever-guild.js";
 
@@ -18,6 +22,7 @@ const blizzardGuildSchema = z.object({
   faction: factionSchema,
   achievement_points: z.number(),
   member_count: z.number().int(),
+  created_timestamp: z.number().int().positive().optional(),
 });
 
 const blizzardRosterSchema = z.object({
@@ -54,7 +59,7 @@ export function makeBattleNetGuildSource(
         if (!parsed.success) {
           return err(appError("upstream.unavailable"));
         }
-        return ok(parsed.data.members.map(toMember));
+        return ok(uniquifySlugs(parsed.data.members.map(toMember)));
       }),
   };
 }
@@ -117,6 +122,9 @@ function toProfile(body: z.infer<typeof blizzardGuildSchema>): GuildProfile {
     faction: body.faction.type,
     achievementPoints: body.achievement_points,
     memberCount: body.member_count,
+    ...(body.created_timestamp === undefined
+      ? {}
+      : { createdAt: new Date(body.created_timestamp).toISOString() }),
   };
 }
 
@@ -131,5 +139,10 @@ function toMember(
     rankId: rankId(member.rank),
     classId: String(member.character.playable_class.id),
     raceId: String(member.character.playable_race.id),
+    slug: assignCharacterSlug(
+      member.character.name,
+      member.character.surname,
+      String(member.character.id),
+    ),
   };
 }

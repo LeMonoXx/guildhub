@@ -1,8 +1,10 @@
 import type { CinematicScene } from "@guildhub/contracts";
 import {
   compileTimeline,
+  decorateFrame,
   type CinematicFrame,
   type CinematicTimeline,
+  type FrameDecorator,
 } from "../../../cinematic";
 import type { PrepareCharacterOptions } from "../../character-model";
 import {
@@ -16,6 +18,7 @@ type Status = "loading" | "ready" | "error";
 export interface CharacterCinematicProps {
   readonly scene: string | CinematicScene;
   readonly manifest?: PrepareCharacterOptions["manifest"];
+  readonly posterUrl?: string;
   readonly assetBase: string;
   readonly posterTimeMs?: number;
   readonly previewTimeMs?: number;
@@ -23,7 +26,11 @@ export interface CharacterCinematicProps {
   readonly variant?: "page" | "embedded";
   readonly loadingLabel?: string;
   readonly readyLabel?: string;
+  /** Live adjustments applied to every frame, in order. */
+  readonly decorators?: readonly FrameDecorator[];
 }
+
+const noDecorators: readonly FrameDecorator[] = [];
 
 const applyUiState = (
   element: HTMLElement,
@@ -65,6 +72,7 @@ export const evaluateMotionFrame = (
 export function CharacterCinematic({
   scene,
   manifest,
+  posterUrl,
   assetBase,
   posterTimeMs,
   previewTimeMs,
@@ -72,11 +80,14 @@ export function CharacterCinematic({
   variant = "page",
   loadingLabel = "Loading character…",
   readyLabel = "Character ready",
+  decorators = noDecorators,
 }: CharacterCinematicProps) {
   const root = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState(loadingLabel);
+  const decoratorsRef = useRef(decorators);
+  decoratorsRef.current = decorators;
 
   useEffect(() => {
     const element = root.current;
@@ -124,21 +135,23 @@ export function CharacterCinematic({
         setStatus("ready");
         setMessage(readyLabel);
 
+        const show = (frame: CinematicFrame) => {
+          mounted.director.apply(decorateFrame(frame, decoratorsRef.current));
+        };
+
         if (reducedMotion || previewTimeMs !== undefined) {
-          mounted.director.apply(
-            timeline.poster(previewTimeMs ?? posterTimeMs),
-          );
+          show(timeline.poster(previewTimeMs ?? posterTimeMs));
           mounted.rig.render();
           return;
         }
 
-        mounted.director.apply(timeline.play());
+        show(timeline.play());
         mounted.rig.render();
         const animate = (timestamp: number) => {
           const delta =
             previousTimestamp === undefined ? 0 : timestamp - previousTimestamp;
           previousTimestamp = timestamp;
-          mounted.director.apply(timeline.tick(Math.max(0, delta)));
+          show(timeline.tick(Math.max(0, delta)));
           mounted.rig.render();
           frameRequest = requestAnimationFrame(animate);
         };
@@ -189,6 +202,14 @@ export function CharacterCinematic({
         role="img"
         aria-label={ariaLabel}
       >
+        {posterUrl ? (
+          <img
+            className="cinematic-poster"
+            src={posterUrl}
+            alt=""
+            hidden={status === "ready"}
+          />
+        ) : null}
         {status !== "ready" && (variant === "page" || status === "error") ? (
           <div className="cinematic-status" role="status">
             {message}

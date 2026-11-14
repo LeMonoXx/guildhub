@@ -112,9 +112,7 @@ async function applyMaterials(
       texture = context.textures.get(reference.type);
       const fileDataId = reference.fileDataId ?? replacements[reference.type];
       if (!texture && fileDataId)
-        texture = await context.assets.texture(
-          context.urls.texture(fileDataId),
-        );
+        texture = await optionalTexture(context, fileDataId);
     }
     if (!texture) {
       mesh.material = context.fallback;
@@ -148,6 +146,19 @@ interface InternalAssemblyContext extends AssemblyContext {
   fallback: THREE.Material;
 }
 
+/** The baker skips textures the CDN cannot serve; the mesh keeps the fallback. */
+async function optionalTexture(
+  context: InternalAssemblyContext,
+  fileDataId: number,
+): Promise<THREE.Texture | undefined> {
+  try {
+    return await context.assets.texture(context.urls.texture(fileDataId));
+  } catch {
+    context.notices.push(`texture ${String(fileDataId)} is unavailable`);
+    return undefined;
+  }
+}
+
 async function applyParticles(
   object: THREE.Object3D,
   metadata: ModelMeta,
@@ -166,7 +177,7 @@ async function applyParticles(
         reference?.fileDataId ??
         replacements[reference?.type ?? -1];
       const texture = fileDataId
-        ? await context.assets.texture(context.urls.texture(fileDataId))
+        ? ((await optionalTexture(context, fileDataId)) ?? null)
         : null;
       const particle = createParticleMesh(
         emitter,

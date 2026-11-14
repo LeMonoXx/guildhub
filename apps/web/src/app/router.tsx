@@ -8,6 +8,7 @@ import { parseRosterSearch } from "../features/roster-filter";
 import { useLocale } from "../shared/i18n";
 import { StatusBlock } from "../shared/ui";
 import { PortalShell } from "../widgets/portal-shell";
+import { parseRecipeFilters } from "../entities/recipe";
 import { NotFoundPage } from "../pages/not-found";
 
 function RouterError() {
@@ -34,6 +35,16 @@ const membersRoute = createRoute({
   component: lazyRouteComponent(
     () => import("../pages/members"),
     "MembersPage",
+  ),
+});
+
+const professionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/professions",
+  validateSearch: parseRecipeFilters,
+  component: lazyRouteComponent(
+    () => import("../pages/professions"),
+    "ProfessionsPage",
   ),
 });
 
@@ -75,6 +86,7 @@ const labViewerRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   membersRoute,
+  professionsRoute,
   characterRoute,
   labCinematicRoute,
   labViewerRoute,

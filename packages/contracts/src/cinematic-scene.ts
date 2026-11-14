@@ -179,6 +179,20 @@ const smokeValueSchema = z
   })
   .readonly();
 
+/** The `progress` of a teleport track at which its flash peaks and the arrival shows. */
+export const teleportFlashProgress = 0.42;
+
+/** An arrival by teleport: `progress` runs 0 → 1 over charge, flash and fade. */
+const teleportValueSchema = z
+  .strictObject({
+    position: cinematicVec3Schema,
+    progress: unitSchema,
+    tint: z
+      .strictObject({ x: unitSchema, y: unitSchema, z: unitSchema })
+      .readonly(),
+  })
+  .readonly();
+
 const audioCueKeyframeSchema = keyframe(
   z
     .strictObject({
@@ -260,6 +274,14 @@ export const cinematicSmokeTrackSchema = z
   })
   .readonly();
 
+export const cinematicTeleportTrackSchema = z
+  .strictObject({
+    kind: z.literal("teleport"),
+    ...trackBase,
+    keyframes: z.array(keyframe(teleportValueSchema)).min(1),
+  })
+  .readonly();
+
 export const cinematicAudioTrackSchema = z
   .strictObject({
     kind: z.literal("audio"),
@@ -277,6 +299,7 @@ export const cinematicTrackSchema = z.discriminatedUnion("kind", [
   cinematicUiTrackSchema,
   cinematicEmitterTrackSchema,
   cinematicSmokeTrackSchema,
+  cinematicTeleportTrackSchema,
   cinematicAudioTrackSchema,
 ]);
 
@@ -486,6 +509,9 @@ export type CinematicVisibilityTrack = z.infer<
 export type CinematicUiTrack = z.infer<typeof cinematicUiTrackSchema>;
 export type CinematicEmitterTrack = z.infer<typeof cinematicEmitterTrackSchema>;
 export type CinematicSmokeTrack = z.infer<typeof cinematicSmokeTrackSchema>;
+export type CinematicTeleportTrack = z.infer<
+  typeof cinematicTeleportTrackSchema
+>;
 export type CinematicAudioTrack = z.infer<typeof cinematicAudioTrackSchema>;
 export type CinematicTrack = z.infer<typeof cinematicTrackSchema>;
 export type CinematicScene = z.infer<typeof cinematicSceneSchema>;

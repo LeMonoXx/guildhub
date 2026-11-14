@@ -80,7 +80,7 @@ apps/web/
 
 ## 4. API access
 
-- The only way to call the API is the client in `shared/api`. Components and hooks never call `fetch` directly.
+- The only way to call the API is the client in `shared/api` (`getJson`). Components and hooks never call `fetch` directly. Entity query functions call `/api/guild`, `/api/guild/roster`, `/api/guild/featured`, and `/api/characters/:slug`.
 - Request and response types come from `packages/contracts` (the same zod schemas the API validates with). Responses are parsed in development and test builds to catch contract drift; production trusts the types to save work.
 - The client sends cookies (`credentials: "same-origin"`), sets `Accept: application/json`, and attaches no tokens. The browser never sees an OAuth token.
 - Errors follow the [error model](errors.md): every failure becomes an `ApiError` with a `code`.

@@ -21,8 +21,9 @@ Traceless is the first instance (`eu` / `traceless`). The guild is not hard-wire
 `apps/battlenet-stub` fakes the Battle.net endpoints the API needs today. `apps/model-baker`
 converts a manually selected fixed Forever look. `apps/web` is the bilingual guild portal (home,
 members, character detail) with an adaptive shared character stage and retained cinematic/viewer
-lab routes. Fixture adapters stand in for the later `/api/guild` swap. Battle.net login and live
-Armory character pages are not built yet.
+lab routes. The portal reads guild, roster, featured members, and character identity from the
+API (`/api/guild`, `/api/guild/roster`, `/api/guild/featured`, `/api/characters/:slug`). Models
+still use the one fixed bake; Battle.net login and live Armory looks are not built yet.
 
 The API is Node because `@blizzard-api/wow-forever` is a TypeScript package. The web app is React 19,
 Vite, TanStack Router, and TanStack Query.

@@ -18,6 +18,7 @@ const members: readonly RosterMember[] = [
     rankId: rankId(0),
     classId: "1",
     raceId: "1",
+    slug: "guildmaster-example",
   },
 ];
 const now = new Date("2026-11-13T12:00:00.000Z");

@@ -1,3 +1,4 @@
+export { buildCharacterIdleScene } from "./model/build-idle-scene";
 export {
   CharacterCinematic,
   evaluateMotionFrame,

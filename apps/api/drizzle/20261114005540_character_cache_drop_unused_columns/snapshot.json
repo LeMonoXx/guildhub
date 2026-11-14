@@ -1,0 +1,63 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "180c8828-0fdd-409b-bc02-98ce52c8b780",
+  "prevIds": ["400b8fbc-51ab-4f05-b8ce-b5217ffbbff2"],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": ["column", "public", "character_cache", "look_hash"],
+      "writes": [
+        "s|col|public.character_cache.look_hash",
+        "n|col|public.character_cache.look_hash",
+        "e|col|public.character_cache.look_hash"
+      ],
+      "reads": ["n|tbl|public.character_cache", "n|sch|public"]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "character_cache",
+        "model_status"
+      ],
+      "writes": [
+        "s|col|public.character_cache.model_status",
+        "n|col|public.character_cache.model_status",
+        "e|col|public.character_cache.model_status"
+      ],
+      "reads": ["n|tbl|public.character_cache", "n|sch|public"]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "character_cache",
+        "client_build"
+      ],
+      "writes": [
+        "s|col|public.character_cache.client_build",
+        "n|col|public.character_cache.client_build",
+        "e|col|public.character_cache.client_build"
+      ],
+      "reads": ["n|tbl|public.character_cache", "n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"character_cache\",\"look_hash\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"character_cache\",\"model_status\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"character_cache\",\"client_build\"]"
+    }
+  ]
+}

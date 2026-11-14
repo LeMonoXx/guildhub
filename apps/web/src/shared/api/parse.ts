@@ -1,7 +1,7 @@
 export const shouldParseContracts = (): boolean =>
   import.meta.env.DEV || import.meta.env.MODE === "test";
 
-interface Parseable<T> {
+export interface Parseable<T> {
   parse(value: unknown): T;
 }
 

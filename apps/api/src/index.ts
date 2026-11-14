@@ -1,11 +1,40 @@
 import {
-  createGuildBattleNetClient,
-  makeBattleNetGuildSource,
-  makeDrizzleGuildCache,
-  makeGetGuild,
-  makeGetGuildRoster,
+  makeGetGuildChronicle,
+  registerChronicle,
+} from "./modules/chronicle/index.js";
+import { composeGuild } from "./composition.js";
+import {
+  makeBattleNetCharacterSource,
+  makeDrizzleCharacterCache,
+  makeFilesystemModelAssetStore,
+  makeGetCharacter,
+  makeGetCharacterAvatar,
+  makeGetCharacterProfile,
+  makeGetCharacterRender,
+  makeGetItemIcon,
+  makeHttpCharacterMediaGateway,
+  makeNoopModelBuildQueue,
+  makePgBossModelBuildQueue,
+  makePresentFeaturedMembers,
+  makePresentRosterMembers,
+  registerCharacter,
+  startJobQueue,
+} from "./modules/character/index.js";
+import {
+  makeGetFeaturedMembers,
   registerGuild,
 } from "./modules/guild/index.js";
+import {
+  makeGetCharacterHistory,
+  makeGetGuildHistory,
+  registerHistory,
+} from "./modules/history/index.js";
+import {
+  makeDrizzleRecipeCatalogStore,
+  makeLoadGuildCrafters,
+  makeSearchRecipes,
+  registerCrafting,
+} from "./modules/crafting/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
@@ -33,27 +62,104 @@ const app = createApp({
   serviceName: env.OTEL_SERVICE_NAME,
   database,
 });
-const battleNet = await createGuildBattleNetClient({
-  key: env.BATTLENET_CLIENT_ID,
-  secret: env.BATTLENET_CLIENT_SECRET,
-  origin: instance.region,
-  apiBaseUrl: env.BATTLENET_API_BASE_URL,
-});
-const guildCache = makeDrizzleGuildCache(database);
-const guildSource = makeBattleNetGuildSource(battleNet);
-const guildDeps = {
-  source: guildSource,
-  cache: guildCache,
+const {
+  battleNet,
+  getGuild,
+  getGuildRoster,
+  profileDeps,
+  loadProfiles,
+  history,
+} = await composeGuild({ env, instance, database });
+const characterCache = makeDrizzleCharacterCache(database);
+const characterSource = makeBattleNetCharacterSource(battleNet);
+const assets = makeFilesystemModelAssetStore(env.ASSET_ROOT);
+let jobQueue = makeNoopModelBuildQueue();
+let jobBoss: Awaited<ReturnType<typeof startJobQueue>> | undefined;
+try {
+  jobBoss = await startJobQueue(env.DATABASE_URL);
+  jobQueue = makePgBossModelBuildQueue(jobBoss);
+} catch (error) {
+  logger.warn(
+    { module: "jobs", err: error },
+    "job queue unavailable; look requests still write to the asset store",
+  );
+}
+const lookDeps = {
+  source: characterSource,
+  cache: characterCache,
+  assets,
+  queue: jobQueue,
   clock: systemClock,
-  maxAgeMs: env.GUILD_CACHE_TTL_SECONDS * 1000,
+  maxAgeMs: env.CHARACTER_CACHE_TTL_SECONDS * 1000,
+  fallbackBuild: env.MODEL_CLIENT_BUILD ?? "wowf",
+};
+const onStaleCache = (kind: "profile" | "roster"): void => {
+  logger.warn({ module: "guild", kind }, "serving stale guild cache");
 };
 registerGuild(app, {
   instance,
-  getGuild: makeGetGuild(guildDeps),
-  getGuildRoster: makeGetGuildRoster(guildDeps),
-  onStaleCache: (kind) => {
-    logger.warn({ module: "guild", kind }, "serving stale guild cache");
+  getGuild,
+  getGuildRoster,
+  getFeaturedMembers: makeGetFeaturedMembers({ getRoster: getGuildRoster }),
+  presentRosterMembers: makePresentRosterMembers({ cache: characterCache }),
+  presentFeaturedMembers: makePresentFeaturedMembers(lookDeps),
+  onStaleCache,
+});
+const media = makeHttpCharacterMediaGateway({
+  iconBaseUrls: [
+    `https://render.worldofwarcraft.com/forever-${instance.region}`,
+    `https://render.worldofwarcraft.com/${instance.region}`,
+  ],
+});
+registerCharacter(app, {
+  instance,
+  getCharacter: makeGetCharacter({
+    getRoster: getGuildRoster,
+    ...lookDeps,
+  }),
+  getCharacterRender: makeGetCharacterRender({
+    getRoster: getGuildRoster,
+    cache: characterCache,
+    media,
+  }),
+  getCharacterProfile: makeGetCharacterProfile({
+    getRoster: getGuildRoster,
+    ...profileDeps,
+  }),
+  getCharacterAvatar: makeGetCharacterAvatar({
+    getRoster: getGuildRoster,
+    cache: characterCache,
+    media,
+  }),
+  getItemIcon: makeGetItemIcon({ media }),
+  onStaleCache: () => {
+    onStaleCache("roster");
   },
+});
+registerChronicle(app, {
+  instance,
+  getGuildChronicle: makeGetGuildChronicle({
+    getGuild,
+    getRoster: getGuildRoster,
+    loadProfiles,
+  }),
+});
+registerHistory(app, {
+  instance,
+  getGuildHistory: makeGetGuildHistory(history),
+  getCharacterHistory: makeGetCharacterHistory(history),
+});
+registerCrafting(app, {
+  searchRecipes: makeSearchRecipes({
+    store: makeDrizzleRecipeCatalogStore(database),
+    loadCrafters: makeLoadGuildCrafters({
+      guild: { slug: instance.guild.slug },
+      getRoster: getGuildRoster,
+      loadProfiles,
+    }),
+    clock: systemClock,
+    reloadAfterMs: 5 * 60 * 1000,
+  }),
 });
 
 const server = serve(
@@ -91,6 +197,15 @@ function shutdown(signal: NodeJS.Signals): void {
 async function finishShutdown(error?: Error): Promise<void> {
   if (error !== undefined) {
     logger.error({ module: "lifecycle", err: error }, "server close failed");
+  }
+  try {
+    await jobBoss?.stop({ graceful: true, timeout: 5000 });
+  } catch (queueError) {
+    logger.error(
+      { module: "lifecycle", err: queueError },
+      "job queue stop failed",
+    );
+    error ??= new Error("job queue stop failed");
   }
   try {
     await database.close();

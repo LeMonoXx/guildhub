@@ -1,0 +1,1276 @@
+/* Guild home */
+
+/*
+ * One stacking context for the masthead and the hero: the masthead's glow lies
+ * under the characters, its text over them.
+ */
+.guild-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  isolation: isolate;
+}
+
+/*
+ * The opening spans the whole window: the stage fills the first screen under
+ * the floating header, the masthead follows below it.
+ */
+.guild-opening {
+  --faction-glow: rgb(200 162 74 / 0.22);
+  --stage-height: min(100svh, max(30rem, 125vw));
+  /* Figures stepping forward may reach this far over the masthead. */
+  --stage-bleed: calc(var(--stage-height) * 0.3);
+  position: relative;
+  margin: calc(-1 * var(--main-pad-top)) calc(50% - 50vw) 0;
+}
+
+.guild-opening[data-faction="horde"] {
+  --faction-glow: rgb(190 40 30 / 0.3);
+}
+
+.guild-opening[data-faction="alliance"] {
+  --faction-glow: rgb(50 100 220 / 0.3);
+}
+
+.opening-backdrop {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: calc(var(--stage-height) + var(--stage-bleed));
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 60% at 18% 8%,
+      var(--faction-glow),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 55% at 84% 14%,
+      rgb(200 162 74 / 0.14),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 50% 62%,
+      rgb(60 40 80 / 0.22),
+      transparent 75%
+    ),
+    linear-gradient(180deg, transparent 55%, var(--color-obsidian));
+}
+
+/* Warm ground light under the troop, fading into the page below. */
+.opening-floor {
+  position: absolute;
+  top: calc(var(--stage-height) * 0.86);
+  left: 50%;
+  width: min(110vw, 160rem);
+  height: calc(var(--stage-height) * 0.34);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse 50% 22% at 50% 50%,
+      rgb(255 214 150 / 0.16),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 50% 50% at 50% 50%,
+      color-mix(in srgb, var(--faction-glow) 70%, transparent),
+      transparent 72%
+    );
+  transform: translate(-50%, -50%);
+  animation: floor-breathe 7s ease-in-out infinite alternate;
+}
+
+.opening-floor::after {
+  position: absolute;
+  top: 50%;
+  right: 12%;
+  left: 12%;
+  height: 1px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(232 199 122 / 0.35) 50%,
+    transparent
+  );
+}
+
+.masthead-beams {
+  position: absolute;
+  inset: -20% 0 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.masthead-beams span {
+  position: absolute;
+  top: 0;
+  width: 18%;
+  height: 140%;
+  transform-origin: top center;
+  background: linear-gradient(180deg, rgb(255 230 170 / 0.16), transparent 75%);
+  filter: blur(18px);
+  animation: beam-sway 11s ease-in-out infinite alternate;
+}
+
+.masthead-beams span:nth-child(1) {
+  left: 12%;
+  transform: rotate(14deg);
+}
+
+.masthead-beams span:nth-child(2) {
+  left: 44%;
+  width: 12%;
+  transform: rotate(-6deg);
+  animation-duration: 14s;
+  animation-delay: -4s;
+}
+
+.masthead-beams span:nth-child(3) {
+  left: 72%;
+  transform: rotate(-16deg);
+  animation-duration: 9s;
+  animation-delay: -2s;
+}
+
+/* The scroll hint at the foot of the stage, once the title has cleared. */
+.opening-cue {
+  position: absolute;
+  top: calc(var(--stage-height) - 3.6rem);
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.24em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  animation: float-up 1s var(--ease-out) both 5.2s;
+}
+
+.opening-cue::after {
+  width: 0.55rem;
+  height: 0.55rem;
+  content: "";
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+  animation: cue-bob 1.8s ease-in-out infinite;
+}
+
+.opening-cue:hover,
+.opening-cue:focus-visible {
+  color: var(--color-gold);
+}
+
+.guild-opening:has(.guild-hero[data-stage="posters"]) .opening-cue,
+.guild-opening:has(.guild-hero[data-stage="posters"]) .opening-floor {
+  display: none;
+}
+
+.guild-masthead {
+  position: relative;
+  z-index: 0;
+  width: min(100%, var(--page-max));
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem) var(--page-pad) clamp(2.5rem, 6vw, 5rem);
+}
+
+.masthead-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.25rem, 3vw, 2.5rem) clamp(2rem, 5vw, 6rem);
+  align-items: end;
+}
+
+.masthead-title {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.guild-masthead .wordmark {
+  font-size: clamp(2.6rem, 8vw, 7.5rem);
+  filter: drop-shadow(0 6px 24px rgb(200 162 74 / 0.3));
+}
+
+/* The clip must sit on the animated span: its own layer hides the parent's text. */
+.guild-masthead .wordmark-text,
+.guild-hero-intro .wordmark-text {
+  background: linear-gradient(180deg, #fff6d8 0%, #e7c26a 45%, #8f6a1f 100%);
+  background-clip: text;
+  color: transparent;
+}
+
+.masthead-pitch {
+  max-width: 44rem;
+  margin: 0;
+  color: var(--color-ink);
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  line-height: 1.55;
+}
+
+.masthead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.masthead-stats {
+  grid-column: 1 / -1;
+}
+
+.guild-masthead .guild-stats {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.guild-masthead .guild-stats > div {
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+  background: linear-gradient(
+    160deg,
+    rgb(255 255 255 / 0.035),
+    rgb(10 9 14 / 0.6)
+  );
+}
+
+.guild-masthead .guild-stats dd {
+  color: var(--color-gold);
+  font-family: var(--font-fantasy);
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+}
+
+@media (min-width: 64rem) {
+  .masthead-body {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+@keyframes floor-breathe {
+  from {
+    opacity: 0.75;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cue-bob {
+  50% {
+    translate: 0 0.3rem;
+  }
+}
+
+/* Pulse */
+.guild-pulse {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.pulse-lead {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.pulse-lead p {
+  margin: 0;
+}
+
+.pulse-members {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  color: var(--color-gold);
+  font-family: var(--font-fantasy);
+  font-size: clamp(4rem, 10vw, 7rem);
+  line-height: 0.9;
+  text-shadow: 0 0 40px rgb(200 162 74 / 0.35);
+}
+
+.pulse-members span:last-child {
+  color: var(--color-muted);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  text-shadow: none;
+  text-transform: uppercase;
+}
+
+.pulse-founded {
+  font-size: 1.05rem;
+}
+
+.pulse-coverage {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.pulse-tile {
+  position: relative;
+  padding: 1rem 1.1rem;
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  background: rgb(10 9 14 / 0.8);
+  transition:
+    transform 0.3s var(--ease-out),
+    border-color 0.3s;
+}
+
+.pulse-tile::before {
+  position: absolute;
+  inset: auto -30% -60% auto;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(200 162 74 / 0.18), transparent 70%);
+  content: "";
+}
+
+.pulse-tile:hover {
+  transform: translateY(-3px);
+  border-color: rgb(232 199 122 / 0.35);
+}
+
+.pulse-tile dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.pulse-tile dd {
+  margin: 0.3rem 0 0;
+  color: var(--color-ink);
+  font-family: var(--font-fantasy);
+  font-size: 2.1rem;
+}
+
+/* Hall of fame */
+.hall-of-fame {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hall-of-fame > .champion {
+  flex: 0 1 15rem;
+  min-width: 11rem;
+}
+
+.champion-card {
+  position: relative;
+  height: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 1.6rem 1rem 1.2rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--champion-class) 40%, transparent);
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      ellipse 80% 70% at 50% 0%,
+      color-mix(in srgb, var(--champion-class) 22%, transparent),
+      transparent 70%
+    ),
+    rgb(10 9 14 / 0.9);
+  text-align: center;
+  transition:
+    transform 0.35s var(--ease-out),
+    box-shadow 0.35s;
+}
+
+.champion-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 40px
+    color-mix(in srgb, var(--champion-class) 25%, transparent);
+}
+
+.champion-crown {
+  width: 2.2rem;
+  height: 1.3rem;
+  clip-path: polygon(
+    0 100%,
+    0 20%,
+    25% 60%,
+    50% 0,
+    75% 60%,
+    100% 20%,
+    100% 100%
+  );
+  background: linear-gradient(180deg, #fff1b8, #c8a24a 60%, #7a5a18);
+  filter: drop-shadow(0 0 8px rgb(232 199 122 / 0.6));
+}
+
+.champion-card .eyebrow {
+  margin: 0.2rem 0 0;
+}
+
+.champion-value {
+  margin: 0;
+  font-family: var(--font-fantasy);
+  font-size: 2.4rem;
+}
+
+.champion-name {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.champion-surname {
+  margin-top: -0.3rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+/* Composition */
+.composition {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.composition-levels {
+  grid-column: 1 / -1;
+}
+
+.composition-classes-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.class-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 11rem;
+  height: 11rem;
+  border-radius: 50%;
+  background: var(--ring);
+  mask: radial-gradient(circle, transparent 54%, #000 55%);
+  transform: rotate(-90deg) scale(0.6);
+  opacity: 0;
+  transition:
+    transform 1.2s var(--ease-out),
+    opacity 0.8s;
+}
+
+.class-ring[data-visible="true"] {
+  transform: rotate(0) scale(1);
+  opacity: 1;
+}
+
+.class-ring-total {
+  display: none;
+}
+
+.class-bars {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.class-bars li {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.class-bar {
+  height: 0.6rem;
+  transform: scaleX(var(--bar-share));
+  transform-origin: left;
+  border-radius: 999px;
+  background: var(--bar-color);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--bar-color) 55%, transparent);
+  animation: bar-grow 1.2s var(--ease-out) both var(--bar-delay);
+}
+
+.class-bar-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+
+.race-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.race-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+  font-size: 0.85rem;
+}
+
+.race-chips strong {
+  color: var(--color-gold);
+}
+
+.level-histogram {
+  display: flex;
+  align-items: end;
+  gap: 0.6rem;
+  height: 12rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.level-histogram li {
+  display: grid;
+  flex: 1;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  gap: 0.35rem;
+  height: 100%;
+}
+
+.level-bar {
+  align-self: end;
+  width: 100%;
+  max-width: 4rem;
+  height: calc(var(--bar-share) * 100%);
+  min-height: 3px;
+  transform-origin: bottom;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #f1d58b, #8a6a24);
+  box-shadow: 0 0 16px rgb(200 162 74 / 0.3);
+  animation: bar-rise 1.1s var(--ease-out) both var(--bar-delay);
+}
+
+.level-count {
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+.level-range {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+/* Dossiers */
+.dossiers {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dossier-card {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  height: 100%;
+  padding: 1.1rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--dossier-class) 30%, transparent);
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      ellipse 70% 90% at 0% 0%,
+      color-mix(in srgb, var(--dossier-class) 16%, transparent),
+      transparent 70%
+    ),
+    rgb(10 9 14 / 0.9);
+  text-decoration: none;
+  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition:
+    transform 0.2s ease-out,
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.dossier-card:hover,
+.dossier-card:focus-visible {
+  border-color: var(--dossier-class);
+  box-shadow: 0 18px 40px
+    color-mix(in srgb, var(--dossier-class) 22%, transparent);
+}
+
+.dossier-card[data-status="unavailable"] {
+  filter: saturate(0.4);
+}
+
+.dossier-glare {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgb(255 255 255 / 0.12),
+    transparent 45%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.dossier-card:hover .dossier-glare {
+  opacity: 1;
+}
+
+.dossier-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.6rem;
+  height: 4.6rem;
+  border: 2px solid #c8a24a;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2a2131, #050407);
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 18px color-mix(in srgb, var(--dossier-class) 35%, transparent);
+}
+
+.dossier-portrait img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.dossier-portrait .unit-frame-level {
+  min-width: 1.7rem;
+  height: 1.7rem;
+  font-size: 0.72rem;
+}
+
+.dossier-body {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dossier-body p {
+  margin: 0;
+}
+
+.dossier-name {
+  font-size: 1.1rem;
+  font-weight: 750;
+}
+
+.dossier-surname {
+  margin-left: 0.4rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.dossier-spec,
+.dossier-professions,
+.dossier-seen {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.dossier-stats {
+  display: flex;
+  gap: 1rem;
+  margin: 0.4rem 0;
+}
+
+.dossier-stats dt {
+  color: var(--color-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dossier-stats dd {
+  margin: 0;
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+/* Bestiary */
+.bestiary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.boss-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.1rem;
+  overflow: hidden;
+  border-color: rgb(200 60 40 / 0.3);
+  background:
+    radial-gradient(
+      ellipse 60% 100% at 0% 50%,
+      rgb(160 30 20 / 0.22),
+      transparent 70%
+    ),
+    rgb(10 8 10 / 0.9);
+}
+
+.boss-sigil {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border: 2px solid #8a1f16;
+  transform: rotate(45deg);
+  background: radial-gradient(circle, #3a0d0a, #0b0303);
+  box-shadow: 0 0 22px rgb(200 40 20 / 0.35);
+}
+
+.boss-sigil span {
+  transform: rotate(-45deg);
+  color: #ff9c7a;
+  font-family: var(--font-fantasy);
+  font-size: 1.6rem;
+}
+
+.boss-body h3 {
+  margin: 0.1rem 0 0.4rem;
+  font-family: var(--font-fantasy);
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.boss-body .eyebrow {
+  margin: 0;
+}
+
+.boss-kills {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0;
+  color: #ff8f6b;
+  font-family: var(--font-fantasy);
+  font-size: 2rem;
+}
+
+.boss-kills span:last-child {
+  color: var(--color-muted);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+}
+
+.boss-slayers {
+  margin: 0.4rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.character-link {
+  text-decoration: none;
+}
+
+.character-link:hover {
+  text-decoration: underline;
+}
+
+/* Crafters */
+.crafter-card header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.crafter-card header h3 {
+  flex: 1;
+}
+
+.crafter-count {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.crafter-card ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Timeline */
+.timeline {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.timeline-list {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0 0 0 1.75rem;
+  list-style: none;
+}
+
+.timeline-list::before {
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  left: 0.45rem;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--color-gold),
+    rgb(200 162 74 / 0.05)
+  );
+  content: "";
+}
+
+.timeline-event {
+  position: relative;
+}
+
+.timeline-node {
+  position: absolute;
+  top: 1rem;
+  left: -1.6rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  transform: rotate(45deg);
+  border: 2px solid var(--color-gold);
+  background: var(--color-obsidian);
+  box-shadow: var(--glow-gold);
+}
+
+.timeline-node[data-kind="login"] {
+  border-color: var(--power-health);
+  box-shadow: 0 0 10px rgb(31 191 58 / 0.5);
+}
+
+.timeline-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.timeline-card p {
+  margin: 0;
+}
+
+.timeline-event-login .timeline-node {
+  top: 0.75rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  left: -1.48rem;
+}
+
+.timeline-logins {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0.25rem;
+  border-bottom: 1px dashed rgb(31 191 58 / 0.18);
+  font-size: 0.85rem;
+}
+
+.timeline-logins-label {
+  color: rgb(120 220 140 / 0.85);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timeline-logins-names {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.timeline-login-chip {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.03);
+}
+
+.timeline-logins time {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.timeline-event-achievement .timeline-node {
+  top: 1.35rem;
+  width: 1rem;
+  height: 1rem;
+  left: -1.7rem;
+  background: radial-gradient(var(--color-gold), #6b4e12);
+  animation: timeline-node-pulse 2.8s ease-in-out infinite;
+}
+
+.timeline-achievement {
+  position: relative;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-color: rgb(232 199 122 / 0.4);
+  background:
+    linear-gradient(
+      100deg,
+      rgb(200 162 74 / 0.16),
+      rgb(200 162 74 / 0.03) 55%,
+      transparent
+    ),
+    rgb(12 10 16 / 0.92);
+}
+
+.timeline-achievement::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgb(255 230 160 / 0.12) 50%,
+    transparent 65%
+  );
+  border-radius: inherit;
+  background-size: 250% 100%;
+  animation: shimmer 5s ease-in-out infinite;
+  content: "";
+  pointer-events: none;
+}
+
+.timeline-event:hover,
+.timeline-event:focus-within {
+  z-index: 5;
+}
+
+.timeline-trophy {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgb(232 199 122 / 0.55);
+  border-radius: 50%;
+  color: #ffe9a8;
+  background: radial-gradient(circle at 35% 30%, #7a5a1c, #1d150a 75%);
+  box-shadow: var(--glow-gold);
+  font-size: 1.15rem;
+}
+
+.timeline-trophy img {
+  border-radius: 50%;
+  box-shadow: inset 0 0 6px rgb(0 0 0 / 0.8);
+}
+
+.timeline-achievement-body {
+  display: grid;
+  flex: 1;
+  gap: 0.15rem;
+}
+
+.timeline-achievement-body .eyebrow {
+  margin: 0;
+  font-size: 0.65rem;
+}
+
+.timeline-title {
+  color: #ffe08a;
+  text-shadow: 0 0 12px rgb(255 200 90 / 0.35);
+}
+
+@keyframes timeline-node-pulse {
+  50% {
+    box-shadow: 0 0 18px rgb(255 205 100 / 0.8);
+  }
+}
+
+/* Profession skill on one fixed 0–300 scale */
+.skill-scale {
+  position: relative;
+  height: 1.1rem;
+  margin: -0.25rem 0 0.6rem;
+  color: var(--color-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Each label ends on its mark; the line below it sits where the bar's tick is. */
+.skill-scale span {
+  position: absolute;
+  bottom: 0;
+  padding: 0 0.3rem 0.15rem 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform: translateX(-100%);
+}
+
+.skill-scale span::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  content: "";
+  background: rgb(232 199 122 / 0.25);
+  transform: translateX(50%);
+}
+
+.skill-track {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.skill-track .meter-labels > span:last-child {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.skill-track-tier {
+  color: rgb(232 199 122 / 0.75);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.skill-track-bar {
+  position: relative;
+  height: 0.6rem;
+  overflow: hidden;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(255 255 255 / 0.025) 0 4px,
+    rgb(0 0 0 / 0.25) 4px 8px
+  );
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+.skill-track-unlocked {
+  position: absolute;
+  inset: 0;
+  width: calc(var(--skill-unlocked) * 100%);
+  border-right: 1px solid
+    color-mix(in srgb, var(--meter-color) 70%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--meter-color) 12%,
+    rgb(255 255 255 / 0.05)
+  );
+}
+
+/* Ends on the exact skill: no glow past the end, a dark rim marks where it stops. */
+.skill-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--meter-color) 55%, transparent),
+    var(--meter-color)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset -1px 0 0 rgb(10 9 14 / 0.8);
+  transition: width 1.3s var(--ease-out) 0.15s;
+}
+
+.skill-track[data-visible="true"] .skill-track-fill {
+  width: calc(var(--skill-fill) * 100%);
+}
+
+.skill-track-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 0.12);
+  transform: translateX(-50%);
+}
+
+.skill-track-tick[data-unlocked="true"] {
+  width: 2px;
+  background: rgb(10 9 14 / 0.75);
+}
+
+.skill-track-cap {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: calc(var(--skill-unlocked) * 100%);
+  width: 1px;
+  background: rgb(255 248 230 / 0.9);
+  box-shadow: 0 0 4px rgb(255 248 230 / 0.6);
+  transform: translateX(-50%);
+}
+
+.skill-track[data-capped="true"] .skill-track-cap {
+  animation: timeline-node-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-track-fill {
+    transition: none;
+  }
+
+  .timeline-achievement::after,
+  .timeline-event-achievement .timeline-node,
+  .skill-track[data-capped="true"] .skill-track-cap {
+    animation: none;
+  }
+}
+
+.timeline-more {
+  justify-self: center;
+  padding: 0.55rem 1.2rem;
+  border: 1px solid rgb(232 199 122 / 0.35);
+  border-radius: 999px;
+  color: var(--color-gold);
+  background: none;
+  cursor: pointer;
+}
+
+/* About */
+.guild-about {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  margin-top: clamp(3rem, 7vw, 5rem);
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border: 1px solid rgb(232 199 122 / 0.2);
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      ellipse 60% 100% at 50% 0%,
+      rgb(200 162 74 / 0.14),
+      transparent 70%
+    ),
+    rgb(10 9 14 / 0.85);
+  text-align: center;
+}
+
+.guild-about h2 {
+  margin: 0;
+  font-family: var(--font-fantasy);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 500;
+}
+
+.guild-about p {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--color-muted);
+}
+
+@media (max-width: 56rem) {
+  .guild-pulse,
+  .composition,
+  .composition-classes-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .class-ring {
+    justify-self: center;
+  }
+
+  .class-bars li {
+    grid-template-columns: 7.5rem minmax(0, 1fr) 2rem;
+  }
+}
+
+@keyframes beam-sway {
+  from {
+    opacity: 0.5;
+    translate: -3% 0;
+  }
+
+  to {
+    opacity: 1;
+    translate: 3% 0;
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masthead-beams span,
+  .opening-floor,
+  .opening-cue,
+  .opening-cue::after,
+  .class-bar,
+  .level-bar {
+    animation: none;
+  }
+
+  .class-ring {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+
+  .dossier-card {
+    transform: none;
+  }
+}

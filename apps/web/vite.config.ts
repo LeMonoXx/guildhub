@@ -42,17 +42,28 @@ function localAssets(root: string): Plugin {
   };
 }
 
-const localProofAssets = resolve(
+const apiOrigin =
+  process.env.services__api__http__0 ??
+  process.env.API_HTTP ??
+  "http://127.0.0.1:3000";
+
+const localSharedAssets = resolve(
   import.meta.dirname,
-  "../model-baker/assets/proof/rogue-t2",
+  "../model-baker/assets/fixed",
 );
 const assetRoot =
   process.env.GUILDHUB_ASSET_ROOT ??
-  (existsSync(localProofAssets) ? localProofAssets : undefined);
+  (existsSync(localSharedAssets) ? localSharedAssets : undefined);
 
 export default defineConfig({
   plugins: [react(), ...(assetRoot ? [localAssets(assetRoot)] : [])],
   publicDir: "test-fixtures",
+  server: {
+    proxy: {
+      "/api": { target: apiOrigin, changeOrigin: true },
+      "/auth": { target: apiOrigin, changeOrigin: true },
+    },
+  },
   build: {
     assetsDir: "static",
     sourcemap: true,

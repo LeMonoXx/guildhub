@@ -4,6 +4,7 @@ import { createApp } from "../../../platform/http/app.js";
 import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok } from "../../../platform/kernel/result.js";
 import { createLogger } from "../../../platform/observability/logger.js";
+import { makeGetFeaturedMembers } from "../application/get-featured-members.js";
 import { rankId } from "../domain/roster-member.js";
 import { registerGuild } from "./routes.js";
 
@@ -20,9 +21,23 @@ const logger = createLogger({
   serviceName: "guildhub-api-test",
 });
 
+const rosterMember = {
+  characterId: "101",
+  name: "Guildmaster",
+  surname: "Example",
+  level: 80,
+  rankId: rankId(0),
+  classId: "1",
+  raceId: "1",
+  slug: "guildmaster-example",
+};
+
 function app(overrides?: {
   getGuild?: Parameters<typeof registerGuild>[1]["getGuild"];
   getGuildRoster?: Parameters<typeof registerGuild>[1]["getGuildRoster"];
+  getFeaturedMembers?: Parameters<
+    typeof registerGuild
+  >[1]["getFeaturedMembers"];
   stale?: string[];
 }) {
   const stale: string[] = overrides?.stale ?? [];
@@ -30,6 +45,16 @@ function app(overrides?: {
     logger,
     serviceName: "guildhub-api-test",
   });
+  const getGuildRoster =
+    overrides?.getGuildRoster ??
+    (() =>
+      Promise.resolve(
+        ok({
+          data: [rosterMember],
+          fetchedAt,
+          stale: false,
+        }),
+      ));
   registerGuild(hono, {
     instance,
     getGuild:
@@ -49,26 +74,10 @@ function app(overrides?: {
             stale: false,
           }),
         )),
-    getGuildRoster:
-      overrides?.getGuildRoster ??
-      (() =>
-        Promise.resolve(
-          ok({
-            data: [
-              {
-                characterId: "101",
-                name: "Guildmaster",
-                surname: "Example",
-                level: 80,
-                rankId: rankId(0),
-                classId: "1",
-                raceId: "1",
-              },
-            ],
-            fetchedAt,
-            stale: false,
-          }),
-        )),
+    getGuildRoster,
+    getFeaturedMembers:
+      overrides?.getFeaturedMembers ??
+      makeGetFeaturedMembers({ getRoster: getGuildRoster }),
     onStaleCache: (kind) => {
       stale.push(kind);
     },
@@ -156,9 +165,27 @@ describe("GET /api/guild/roster", () => {
           rankId: 0,
           classId: "1",
           raceId: "1",
+          slug: "guildmaster-example",
         },
       ],
       fetchedAt: "2026-11-13T12:00:00.000Z",
+      stale: false,
+    });
+  });
+});
+
+describe("GET /api/guild/featured", () => {
+  it("returns presented featured members", async () => {
+    const response = await app().request("/api/guild/featured");
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      members: [
+        {
+          slug: "guildmaster-example",
+          pose: "Stand",
+          lookManifest: "/assets/looks/fixed/look.json",
+        },
+      ],
       stale: false,
     });
   });

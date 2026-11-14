@@ -19,6 +19,9 @@ export function PortalShell() {
           <Link to="/members" className="portal-nav-link">
             {t("nav.members")}
           </Link>
+          <Link to="/professions" className="portal-nav-link">
+            {t("nav.professions")}
+          </Link>
         </nav>
         <LocaleSwitcher />
       </header>

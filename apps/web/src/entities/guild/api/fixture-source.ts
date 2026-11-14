@@ -1,3 +1,5 @@
+import { fixtureGuildChronicle } from "./chronicle-fixtures";
+import { fixtureGuildHistory } from "./history-fixtures";
 import {
   fixtureFeaturedMembers,
   fixtureGuildProfile,
@@ -9,4 +11,6 @@ export const createFixtureGuildSource = (): GuildDataSource => ({
   getProfile: () => Promise.resolve(fixtureGuildProfile()),
   getRoster: () => Promise.resolve(fixtureGuildRoster()),
   getFeaturedMembers: () => Promise.resolve(fixtureFeaturedMembers()),
+  getChronicle: () => Promise.resolve(fixtureGuildChronicle()),
+  getHistory: () => Promise.resolve(fixtureGuildHistory()),
 });

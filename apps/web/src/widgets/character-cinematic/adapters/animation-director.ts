@@ -6,6 +6,7 @@ import type {
 } from "../../../cinematic";
 import type { CharacterHandle } from "../../character-model";
 import type { SmokeEffect, SmokeValues } from "./smoke-effect";
+import type { TeleportEffect, TeleportValues } from "./teleport-effect";
 
 export type BindingDiagnostic = (message: string) => void;
 
@@ -256,6 +257,12 @@ const smokeBinding: CommandBinding<SmokeEffect> = {
   },
 };
 
+const teleportBinding: CommandBinding<TeleportEffect> = {
+  apply(target, command, context) {
+    target.apply(command.value as TeleportValues, context.frame.elapsedMs);
+  },
+};
+
 export class AudioBindingState implements CommandBinding<AudioBindingState> {
   private readonly consumed = new Set<string>();
 
@@ -289,6 +296,7 @@ export const createDefaultBindings = (): BindingRegistry =>
     .register("ui", uiBinding)
     .register("emitter", emitterBinding)
     .register("smoke", smokeBinding)
+    .register("teleport", teleportBinding)
     .register("audio", new AudioBindingState());
 
 export class AnimationDirector {

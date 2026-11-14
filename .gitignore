@@ -13,3 +13,4 @@ apps/model-baker/**/obj/
 apps/model-baker/assets/
 apps/model-baker/cache/
 apps/model-baker/output/
+.claude/

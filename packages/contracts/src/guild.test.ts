@@ -34,6 +34,7 @@ describe("guild contracts", () => {
             rankId: 0,
             classId: "1",
             raceId: "1",
+            slug: "guildmaster-example",
           },
         ],
         fetchedAt: "2026-11-13T12:00:00.000Z",
@@ -45,10 +46,17 @@ describe("guild contracts", () => {
 
 const presentation = {
   slug: "shade",
-  pose: "Run",
+  pose: "Stand",
   accent: "class-4",
   lookManifest: "/assets/looks/fixed/look.json",
-  cinematicScene: "/cinematics/rogue-proof.scene.json",
+};
+
+const model = {
+  status: "ready" as const,
+  lookHash: "fixed",
+  clientBuild: "1.60.1.70938",
+  manifestUrl: "/assets/looks/fixed/look.json",
+  renderUrl: "/api/characters/shade/render",
 };
 
 describe("character presentation contracts", () => {
@@ -73,7 +81,7 @@ describe("character presentation contracts", () => {
     ).toHaveLength(1);
   });
 
-  it("accepts a character detail payload with an optional overlay", () => {
+  it("accepts a character detail payload", () => {
     expect(
       characterDetailResponseSchema.parse({
         characterId: "101",
@@ -85,16 +93,34 @@ describe("character presentation contracts", () => {
         raceId: "1",
         fetchedAt: "2026-11-13T12:00:00.000Z",
         stale: false,
+        published: true,
         ...presentation,
-        overlay: {
-          id: "throw",
-          animationGroup: "UseStandingStart",
-          mask: "upper-body",
-          weight: 1,
-          fadeMs: 100,
-        },
+        model,
       }).slug,
     ).toBe("shade");
+  });
+
+  it("accepts pending model status without a manifest", () => {
+    expect(
+      characterDetailResponseSchema.parse({
+        characterId: "101",
+        name: "Shade",
+        surname: "Example",
+        level: 80,
+        rankId: 0,
+        classId: "4",
+        raceId: "1",
+        fetchedAt: "2026-11-13T12:00:00.000Z",
+        stale: false,
+        published: true,
+        ...presentation,
+        model: {
+          status: "pending",
+          lookHash: "abc123",
+          clientBuild: "1.60.1.70938",
+        },
+      }).model.status,
+    ).toBe("pending");
   });
 
   it("rejects an uppercase character slug", () => {
@@ -108,7 +134,9 @@ describe("character presentation contracts", () => {
       raceId: "1",
       fetchedAt: "2026-11-13T12:00:00.000Z",
       stale: false,
+      published: true,
       ...presentation,
+      model,
       slug: "Shade",
     });
     expect(result.success).toBe(false);

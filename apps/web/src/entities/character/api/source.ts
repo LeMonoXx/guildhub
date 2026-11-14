@@ -1,4 +1,8 @@
-import type { CharacterDetailResponse } from "@guildhub/contracts";
+import type {
+  CharacterDetailResponse,
+  CharacterHistoryResponse,
+  CharacterProfileResponse,
+} from "@guildhub/contracts";
 
 export class CharacterNotFoundError extends Error {
   readonly code = "character-not-found";
@@ -11,4 +15,6 @@ export class CharacterNotFoundError extends Error {
 
 export interface CharacterDataSource {
   getBySlug(slug: string): Promise<CharacterDetailResponse>;
+  getProfile(slug: string): Promise<CharacterProfileResponse>;
+  getHistory(slug: string): Promise<CharacterHistoryResponse>;
 }

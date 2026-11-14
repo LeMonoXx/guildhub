@@ -203,16 +203,33 @@ public class ItemResolverTests
   }
 
   [Fact]
-  public void SlotOverrideRejectsNonHandSlotsAndNonOneHandInventory()
+  public void SlotOverrideRejectsNonHandSlotsAndIgnoresMismatchedInventory()
   {
-    var resolver = new ItemResolver(Tables());
+    var t = Tables();
+    Item(t, 970, "Shield", inventoryType: 14, display: 9700, modelRes: [10, 0], matRes: [20, 0]);
+    Item(t, 971, "Staff", inventoryType: 17, display: 9710, modelRes: [10, 0], matRes: [20, 0]);
+    Item(t, 972, "Wand", inventoryType: 26, display: 9720, modelRes: [10, 0], matRes: [20, 0]);
+    var resolver = new ItemResolver(t);
 
     Assert.Contains(
         "not a hand slot",
         resolver.Resolve(100, Orc, Male, 5).Error);
-    Assert.Contains(
-        "cannot be overridden between hands",
-        resolver.Resolve(200, Orc, Male, ItemResolver.OffHandSlot).Error);
+
+    var shoulders = resolver.Resolve(200, Orc, Male, ItemResolver.OffHandSlot);
+    Assert.Null(shoulders.Error);
+    Assert.Equal(3, shoulders.EquipSlot);
+
+    var shield = resolver.Resolve(970, Orc, Male, ItemResolver.OffHandSlot);
+    Assert.Null(shield.Error);
+    Assert.Equal(17, shield.EquipSlot);
+
+    var staff = resolver.Resolve(971, Orc, Male, ItemResolver.MainHandSlot);
+    Assert.Null(staff.Error);
+    Assert.Equal(16, staff.EquipSlot);
+
+    var wand = resolver.Resolve(972, Orc, Male, ItemResolver.OffHandSlot);
+    Assert.Null(wand.Error);
+    Assert.Equal(18, wand.EquipSlot);
   }
 
   [Fact]

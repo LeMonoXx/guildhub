@@ -3,9 +3,11 @@
 How character models, game animation tracks, authored effects, camera moves, lighting, and page
 transitions form reusable character-detail intros.
 
-The first proof is a looping human-male rogue intro. It is an instance of this architecture, not a
-special component. A new class intro must be data plus assets; it must not add another timeline
-implementation.
+The first proof is a looping human-male rogue intro on the cinematic lab. It is an instance of this
+architecture, not a special component. The guild home and character page build their scenes in
+widgets (`buildLineupScene`, `buildCharacterIdleScene`) from each member's look manifest. The API
+returns looks and model status; it does not pick a cinematic JSON. A new class intro must be data
+plus assets; it must not add another timeline implementation.
 
 ## 1. Boundaries
 
@@ -128,7 +130,8 @@ because this skeleton does not expose them.
 
 ## 8. Authoring and visual proof
 
-`apps/web/test-fixtures/cinematics/rogue-proof.scene.json` is authored data and may be committed.
+`apps/web/test-fixtures/cinematics/rogue-proof.scene.json` is authored lab data and may be committed.
+Portal scenes are not static JSON: the home troop and character page build them from look manifests.
 The generated character assets under `apps/model-baker/assets/` are ignored and must never be
 committed.
 
@@ -136,8 +139,12 @@ Bake and run the proof from the repository root:
 
 ```powershell
 dotnet run --project apps/model-baker/src/GuildHub.ModelBaker.Cli/GuildHub.ModelBaker.Cli.csproj -- bake-proof-scene rogue-t2 --output apps/model-baker/assets/proof/rogue-t2 --cache apps/model-baker/cache --region eu
+$env:GUILDHUB_ASSET_ROOT="$PWD\apps\model-baker\assets\proof\rogue-t2"
 pnpm --filter @guildhub/web dev
 ```
+
+The guild portal defaults to the shared `assets/fixed` store so hashed looks are visible. The cinematic
+lab still uses this Bloodfang proof; set `GUILDHUB_ASSET_ROOT` as above when you want that scene.
 
 The default route plays the loop; `?viewer=1` retains the free viewer. `?frame=<milliseconds>`
 renders a deterministic, non-playing frame for authoring and visual regression evidence. The

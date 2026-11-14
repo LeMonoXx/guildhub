@@ -7,13 +7,11 @@ import {
   wowClassColorVar,
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
+import { FallbackImage } from "../../../shared/ui";
 
 interface RosterTableProps {
   readonly members: readonly GuildRosterMember[];
 }
-
-const memberSlug = (member: GuildRosterMember): string =>
-  member.slug ?? member.name.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-");
 
 export function RosterTable({ members }: RosterTableProps) {
   const { t } = useLocale();
@@ -39,12 +37,18 @@ export function RosterTable({ members }: RosterTableProps) {
             >
               <th scope="row">
                 <div className="roster-identity">
-                  <ClassMark classId={member.classId} />
+                  <FallbackImage
+                    className="roster-portrait"
+                    src={member.avatarUrl}
+                    width={40}
+                    height={40}
+                    fallback={<ClassMark classId={member.classId} />}
+                  />
                   <div className="roster-identity-text">
                     <ClassColoredName classId={member.classId}>
                       <Link
                         to="/characters/$characterSlug"
-                        params={{ characterSlug: memberSlug(member) }}
+                        params={{ characterSlug: member.slug }}
                         className="reveal-name roster-name"
                         style={{ animationDelay: `${String(index * 40)}ms` }}
                       >

@@ -20,6 +20,11 @@ export {
   type TrackCompiler,
 } from "./evaluators.js";
 export {
+  decorateFrame,
+  mapCommands,
+  type FrameDecorator,
+} from "./frame-decorator.js";
+export {
   SceneStateMachine,
   type AuthoredScenePhase,
   type SceneMarker,

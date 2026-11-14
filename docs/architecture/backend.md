@@ -31,7 +31,7 @@ apps/api/
       ...
 ```
 
-Today the composition root is `src/index.ts`. Shared HTTP, config, kernel, db, and observability live under `src/platform/`. The guild module serves `GET /api/guild` and `GET /api/guild/roster`.
+Today the composition root is `src/index.ts`. Shared HTTP, config, kernel, db, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. `src/worker.ts` is the model-worker composition root.
 
 ## 2. Layers and what they may import
 

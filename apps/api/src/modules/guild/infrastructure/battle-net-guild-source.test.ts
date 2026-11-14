@@ -106,6 +106,7 @@ describe("Battle.net guild source", () => {
     expect(rosterResult.ok && rosterResult.value[0]).toMatchObject({
       characterId: "101",
       rankId: 0,
+      slug: "guildmaster-example",
     });
   });
 

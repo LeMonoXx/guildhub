@@ -18,7 +18,10 @@ RUN pnpm --filter @guildhub/contracts build && pnpm --filter @guildhub/web build
 FROM caddy:2.10-alpine AS runtime
 COPY apps/web/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build --chown=1000:1000 /app/apps/web/dist /srv/web
-RUN mkdir -p /srv/assets && chown -R 1000:1000 /srv/assets
+# Port 8080 needs no bind capability; with cap_drop ALL a file capability
+# on the binary makes exec fail outright.
+RUN apk add --no-cache libcap && setcap -r /usr/bin/caddy && apk del libcap \
+ && mkdir -p /srv/assets && chown -R 1000:1000 /srv/assets
 USER 1000:1000
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=3s --retries=3 \

@@ -8,12 +8,14 @@
     "instrumentation-loader.mjs"
   ],
   "scripts": {
-    "dev": "pnpm --filter @guildhub/contracts build && node --import ./instrumentation-loader.mjs --import tsx --watch src/index.ts",
+    "dev": "pnpm --filter @guildhub/contracts build && node --env-file-if-exists=../../.env --import ./instrumentation-loader.mjs --import tsx --watch src/index.ts",
+    "dev:worker": "pnpm --filter @guildhub/contracts build && node --env-file-if-exists=../../.env --import ./instrumentation-loader.mjs --import tsx --watch src/worker.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "start": "node --import ./instrumentation-loader.mjs dist/index.js",
+    "start:worker": "node --import ./instrumentation-loader.mjs dist/worker.js",
     "migrate": "node --import ./instrumentation-loader.mjs dist/migrate.js",
-    "dev:migrate": "tsx src/migrate.ts",
+    "dev:migrate": "node --env-file-if-exists=../../.env --import tsx src/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "test": "vitest run",
@@ -36,6 +38,7 @@
     "@opentelemetry/sdk-node": "0.301.0",
     "drizzle-orm": "1.0.0-rc.5",
     "hono": "^4.13.17",
+    "pg-boss": "^12.38.2",
     "pino": "^10.4.0",
     "postgres": "4.1.0",
     "zod": "^4.6.7"

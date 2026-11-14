@@ -19,6 +19,14 @@ import {
 } from "./animation-director";
 import { SmokeEffect } from "./smoke-effect";
 import { StageRig } from "./stage-rig";
+import { TeleportEffect } from "./teleport-effect";
+
+const hashTrackId = (id: string): number => {
+  let hash = 0x811c9dc5;
+  for (const char of id)
+    hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;
+  return hash;
+};
 
 export interface MountCinematicStageOptions {
   readonly container: HTMLElement;
@@ -54,7 +62,7 @@ export async function mountCinematicStage(
     orbitControls: false,
     alpha: options.transparent === true,
   });
-  const effects: SmokeEffect[] = [];
+  const effects: { dispose(): void }[] = [];
   const actors = new Map<string, CharacterHandle>();
   try {
     const declarations = actorDeclarations(options.scene);
@@ -128,6 +136,15 @@ export async function mountCinematicStage(
           effects.push(smoke);
           rig.effectRoot.add(smoke.points);
           targets.register(track.kind, track.target, smoke);
+        },
+      ],
+      [
+        "teleport",
+        (track) => {
+          const teleport = new TeleportEffect(hashTrackId(track.id));
+          effects.push(teleport);
+          rig.effectRoot.add(teleport.root);
+          targets.register(track.kind, track.target, teleport);
         },
       ],
       [

@@ -12,7 +12,6 @@ import { parseContract } from "../../../shared/api";
 
 const fetchedAt = "2026-11-13T18:00:00.000Z";
 const lookManifest = "/assets/looks/fixed/look.json";
-const cinematicScene = "/cinematics/rogue-proof.scene.json";
 
 const featured: readonly FeaturedMember[] = [
   {
@@ -24,17 +23,9 @@ const featured: readonly FeaturedMember[] = [
     classId: "4",
     raceId: "1",
     slug: "shade",
-    pose: "Run",
+    pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
-    overlay: {
-      id: "throw",
-      animationGroup: "UseStandingStart",
-      mask: "upper-body",
-      weight: 1,
-      fadeMs: 100,
-    },
   },
   {
     characterId: "102",
@@ -48,7 +39,6 @@ const featured: readonly FeaturedMember[] = [
     pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
   },
   {
     characterId: "103",
@@ -62,7 +52,6 @@ const featured: readonly FeaturedMember[] = [
     pose: "Ready1H",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
   },
   {
     characterId: "104",
@@ -76,7 +65,6 @@ const featured: readonly FeaturedMember[] = [
     pose: "StealthStand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
   },
   {
     characterId: "105",
@@ -90,7 +78,6 @@ const featured: readonly FeaturedMember[] = [
     pose: "StealthStand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
   },
   {
     characterId: "106",
@@ -101,10 +88,9 @@ const featured: readonly FeaturedMember[] = [
     classId: "4",
     raceId: "7",
     slug: "trace",
-    pose: "Run",
+    pose: "Stand",
     accent: "class-4",
     lookManifest,
-    cinematicScene,
   },
 ];
 

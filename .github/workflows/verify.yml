@@ -69,6 +69,7 @@ jobs:
         with:
           context: .
           file: apps/api/Dockerfile
+          build-args: INSTANCE=traceless
           push: false
           load: true
           tags: guildhub-api:ci

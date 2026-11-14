@@ -3,4 +3,6 @@ export const guildKeys = {
   profile: () => [...guildKeys.all, "profile"] as const,
   roster: () => [...guildKeys.all, "roster"] as const,
   featured: () => [...guildKeys.all, "featured"] as const,
+  chronicle: () => [...guildKeys.all, "chronicle"] as const,
+  history: () => [...guildKeys.all, "history"] as const,
 };

@@ -9,6 +9,7 @@ export const guildProfileResponseSchema = z.object({
   faction: guildFactionSchema,
   achievementPoints: z.number().int().nonnegative(),
   memberCount: z.number().int().nonnegative(),
+  createdAt: z.iso.datetime().optional(),
   fetchedAt: z.iso.datetime(),
   stale: z.boolean(),
 });
@@ -27,7 +28,9 @@ export const guildRosterMemberSchema = z.object({
   rankId: z.number().int().nonnegative(),
   classId: z.string().min(1),
   raceId: z.string().min(1),
-  slug: characterSlugSchema.optional(),
+  slug: characterSlugSchema,
+  renderUrl: z.string().min(1).optional(),
+  avatarUrl: z.string().min(1).optional(),
 });
 
 export const guildRosterResponseSchema = z.object({
@@ -36,21 +39,13 @@ export const guildRosterResponseSchema = z.object({
   stale: z.boolean(),
 });
 
-export const animationOverlaySchema = z.object({
-  id: z.string().min(1),
-  animationGroup: z.string().min(1),
-  mask: z.literal("upper-body"),
-  weight: z.number().min(0).max(1),
-  fadeMs: z.number().nonnegative(),
-});
-
 export const characterPresentationSchema = z.object({
   slug: characterSlugSchema,
   pose: z.string().min(1),
   accent: z.string().min(1),
   lookManifest: z.string().min(1),
-  cinematicScene: z.string().min(1),
-  overlay: animationOverlaySchema.optional(),
+  /** Gear that needs extra room in a lineup, like a shield on the back. */
+  carries: z.array(z.enum(["shield", "two-hand"])).optional(),
 });
 
 export const featuredMemberSchema = guildRosterMemberSchema.extend(
@@ -63,9 +58,26 @@ export const featuredMembersResponseSchema = z.object({
   stale: z.boolean(),
 });
 
+export const characterModelStatusSchema = z.enum([
+  "ready",
+  "pending",
+  "unavailable",
+]);
+
+export const characterModelSchema = z.object({
+  status: characterModelStatusSchema,
+  manifestUrl: z.string().min(1).optional(),
+  renderUrl: z.string().min(1).optional(),
+  lookHash: z.string().min(1),
+  clientBuild: z.string().min(1),
+});
+
 export const characterDetailResponseSchema = featuredMemberSchema.extend({
+  /** False when Battle.net does not publish this character's profile. */
+  published: z.boolean(),
   fetchedAt: z.iso.datetime(),
   stale: z.boolean(),
+  model: characterModelSchema,
 });
 
 export type GuildFaction = z.infer<typeof guildFactionSchema>;
@@ -73,7 +85,6 @@ export type GuildProfileResponse = z.infer<typeof guildProfileResponseSchema>;
 export type GuildRosterMember = z.infer<typeof guildRosterMemberSchema>;
 export type GuildRosterResponse = z.infer<typeof guildRosterResponseSchema>;
 export type CharacterSlug = z.infer<typeof characterSlugSchema>;
-export type AnimationOverlay = z.infer<typeof animationOverlaySchema>;
 export type CharacterPresentation = z.infer<typeof characterPresentationSchema>;
 export type FeaturedMember = z.infer<typeof featuredMemberSchema>;
 export type FeaturedMembersResponse = z.infer<
@@ -82,3 +93,5 @@ export type FeaturedMembersResponse = z.infer<
 export type CharacterDetailResponse = z.infer<
   typeof characterDetailResponseSchema
 >;
+export type CharacterModelStatus = z.infer<typeof characterModelStatusSchema>;
+export type CharacterModel = z.infer<typeof characterModelSchema>;

@@ -180,7 +180,13 @@ public sealed class LookResolver
     }
 
     // `meshGeosets` returns the geoset IDs present in a body model's mesh (from its converted metadata).
-    public CharacterLook? Resolve(int raceId, int sex, int classId, ModelSet set, Func<int, IReadOnlyList<int>> meshGeosets)
+    public CharacterLook? Resolve(
+        int raceId,
+        int sex,
+        int classId,
+        ModelSet set,
+        Func<int, IReadOnlyList<int>> meshGeosets,
+        IReadOnlyDictionary<int, int>? customizations = null)
     {
         if (Body(raceId, sex, set) is not var (chrModelId, hdChrModelId, bodyFdid)) return null;
         var model = _chrModel[chrModelId];
@@ -206,6 +212,20 @@ public sealed class LookResolver
                 if (string.IsNullOrEmpty(hdChoice)) continue;
                 var same = p.all.Where(c => c.fail == null && c.choice.Str("Name_lang") == hdChoice).ToList();
                 if (same.Count == 1) picks[i] = p with { choice = same[0].choice };
+            }
+        }
+        if (customizations != null)
+        {
+            for (var i = 0; i < picks.Count; i++)
+            {
+                var p = picks[i];
+                var optionId = p.option.Int("ID");
+                if (!customizations.TryGetValue(optionId, out var wanted)) continue;
+                var match = p.all.FirstOrDefault(c => c.choice.Int("ID") == wanted && c.fail == null);
+                if (match.choice != null)
+                    picks[i] = p with { choice = match.choice };
+                else
+                    notes.Add($"Choice {wanted} for option {optionId} is missing or ineligible; using the default");
             }
         }
         var active = picks.Where(p => p.choice != null).Select(p => (optionId: p.option.Int("ID"), choice: p.choice!)).ToList();

@@ -1,4 +1,13 @@
 export { formatDocumentTitle } from "./document-title";
+export {
+  daysBetween,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  formatRelativeTime,
+} from "./format";
+export { useMediaQuery } from "./media-query";
+export { prefersReducedMotion, useCountUp, useInView } from "./motion";
 export { asRecord, numberValue, stringValue } from "./records";
 export {
   canUseLiveStage,
@@ -6,3 +15,4 @@ export {
   liveStageMediaQuery,
   type StageCapability,
 } from "./stage-capability";
+export { wowheadUrl, type WowheadKind } from "./wowhead";

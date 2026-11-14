@@ -27,6 +27,10 @@
   --font-fantasy: Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
   --space: 0.7rem;
+  --header-gap: 0.6rem;
+  --header-height: 2.75rem;
+  --page-max: 150rem;
+  --page-pad: clamp(1rem, 3.5vw, 4.5rem);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--color-ink);
   background: var(--color-obsidian);

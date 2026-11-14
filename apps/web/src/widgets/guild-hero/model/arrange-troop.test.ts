@@ -1,8 +1,12 @@
 import { describe, expect, test } from "vitest";
 import type { FeaturedMember } from "@guildhub/contracts";
 import { createFixtureGuildSource } from "../../../entities/guild";
-import { isLargeRace, isSmallRace } from "../../../entities/character";
-import { arrangeTroop } from "./arrange-troop";
+import {
+  isLargeRace,
+  isSmallRace,
+  raceRadius,
+} from "../../../entities/character";
+import { arrangeTroop, silhouetteOf } from "./arrange-troop";
 
 const withRace = (
   member: FeaturedMember,
@@ -67,6 +71,37 @@ describe("arrangeTroop", () => {
     expect(kneelers[0]?.slot.z).toBeGreaterThan(behind?.slot.z ?? 0);
     expect(isLargeRace(behind?.member.raceId ?? "")).toBe(true);
     expect(isSmallRace(kneelers[0]?.member.raceId ?? "")).toBe(true);
+  });
+
+  test("gives a shield bearer extra room forward and to the side", async () => {
+    const members = (await createFixtureGuildSource().getFeaturedMembers())
+      .members;
+    const [first, second, third, fourth] = members;
+    if (!first || !second || !third || !fourth) {
+      throw new Error("need featured members");
+    }
+    const lineup = (carries: FeaturedMember["carries"]) => {
+      const places = arrangeTroop([
+        withRace(first, "3", "dwarf"),
+        withRace(second, "7", "gnome"),
+        { ...withRace(third, "6", "tauren"), carries },
+        withRace(fourth, "4", "night-elf"),
+      ]);
+      const tauren = places.find((place) => place.member.slug === "tauren");
+      const gnome = places.find((place) => place.member.slug === "gnome");
+      if (!tauren || !gnome) throw new Error("missing place");
+      return {
+        forward: gnome.slot.z - tauren.slot.z,
+        aside: Math.abs(gnome.slot.x - tauren.slot.x),
+        body: silhouetteOf(tauren).halfWidth,
+      };
+    };
+
+    const bare = lineup(undefined);
+    const shielded = lineup(["shield"]);
+    expect(shielded.forward).toBeGreaterThan(bare.forward + 0.3);
+    expect(shielded.aside).toBeGreaterThan(bare.aside);
+    expect(shielded.body).toBeGreaterThan(bare.body);
   });
 
   test("never kneels without a large race behind the kneeler", async () => {
@@ -136,16 +171,23 @@ describe("arrangeTroop", () => {
     expect(Math.abs(min)).toBeCloseTo(Math.abs(max), 1);
   });
 
-  test("keeps every actor laterally offset from every other actor", async () => {
+  test("packs actors using race radii instead of a fixed spread", async () => {
     const members = (await createFixtureGuildSource().getFeaturedMembers())
       .members;
     const places = arrangeTroop(members);
+    const xs = places.map((place) => place.slot.x);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(5.2);
     for (const [index, place] of places.entries()) {
       for (const other of places.slice(index + 1)) {
-        expect(Math.abs(place.slot.x - other.slot.x)).toBeGreaterThan(0.55);
+        const sameRow = Math.abs(place.slot.z - other.slot.z) < 0.4;
+        if (!sameRow) continue;
+        const minDistance =
+          raceRadius(place.member.raceId) +
+          raceRadius(other.member.raceId) +
+          0.08;
         expect(
           Math.hypot(place.slot.x - other.slot.x, place.slot.z - other.slot.z),
-        ).toBeGreaterThan(1);
+        ).toBeGreaterThan(minDistance * 0.9);
       }
     }
   });

@@ -1,0 +1,104 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "7a9c83db-74ea-4b8c-8bf6-686ede2bb2c3",
+  "prevIds": ["467ead70-948a-42aa-a393-4fadb4fc1102"],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "character_profile", "locale"],
+      "writes": [
+        "s|col|public.character_profile.locale",
+        "n|col|public.character_profile.locale",
+        "e|col|public.character_profile.locale"
+      ],
+      "reads": ["n|tbl|public.character_profile", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "guild_day", "locale"],
+      "writes": [
+        "s|col|public.guild_day.locale",
+        "n|col|public.guild_day.locale",
+        "e|col|public.guild_day.locale"
+      ],
+      "reads": ["n|tbl|public.guild_day", "n|sch|public"]
+    },
+    {
+      "statementType": "alter_pk",
+      "statementTarget": ["table", "public", "character_profile"],
+      "writes": ["s|pk|public.character_profile"],
+      "reads": [
+        "n|tbl|public.character_profile",
+        "n|sch|public",
+        "n|col|public.character_profile.character_id",
+        "n|col|public.character_profile.locale"
+      ],
+      "sharedWrites": ["e|uniqueness|public.character_profile.character_id"],
+      "sqlHash": "935da3f191a5ac02"
+    },
+    {
+      "statementType": "alter_pk",
+      "statementTarget": ["table", "public", "guild_day"],
+      "writes": ["s|pk|public.guild_day"],
+      "reads": [
+        "n|tbl|public.guild_day",
+        "n|sch|public",
+        "n|col|public.guild_day.guild_slug",
+        "n|col|public.guild_day.day",
+        "n|col|public.guild_day.locale"
+      ],
+      "sharedWrites": ["e|uniqueness|public.guild_day.day.guild_slug"],
+      "sqlHash": "5af9147399ed797d"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "character_profile",
+        "name": "locale",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'en'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_day",
+        "name": "locale",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'en'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"character_profile\",\"character_profile_pkey\"]",
+      "set": {
+        "columns": ["character_id", "locale"]
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"guild_day\",\"guild_day_pkey\"]",
+      "set": {
+        "columns": ["guild_slug", "day", "locale"]
+      }
+    }
+  ]
+}

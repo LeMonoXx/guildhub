@@ -12,6 +12,20 @@ export interface StageRigOptions {
   };
 }
 
+/**
+ * The container's vertical padding is drawn into but not framed: the camera
+ * frames the content box, so figures can reach past it without shrinking.
+ */
+const verticalBleed = (container: HTMLElement) => {
+  if (typeof Element === "undefined" || !(container instanceof Element))
+    return { top: 0, bottom: 0 };
+  const style = getComputedStyle(container);
+  return {
+    top: Number.parseFloat(style.paddingTop) || 0,
+    bottom: Number.parseFloat(style.paddingBottom) || 0,
+  };
+};
+
 export class StageRig {
   readonly scene = new THREE.Scene();
   readonly background = new THREE.Color(0x000000);
@@ -140,8 +154,13 @@ export class StageRig {
     if (this.disposed) return;
     const width = Math.max(this.container.clientWidth, 1);
     const height = Math.max(this.container.clientHeight, 1);
+    const bleed = verticalBleed(this.container);
+    const framed = Math.max(height - bleed.top - bleed.bottom, 1);
     this.renderer.setSize(width, height, false);
-    this.camera.aspect = width / height;
+    this.camera.aspect = width / framed;
+    if (bleed.top > 0 || bleed.bottom > 0)
+      this.camera.setViewOffset(width, framed, 0, -bleed.top, width, height);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
   }
 

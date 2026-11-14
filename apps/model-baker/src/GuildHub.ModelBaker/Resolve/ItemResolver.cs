@@ -79,6 +79,7 @@ public sealed record ResolvedItem
 public sealed class ItemResolver
 {
   public const int ShoulderLeft = 3, ShoulderRight = 30, BackSlot = 15, MainHandSlot = 16, OffHandSlot = 17, RangedSlot = 18;
+  public const int OneHandInventoryType = 13;
   // The name of an item the game files don't name (no ItemSparse row).
   public const string NoName = "(no ItemSparse row)";
   const string HelmKeepColumn = "Field_10_0_0_46047_003";
@@ -224,9 +225,9 @@ public sealed class ItemResolver
     {
       if (requestedSlot is not MainHandSlot and not OffHandSlot)
         return Fail($"equipment slot override {requestedSlot} is not a hand slot");
-      if (inventoryType != 13)
-        return Fail($"inventory type {inventoryType?.ToString() ?? "unknown"} cannot be overridden between hands");
-      equipSlot = requestedSlot;
+      // Dual-wield only. Staves, shields, and wands keep the inventory-type slot instead of vanishing.
+      if (inventoryType == OneHandInventoryType)
+        equipSlot = requestedSlot;
     }
 
     // ChrRaces flag 0x2, "Bare Feet" (wowdev.wiki DB/ChrRaces): Tauren and Trolls keep their own feet in

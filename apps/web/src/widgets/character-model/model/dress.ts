@@ -27,6 +27,12 @@ const SLOT_LAYER: Record<number, number> = {
   15: 23,
 };
 
+const CHEST_SLOT = 5;
+// Geoset group 13 is the lower body: 1301 trousers, 1302 and up a robe skirt.
+// A robe from the chest wins over the legs, as in game.
+const ROBE_GROUP = 13;
+const TROUSERS = 1301;
+
 export interface Attachment {
   slot: number;
   itemId: number;
@@ -61,6 +67,13 @@ export function dress(
   const show = new Set(look.geosets);
   const replaceableTextures: Record<number, number> = {};
   const attachments: Attachment[] = [];
+  const robe = items.some(
+    (item) =>
+      item.equipSlot === CHEST_SLOT &&
+      (item.geosets ?? []).some(
+        (change) => change.group === ROBE_GROUP && change.geoset > TROUSERS,
+      ),
+  );
 
   for (const item of items) {
     if (item.error || item.equipSlot === null) continue;
@@ -86,6 +99,7 @@ export function dress(
       });
     }
     for (const change of item.geosets ?? []) {
+      if (robe && change.group === ROBE_GROUP && slot !== CHEST_SLOT) continue;
       for (const geoset of [...show])
         if (
           geoset >= change.group * 100 + 1 &&
@@ -115,7 +129,55 @@ export function dress(
     layers,
     geosets: [...show].sort((a, b) => a - b),
     replaceableTextures,
-    attachments,
+    attachments: holdOneItemPerPoint(attachments, items, notes),
     notes,
   };
+}
+
+const HAND_PRIORITY = [16, 17, 18];
+
+// Item.SheatheType: 1 one-hander on the back, 2 large weapon on the back,
+// 3 hip, 4 shield on the back. Zero means the game shows nothing when stowed.
+const SHEATH_POINTS: Record<number, number[]> = {
+  1: [26, 27],
+  2: [26, 27],
+  3: [32, 33],
+  4: [28],
+};
+
+/**
+ * A hand or sheath point carries one item model. Lower-priority hand items
+ * that collide are stowed at their sheath point, or hidden when they have none.
+ */
+function holdOneItemPerPoint(
+  attachments: Attachment[],
+  items: ResolvedItem[],
+  notes: string[],
+): Attachment[] {
+  const rank = (slot: number) => {
+    const index = HAND_PRIORITY.indexOf(slot);
+    return index === -1 ? -1 : index;
+  };
+  const ordered = [...attachments].sort((a, b) => rank(a.slot) - rank(b.slot));
+  const taken = new Set<number>();
+  const held: Attachment[] = [];
+  for (const attachment of ordered) {
+    if (rank(attachment.slot) === -1 || !taken.has(attachment.attachmentId)) {
+      if (rank(attachment.slot) !== -1) taken.add(attachment.attachmentId);
+      held.push(attachment);
+      continue;
+    }
+    const sheathe =
+      items.find((item) => item.itemId === attachment.itemId)?.sheatheType ?? 0;
+    const point = (SHEATH_POINTS[sheathe] ?? []).find((id) => !taken.has(id));
+    if (point === undefined) {
+      notes.push(
+        `item ${String(attachment.itemId)} stays stowed: hand ${String(attachment.attachmentId)} is in use`,
+      );
+      continue;
+    }
+    taken.add(point);
+    held.push({ ...attachment, attachmentId: point });
+  }
+  return held;
 }

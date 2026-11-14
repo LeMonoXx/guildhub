@@ -7,4 +7,5 @@ export interface GuildProfile {
   readonly faction: GuildFaction;
   readonly achievementPoints: number;
   readonly memberCount: number;
+  readonly createdAt?: string;
 }

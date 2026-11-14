@@ -10,6 +10,7 @@ function member(rank: number): RosterMember {
     rankId: rankId(rank),
     classId: "1",
     raceId: "1",
+    slug: "guildmaster-example",
   };
 }
 

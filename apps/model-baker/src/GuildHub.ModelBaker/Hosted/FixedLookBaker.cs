@@ -18,7 +18,9 @@ public sealed record FixedLookRequest(
     IReadOnlyList<int> ItemIds,
     IReadOnlyList<int>? AnimationIds = null,
     int ClassId = LookResolver.DefaultClassId,
-    IReadOnlyList<EquipmentSlotOverride>? EquipmentOverrides = null);
+    IReadOnlyList<EquipmentSlotOverride>? EquipmentOverrides = null,
+    string? LookHash = null,
+    IReadOnlyDictionary<int, int>? Customizations = null);
 
 public sealed record FixedLookAsset(string Path, int FileDataId);
 
@@ -36,7 +38,8 @@ public sealed record FixedLookManifest(
 
 public sealed class FixedLookBaker
 {
-  static readonly int[] DefaultAnimationIds = [0, 67]; // Stand and EmoteWave preserve the CLI contract.
+  public static readonly int[] DefaultAnimationIds = [0, 67]; // Stand and EmoteWave preserve the CLI contract.
+  public static readonly int[] TroopAnimationIds = [0, 4, 67, 115, 116, 119]; // Stand, Walk, EmoteWave, KneelStart, KneelLoop, StealthWalk.
   static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
   {
     WriteIndented = true,
@@ -79,7 +82,8 @@ public sealed class FixedLookBaker
       throw new InvalidOperationException(
           $"Item {duplicateOverrides.Key} has conflicting duplicate equipment slot overrides.");
     var overrides = (request.EquipmentOverrides ?? []).ToDictionary(o => o.ItemId, o => o.EquipSlot);
-    var resolvedItems = request.ItemIds.Select(id =>
+    var resolvedItems = new List<ResolvedItem>();
+    foreach (var id in request.ItemIds)
     {
       var item = _items.Resolve(
               id,
@@ -87,9 +91,12 @@ public sealed class FixedLookBaker
               request.Sex,
               overrides.TryGetValue(id, out var overrideSlot) ? overrideSlot : null);
       if (item.Error != null)
-        throw new InvalidOperationException($"Item {id} could not be resolved: {item.Error}");
-      return item with { Build = _build, ModelSet = "hd" };
-    }).ToList();
+      {
+        log?.Invoke($"item {id} skipped: {item.Error}");
+        continue;
+      }
+      resolvedItems.Add(item with { Build = _build, ModelSet = "hd" });
+    }
     var duplicateSlot = resolvedItems
         .Where(item => item.EquipSlot != null)
         .GroupBy(item => item.EquipSlot!.Value)
@@ -115,7 +122,8 @@ public sealed class FixedLookBaker
         request.Sex,
         request.ClassId,
         ModelSet.Hd,
-        _ => AssetConverter.GeosetIds(bodyMetaBytes))
+        _ => AssetConverter.GeosetIds(bodyMetaBytes),
+        request.Customizations)
         ?? throw new InvalidOperationException(
             $"The default look could not be resolved for race {request.Race}, sex {request.Sex}.");
 
@@ -129,27 +137,51 @@ public sealed class FixedLookBaker
     {
       textureIds.UnionWith(ItemTextureIds(item));
     }
+    var unavailableModels = new HashSet<int>();
     foreach (var modelId in modelIds)
     {
-      var converted = ConvertModel(
-          modelId,
-          request.OutputDirectory,
-          EmbeddedAnimationPolicy.AllSequencesAndGlobals,
-          log);
+      try
+      {
+        _ = ConvertModel(
+            modelId,
+            request.OutputDirectory,
+            EmbeddedAnimationPolicy.AllSequencesAndGlobals,
+            log);
+      }
+      catch (FileNotFoundException error)
+      {
+        unavailableModels.Add(modelId);
+        log?.Invoke($"model {modelId} unavailable, skipped: {error.Message}");
+        continue;
+      }
       var metadata = File.ReadAllBytes(
           Path.Combine(request.OutputDirectory, Native(MetadataPath(modelId))));
       textureIds.UnionWith(AssetConverter.TextureIds(metadata));
-      _ = converted;
+    }
+    if (unavailableModels.Count > 0)
+    {
+      resolvedItems = resolvedItems.Select(item => WithoutModels(item, unavailableModels)).ToList();
     }
     textureIds.UnionWith(AssetConverter.TextureIds(bodyMetaBytes));
 
     foreach (var textureId in textureIds.Order())
     {
       var path = TexturePath(textureId);
-      Write(
-          request.OutputDirectory,
-          path,
-          AssetConverter.ConvertTexture(_files.Open((uint)textureId)));
+      if (Exists(request.OutputDirectory, path))
+      {
+        log?.Invoke($"texture {textureId} exists, skipped");
+        continue;
+      }
+      // Some classic textures are listed in root but absent from every CDN archive; the
+      // client renders those surfaces with its fallback material instead of losing the look.
+      byte[] source;
+      try { source = _files.Open((uint)textureId); }
+      catch (FileNotFoundException error)
+      {
+        log?.Invoke($"texture {textureId} unavailable, skipped: {error.Message}");
+        continue;
+      }
+      Write(request.OutputDirectory, path, AssetConverter.ConvertTexture(source));
       log?.Invoke($"texture {textureId} -> {path}");
     }
 
@@ -169,15 +201,20 @@ public sealed class FixedLookBaker
     foreach (var animationId in selectedAnimationIds)
     {
       var path = AnimationPath(body.bodyFileDataId, animationId);
-      Write(
-          request.OutputDirectory,
-          path,
-          AssetConverter.ConvertAnimation(
-              (uint)body.bodyFileDataId,
-              animationId,
-              _files.Open));
+      if (!Exists(request.OutputDirectory, path))
+      {
+        Write(
+            request.OutputDirectory,
+            path,
+            AssetConverter.ConvertAnimation(
+                (uint)body.bodyFileDataId,
+                animationId,
+                _files.Open));
+        log?.Invoke($"animation {AnimationNames.Name(animationId)} -> {path}");
+      }
+      else
+        log?.Invoke($"animation {AnimationNames.Name(animationId)} exists, skipped");
       animations.Add(new(animationId, AnimationNames.Name(animationId), path));
-      log?.Invoke($"animation {AnimationNames.Name(animationId)} -> {path}");
     }
     if (requestedAnimationIds.Contains(0) && animations.All(a => a.Id != 0))
       throw new InvalidOperationException(
@@ -198,12 +235,62 @@ public sealed class FixedLookBaker
         bodyMeta,
         animations);
 
-    WriteJson(request.OutputDirectory, "looks/fixed/look.json", manifest);
+    WriteJson(request.OutputDirectory, ManifestPath(request.LookHash), manifest);
     WriteJson(
         request.OutputDirectory,
         "current.json",
         new { build = _build, fixedLook = "looks/fixed/look.json" });
     return manifest;
+  }
+
+  public void BakeSharedFile(
+      string outputDirectory,
+      string kind,
+      int fileId,
+      int? modelFileId = null,
+      int? animationId = null,
+      Action<string>? log = null)
+  {
+    switch (kind)
+    {
+      case "model":
+        _ = ConvertModel(
+            fileId,
+            outputDirectory,
+            EmbeddedAnimationPolicy.AllSequencesAndGlobals,
+            log);
+        return;
+      case "texture":
+        var texturePath = TexturePath(fileId);
+        if (Exists(outputDirectory, texturePath))
+        {
+          log?.Invoke($"texture {fileId} exists, skipped");
+          return;
+        }
+        Write(
+            outputDirectory,
+            texturePath,
+            AssetConverter.ConvertTexture(_files.Open((uint)fileId)));
+        log?.Invoke($"texture {fileId} -> {texturePath}");
+        return;
+      case "animation":
+        if (modelFileId is not int modelId || animationId is not int animId)
+          throw new ArgumentException("Animation converts need --model-file-id and --animation-id.");
+        var animationPath = AnimationPath(modelId, animId);
+        if (Exists(outputDirectory, animationPath))
+        {
+          log?.Invoke($"animation {animId} exists, skipped");
+          return;
+        }
+        Write(
+            outputDirectory,
+            animationPath,
+            AssetConverter.ConvertAnimation((uint)modelId, animId, _files.Open));
+        log?.Invoke($"animation {AnimationNames.Name(animId)} -> {animationPath}");
+        return;
+      default:
+        throw new ArgumentOutOfRangeException(nameof(kind), kind, "Kind must be model, texture, or animation.");
+    }
   }
 
   FixedLookAsset ConvertModel(
@@ -212,18 +299,40 @@ public sealed class FixedLookBaker
       EmbeddedAnimationPolicy animationPolicy,
       Action<string>? log)
   {
+    var modelPath = ModelPath(fileDataId);
+    var metadataPath = MetadataPath(fileDataId);
+    var modelFull = Path.Combine(outputDirectory, Native(modelPath));
+    var metadataFull = Path.Combine(outputDirectory, Native(metadataPath));
+    if (File.Exists(modelFull) && File.Exists(metadataFull))
+    {
+      log?.Invoke($"model {fileDataId} exists, skipped");
+      return new(modelPath, fileDataId);
+    }
     var converted = AssetConverter.ConvertModel(
         (uint)fileDataId,
         _files.Open,
         animationPolicy);
-    var modelPath = ModelPath(fileDataId);
     Write(outputDirectory, modelPath, converted.Glb);
-    Write(outputDirectory, MetadataPath(fileDataId), converted.MetaJson);
+    Write(outputDirectory, metadataPath, converted.MetaJson);
     log?.Invoke($"model {fileDataId} -> {modelPath}");
     return new(modelPath, fileDataId);
   }
 
+  public static string ManifestPath(string? lookHash) =>
+      string.IsNullOrEmpty(lookHash) ? "looks/fixed/look.json" : $"looks/{lookHash}/look.json";
+
   string ReadBodyMetadataPath(int fileDataId) => MetadataPath(fileDataId);
+
+  // Some item models are listed in root but absent from every CDN archive. The item keeps its
+  // textures and geosets; only the models the client could never load leave the manifest.
+  public static ResolvedItem WithoutModels(ResolvedItem item, IReadOnlySet<int> unavailable) => item with
+  {
+    Models = item.Models
+        .Select(slot => slot with { Models = slot.Models.Where(m => !unavailable.Contains(m.FileDataId)).ToList() })
+        .ToList(),
+    Attachments = item.Attachments.Where(a => !unavailable.Contains(a.ModelFileDataId)).ToList(),
+    Effects = item.Effects.Where(e => !unavailable.Contains(e.ModelFileDataId)).ToList(),
+  };
 
   static IEnumerable<int> ModelIds(ResolvedItem item) =>
       item.Models.SelectMany(m => m.Models).Select(m => m.FileDataId)
@@ -250,6 +359,9 @@ public sealed class FixedLookBaker
 
   string AnimationPath(int modelFileDataId, int animationId) =>
       $"{string.Format(BuildRoot, _build)}/anims/{modelFileDataId}/{animationId}.glb";
+
+  static bool Exists(string root, string relativePath) =>
+      File.Exists(Path.Combine(root, Native(relativePath)));
 
   static void Write(string root, string relativePath, ReadOnlySpan<byte> bytes) =>
       AtomicFile.WriteAllBytes(Path.Combine(root, Native(relativePath)), bytes);

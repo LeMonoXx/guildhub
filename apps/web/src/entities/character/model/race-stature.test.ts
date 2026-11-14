@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { isLargeRace, isSmallRace, raceStature } from "./race-stature";
+import {
+  isLargeRace,
+  isSmallRace,
+  raceRadius,
+  raceStature,
+} from "./race-stature";
 
 describe("raceStature", () => {
   test("orders classic races from gnome to tauren", () => {
@@ -18,5 +23,9 @@ describe("raceStature", () => {
     expect(isLargeRace("8")).toBe(true);
     expect(isLargeRace("4")).toBe(true);
     expect(isLargeRace("1")).toBe(false);
+  });
+
+  test("gives tauren a wider packing radius than gnomes", () => {
+    expect(raceRadius("6")).toBeGreaterThan(raceRadius("7") * 1.8);
   });
 });

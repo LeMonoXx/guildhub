@@ -18,6 +18,9 @@ public class CliTests
 
     Assert.Equal(0, exitCode);
     Assert.Contains("bake-fixed", output.ToString());
+    Assert.Contains("bake-look", output.ToString());
+    Assert.Contains("bake-looks", output.ToString());
+    Assert.Contains("bake-file", output.ToString());
     Assert.Contains("bake-proof-scene rogue-t2", output.ToString());
     Assert.Contains("--class <id>", output.ToString());
     Assert.Contains("must never be committed", output.ToString());
@@ -129,5 +132,22 @@ public class CliTests
     Assert.EndsWith("proof-output", overridden.OutputDirectory);
     Assert.EndsWith("proof-cache", overridden.CacheDirectory);
     Assert.Equal(scene.Options.ItemIds, overridden.ItemIds);
+  }
+
+  [Fact]
+  public void LookAndFileCommandsParseOffline()
+  {
+    Assert.True(LookCommandOptions.TryParse(
+        ["--look", "look.request.json", "--output", "out", "--cache", "cache"],
+        out var look,
+        out var error), error);
+    Assert.EndsWith("look.request.json", look!.LookFile);
+    Assert.True(FileCommandOptions.TryParse(
+        ["--kind", "model", "--file-id", "123"],
+        out var file,
+        out error), error);
+    Assert.Equal(("model", 123), (file!.Kind, file.FileId));
+    Assert.False(FileCommandOptions.TryParse(["--kind", "model"], out _, out var missing));
+    Assert.Contains("file-id", missing, StringComparison.OrdinalIgnoreCase);
   }
 }

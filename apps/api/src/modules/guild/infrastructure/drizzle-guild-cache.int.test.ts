@@ -42,6 +42,7 @@ describe("drizzle guild cache", () => {
             rankId: rankId(0),
             classId: "1",
             raceId: "1",
+            slug: "guildmaster-example",
           },
         ],
       });

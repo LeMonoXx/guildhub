@@ -1,5 +1,11 @@
 import { Hono, type Context } from "hono";
-import { guildProfile, guildRoster } from "./fixtures.js";
+import {
+  appearanceFor,
+  equipmentFor,
+  guildProfile,
+  guildRoster,
+  mediaFor,
+} from "./fixtures.js";
 
 export function createStubApp(): Hono {
   const app = new Hono();
@@ -28,6 +34,43 @@ export function createStubApp(): Hono {
       _links: { self: { href: `/data/wow/guild/${guildSlug}` } },
     });
   });
+
+  app.get("/profile/wow/character/:characterSlug/appearance", (context) => {
+    const characterSlug = context.req.param("characterSlug");
+    return context.json({
+      ...appearanceFor(characterSlug),
+      _links: {
+        self: {
+          href: `/profile/wow/character/${characterSlug}/appearance`,
+        },
+      },
+    });
+  });
+  app.get("/profile/wow/character/:characterSlug/equipment", (context) => {
+    const characterSlug = context.req.param("characterSlug");
+    return context.json({
+      ...equipmentFor(characterSlug),
+      _links: {
+        self: {
+          href: `/profile/wow/character/${characterSlug}/equipment`,
+        },
+      },
+    });
+  });
+  app.get(
+    "/profile/wow/character/:characterSlug/character-media",
+    (context) => {
+      const characterSlug = context.req.param("characterSlug");
+      return context.json({
+        ...mediaFor(characterSlug),
+        _links: {
+          self: {
+            href: `/profile/wow/character/${characterSlug}/character-media`,
+          },
+        },
+      });
+    },
+  );
 
   app.get("/data/wow/guild/:guildSlug/roster", (context) => {
     const guildSlug = context.req.param("guildSlug");

@@ -12,6 +12,7 @@ export interface RosterMember {
   readonly rankId: RankId;
   readonly classId: string;
   readonly raceId: string;
+  readonly slug: string;
 }
 
 export const isGuildMaster = (member: RosterMember): boolean =>

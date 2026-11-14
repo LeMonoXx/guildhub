@@ -2,11 +2,12 @@
 
 How a guild character becomes an animated 3D model on the site. Decision: [0008](../decisions/0008-character-models-gltf.md).
 
-Milestone A now has a manual fixed-look baker and a standalone viewer. It deliberately has no
-Battle.net character integration, queue, or worker yet. Character pages continue to use the
-official render image until milestone B connects their snapshots to this pipeline.
+The Armory join is in: Battle.net appearance, equipment, and media become a look hash, the baker
+writes `looks/{lookHash}/look.json` plus shared `builds/{build}/v{N}/` files, and the character
+page plus home troop load those manifests. The roster stays on official 2D renders. A missing bake
+falls back to the fixed look so the troop never shows a broken mesh.
 
-What we copy from Altrobe, what we leave, and the order to build it: [character rendering plan](character-rendering-plan.md).
+What we copied from Altrobe, and the order it was built: [character rendering plan](character-rendering-plan.md).
 
 ## 1. No running game
 
@@ -99,57 +100,41 @@ A **look hash** is a hash of `clientBuild + race + gender + customization choice
 
 Six layers. A page view should hit layers 1 to 3 and never reach 5 or 6.
 
-| Layer | Where                                         | Key                                 | Lifetime                    | Holds                                                                                            |
-| ----- | --------------------------------------------- | ----------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------ |
-| 1     | Browser HTTP cache                            | URL                                 | 1 year, `immutable`         | glTF, textures, manifests                                                                        |
-| 2     | Caddy                                         | URL                                 | same `Cache-Control`        | the same files                                                                                   |
-| 3     | Asset store (volume now, S3-compatible later) | build + converter version + file ID | until that build is retired | `builds/{build}/v{N}/models/{fileId}.glb`, `textures/{fileId}.png`, `anims/{model}/{animId}.glb` |
-| 4     | Postgres                                      | character, look hash, build         | rows are tiny and stay      | snapshot `fetched_at`, look hash, model status, asset keys                                       |
-| 5     | Worker memory                                 | client build                        | while the worker runs       | the parsed DB2 index                                                                             |
-| 6     | Blizzard                                      | —                                   | —                           | the API and the game CDN, touched by jobs only                                                   |
+| Layer | Where                                         | Key                                 | Lifetime                    | Holds                                                                                                                        |
+| ----- | --------------------------------------------- | ----------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Browser HTTP cache                            | URL                                 | 1 year, `immutable`         | glTF, textures, manifests                                                                                                    |
+| 2     | Caddy                                         | URL                                 | same `Cache-Control`        | the same files                                                                                                               |
+| 3     | Asset store (volume now, S3-compatible later) | build + converter version + file ID | until that build is retired | `builds/{build}/v{N}/models/{fileId}.glb`, `textures/{fileId}.png`, `anims/{model}/{animId}.glb`                             |
+| 4     | Postgres                                      | character                           | rows are tiny and stay      | snapshot facts (race, sex, custom, items, render URL) and `fetched_at`. Look status is derived from `looks/{hash}/look.json` |
+| 5     | Worker memory                                 | client build                        | while the worker runs       | the parsed DB2 index                                                                                                         |
+| 6     | Blizzard                                      | —                                   | —                           | the API and the game CDN, touched by jobs only                                                                               |
 
 Rules:
 
-- **Asset URLs are content-addressed** (`/assets/looks/{lookHash}/manifest.json`). They never change, so the cache time is a year and `immutable`. The character JSON is the only short-lived response; it points at those URLs.
-- **The API never waits for a build.** `GET /api/characters/:slug` reads Postgres and answers. The model field is one of:
+- **Asset URLs are content-addressed** (`/assets/looks/{lookHash}/look.json`). They never change, so the cache time is a year and `immutable`. The character JSON is the only short-lived response; it points at those URLs. Shared meshes live under `builds/{build}/v{N}/`.
+- **The API never waits for a bake.** `GET /api/characters/:slug` reads the snapshot and the asset store and answers. The model field is one of:
 
 ```json
 {
   "status": "ready",
-  "manifestUrl": "/assets/looks/8f3a.../manifest.json",
-  "renderUrl": "https://render.worldofwarcraft.com/...",
+  "manifestUrl": "/assets/looks/8f3a.../look.json",
+  "renderUrl": "/api/characters/shade/render",
   "lookHash": "8f3a...",
-  "clientBuild": "1.60.1.70374"
+  "clientBuild": "1.60.1.70938"
 }
 ```
 
-`status` is `ready`, `pending`, or `unavailable`. `renderUrl` is always the official image, so the page has something to show in every state.
+`status` is `ready`, `pending`, or `unavailable`. `ready` means `looks/{lookHash}/look.json` exists. `renderUrl` is our stable proxy for the official Battle.net image, never a short-lived CDN link in the SPA.
 
-- **One build per look.** The job uses the look hash as its singleton key, so two simultaneous visitors do not build the same look twice.
+- **Two job levels, not mixed.** Convert jobs are singleton `(build, outputVersion, fileId)` so two people in the same chest convert it once (the baker also skips files that already exist). Look jobs are singleton `lookHash`. Featured looks are enqueued when the home troop is presented; the character page may poll.
 - **Invalidation is by hash, not by time.** A newer character snapshot with the same look hash changes nothing. A different look hash enqueues a new build; the old files stay until unreferenced. A new Forever build marks every ready look stale, and the next page view enqueues a rebuild while the previous model keeps showing.
 - **Game files are read once per build.** The daily check asks which `wowf` build is current. Extraction happens after a new build is detected, in the background, not during a request. With 16 members this can prebuild every current look after a patch instead of waiting for a visit.
 - **Battle.net stays on its existing window.** Character snapshots refresh when viewed and older than the window (start at 15 minutes, configuration, not a constant), and the roster sweep refreshes the rest. The model pipeline consumes the snapshot we already stored. It does not call Battle.net itself.
-- **Postgres does not hold blobs.** It holds keys and status. The asset store holds bytes. Backups cover Postgres as they do today; the asset store is rebuildable from game files plus snapshots, so it is cached data, not the source of truth.
+- **Postgres does not hold blobs.** It holds snapshot facts and `fetched_at`. Look readiness is the presence of `looks/{hash}/look.json`. The asset store holds bytes. Backups cover Postgres as they do today; the asset store is rebuildable from game files plus snapshots, so it is cached data, not the source of truth.
 
-Manifest shape, served as immutable JSON:
+The viewer speaks one manifest: `FixedLookManifest` (`look` + `items` + body + animations). The baker writes that JSON to `looks/{lookHash}/look.json`. There is no second schema.
 
-```json
-{
-  "lookHash": "8f3a...",
-  "clientBuild": "1.60.1.70374",
-  "body": "/assets/builds/1.60.1.70374/v3/models/12345.glb",
-  "layers": [{ "fileId": 67890, "section": "face", "blend": "blit" }],
-  "items": [
-    {
-      "slot": "mainhand",
-      "url": "/assets/builds/1.60.1.70374/v3/models/193838.glb"
-    }
-  ],
-  "animations": ["Stand", "Wave"]
-}
-```
-
-Sharing the body, the item models, and the texture layers between characters is the point. A new character costs the layers it does not already share. The browser paints them together. There is no baked skin image.
+Sharing the body, the item models, and the texture layers between characters is the point. A new character costs the layers it does not already share. The browser paints them together. There is no baked skin image. Troop clips on a look are Stand, Walk, StealthWalk, KneelStart, KneelLoop, and EmoteWave.
 
 ## 7. What a visit does
 
@@ -192,49 +177,45 @@ request-path latency.
 
 Follows [backend architecture](backend.md). The heavy code is isolated so the API image stays small and read-only.
 
-| Piece                                                                    | Home                                                                                                                                                               |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Character snapshot, look hash, model status, `GET /api/characters/:slug` | `apps/api`, module `character`                                                                                                                                     |
-| Ports: `LookSource`, `ModelBuildQueue`, `ModelAssetStore`                | `character/application`                                                                                                                                            |
-| Battle.net adapter, Drizzle status table, enqueueing the job             | `character/infrastructure` in the API                                                                                                                              |
-| Indexing, M2 to glTF, BLP to PNG                                         | `apps/model-baker`, a .NET tool copied from Altrobe. Its own image and a writable asset volume. See the [plan](character-rendering-plan.md).                       |
-| Job transport                                                            | pg-boss, the same Postgres. The API enqueues; only the model worker runs these handlers                                                                            |
-| Contracts: the `model` object and the manifest schema                    | `packages/contracts`                                                                                                                                               |
-| Viewer                                                                   | `apps/web`, slice `widgets/character-model`. Three.js is imported only there and in cinematic adapters. Character detail and the capable home stage load it lazily |
+| Piece                                                                            | Home                                                                                                                                                                   |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Character snapshot, look hash, `GET /api/characters/:slug`                       | `apps/api`, module `character`                                                                                                                                         |
+| Ports: `CharacterSource`, `CharacterCache`, `ModelBuildQueue`, `ModelAssetStore` | `character/application`                                                                                                                                                |
+| Battle.net adapter, Drizzle snapshot table, pg-boss enqueue                      | `character/infrastructure` in the API                                                                                                                                  |
+| Indexing, M2 to glTF, BLP to PNG, `bake-look` / `bake-looks` / `bake-file`       | `apps/model-baker`, a .NET tool copied from Altrobe. Its own image and a writable asset volume. See the [plan](character-rendering-plan.md).                           |
+| Job transport                                                                    | pg-boss, the same Postgres. Queues `bake-look` and `convert-file`. The API enqueues; `apps/api/src/worker.ts` runs the baker CLI                                       |
+| Contracts: the `model` object on the character JSON                              | `packages/contracts`                                                                                                                                                   |
+| Viewer                                                                           | `apps/web`, slices `widgets/character-model` and `widgets/character-cinematic`. Three.js stays in adapters. Character detail and the capable home stage load it lazily |
 
-`apps/model-baker` is .NET. It does not import the API. The API never parses M2, BLP, or CASC, and it never links the baker. They meet at Postgres (the job queue) and the asset store. The implementation order is the [plan](character-rendering-plan.md).
+`apps/model-baker` is .NET. It does not import the API. The API never parses M2, BLP, or CASC, and it never links the baker. They meet at Postgres (the job queue) and the asset store.
 
-The worker's entry point is its own composition root: open the database and the queue, load the build index into memory, register the job handlers, stop on `SIGTERM` after the current job.
-
-Game-file access is a port (`GameDataSource`) with two adapters: `CdnGameDataSource` (default, no install) and `CascGameDataSource` (a copy of the files on a volume, used if the CDN is too slow or blocked). Neither starts the game.
+The worker's entry point is its own composition root: open the queue, spawn `bake-look` / `bake-file`, stop on `SIGTERM`. Game files are read from Blizzard's CDN through the baker's existing storage. Neither process starts the game.
 
 Character clips, material tracks, authored effects, and reusable character-detail intros follow the
 [character cinematics](character-cinematics.md) runtime and ownership boundaries.
 
 ## 10. Failure and fallback
 
-| Failure                                        | What the visitor gets                                                                 |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Build job fails                                | `unavailable`, the official render, the error logged with the look hash. Retry later. |
-| Forever has no model for this race or item     | That part is skipped. A missing body falls back to the official render.               |
-| Character below level 10 (no profile)          | No model and no render. The page says so.                                             |
-| Battle.net down                                | The previous snapshot, the previous model, "last updated" time.                       |
-| Asset store missing a file the row calls ready | Treat as `pending`, enqueue a rebuild. Never a broken image.                          |
+| Failure                                    | What the visitor gets                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Build job fails                            | `unavailable`, the official render, the error logged with the look hash. Retry later. |
+| Forever has no model for this race or item | That part is skipped. A missing body falls back to the official render.               |
+| Character below level 10 (no profile)      | No model and no render. The page says so.                                             |
+| Battle.net down                            | The previous snapshot, the previous model, "last updated" time.                       |
+| Asset store missing `look.json` for a hash | Treat as `pending`, enqueue a rebuild. Troop falls back to the fixed look.            |
 
 ## 11. Tests
 
 - Look-hash tests: same inputs hash the same, any changed slot hashes differently.
 - API tests: `ready`, `pending`, and `unavailable` map to the contract. A pending result enqueues exactly one job for that hash.
 - Worker tests use small recorded fixtures (one mesh, one texture, one item), never the live CDN and never a Blizzard account.
-- The Battle.net stub gains a fixed manifest so end-to-end tests render a stand-in model without game files.
+- The Battle.net stub returns per-character appearance, equipment, and media fixtures so tests can join Armory facts without game files.
 - The character page test covers the swap from the official render to the model, and the pending state that never polls on the roster.
 
 ## 12. Rights
 
 Meshes, animations, and textures are Blizzard's. They are not committed, not baked into images, and not put in the repo: the worker produces them on the server that serves the site. The site keeps the "not affiliated with Blizzard" notice. Whether serving those assets is acceptable is the owner's decision, made before the worker is turned on in production.
 
-## 13. Open before building
+## 13. Probe (resolved)
 
-1. Confirm the Forever `character-appearance` and `item-appearance` endpoints return customization and display data for a real Traceless character. The client package has both resources; the live response is unverified.
-2. Confirm product `wowf` is readable from Blizzard's CDN with the wow.export approach, and time one race body plus one equipped item. Those timings replace the estimates in §8. Altrobe already shows the CDN bake works for Forever; what we still time is one real Traceless character, because Altrobe dresses a look by hand and does not read the Armory.
-3. Decide, with those timings, whether the CDN adapter is enough or the server should keep a CASC copy.
+Forever addressing is name + surname (no realm). Appearance returns `customizations[].option.id` and `choice.id`. Gender is `{type:"MALE"|"FEMALE"}`. Equipment prefers `transmog.item.id`, with `MAIN_HAND` / `OFF_HAND` as slots 16 / 17. Media prefers `assets[].key` `main-raw`. Missing appearance IDs fall back to baker defaults. The CDN adapter is enough for the current roster; a local CASC copy is not required.

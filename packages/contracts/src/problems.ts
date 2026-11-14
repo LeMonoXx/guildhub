@@ -42,6 +42,11 @@ export const PROBLEMS = {
     title: "This guild was not found.",
     retryable: false,
   },
+  "media.not_found": {
+    status: 404,
+    title: "This image was not found.",
+    retryable: false,
+  },
   "character.not_found": {
     status: 404,
     title: "This character was not found.",

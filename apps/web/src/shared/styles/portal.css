@@ -3,7 +3,7 @@
   overflow: hidden;
   color: var(--color-gold);
   font-family: var(--font-fantasy);
-  font-size: clamp(3rem, 12vw, 8.5rem);
+  font-size: clamp(2rem, 11vw, 8.5rem);
   font-weight: 500;
   letter-spacing: 0.16em;
   line-height: 0.9;
@@ -25,15 +25,11 @@
   text-transform: uppercase;
 }
 
-.guild-masthead,
-.guild-about,
-.members-page header,
-.character-profile {
+.members-page header {
   margin-bottom: clamp(1.5rem, 4vw, 3rem);
 }
 
-.guild-stats,
-.character-facts {
+.guild-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1rem;
@@ -41,7 +37,6 @@
 }
 
 .guild-stats dt,
-.character-facts dt,
 .roster-filter span {
   color: var(--color-muted);
   font-family: var(--font-mono);
@@ -50,36 +45,331 @@
   text-transform: uppercase;
 }
 
-.guild-stats dd,
-.character-facts dd {
+.guild-stats dd {
   margin: 0.2rem 0 0;
   font-size: 1.4rem;
 }
 
-.character-facts .wow-badge {
-  font-size: 1.05rem;
-}
-
 .guild-hero {
   position: relative;
+  z-index: 1;
   display: grid;
-  gap: 0.4rem;
-  margin-bottom: clamp(2rem, 5vw, 4rem);
-  padding-bottom: 0.4rem;
 }
 
+/* The stage is the framed first screen; figures may step down over the masthead. */
 .guild-hero-stage {
   position: relative;
-  height: clamp(28rem, 60vw, 44rem);
-  overflow: hidden;
+  height: var(--stage-height, clamp(28rem, 60vw, 44rem));
   pointer-events: none;
   background: transparent;
 }
 
-.guild-hero-stage .cinematic,
-.guild-hero-stage .cinematic-stage {
-  height: 100%;
+.guild-hero-stage .cinematic[data-variant] {
+  position: absolute;
+  inset: 0 0 calc(-1 * var(--stage-bleed, 0px));
+  z-index: 1;
+  height: auto;
+  overflow: visible;
   pointer-events: none;
+}
+
+/* The rig frames the content box and draws into the padding below it. */
+.guild-hero-stage .cinematic-stage {
+  box-sizing: border-box;
+  height: 100%;
+  padding-bottom: var(--stage-bleed, 0px);
+  pointer-events: none;
+}
+
+/* Walk-ons fade in from the window's edges instead of popping in. */
+.guild-hero-stage .cinematic-stage canvas {
+  position: absolute;
+  inset: 0;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 7%,
+    #000 93%,
+    transparent
+  );
+}
+
+/*
+ * The opening title: it stands over the stage while the troop arrives, then
+ * rises away to leave them the screen.
+ */
+.guild-hero-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 0 var(--page-pad, 1rem) 12%;
+  pointer-events: none;
+  text-align: center;
+  animation: intro-in 1.6s var(--ease-out) both;
+}
+
+.guild-hero-intro .wordmark {
+  font-size: clamp(3.2rem, 13vw, 12rem);
+  filter: drop-shadow(0 0.4rem 2.4rem rgb(0 0 0 / 0.85))
+    drop-shadow(0 0 3rem rgb(200 162 74 / 0.35));
+}
+
+.guild-hero-intro .eyebrow,
+.guild-hero-intro .guild-tagline {
+  margin: 0;
+  color: rgb(244 239 230 / 0.82);
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.9);
+}
+
+.guild-hero-intro .guild-tagline {
+  animation: float-up 1.2s var(--ease-out) both 0.6s;
+}
+
+.guild-hero-intro::before,
+.guild-hero-intro::after {
+  width: min(28rem, 60%);
+  height: 1px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(232 199 122 / 0.6),
+    transparent
+  );
+  animation: intro-rule 1.6s var(--ease-out) both 0.3s;
+}
+
+.guild-hero-intro::before {
+  order: -1;
+}
+
+.guild-hero-stage:has(.cinematic[data-state="ready"]) .guild-hero-intro {
+  animation:
+    intro-in 1.6s var(--ease-out) both,
+    intro-rise 1.9s cubic-bezier(0.65, 0, 0.25, 1) 3.4s forwards;
+}
+
+@keyframes intro-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.94);
+  }
+}
+
+@keyframes intro-rule {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+@keyframes intro-rise {
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(-28%) scale(0.7);
+    visibility: hidden;
+  }
+}
+
+.hero-overlay {
+  --focus-x: 50%;
+  --focus-feet: 80%;
+  --focus-height: 40%;
+  --focus-width: 12%;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+/*
+ * A warm light on whoever is hovered or chosen: a pool on the floor at the
+ * feet and a faint aura around the body. The box reaches past the feet and
+ * every gradient fades out inside it, so the light has no edge anywhere.
+ */
+.hero-spotlight {
+  position: absolute;
+  top: var(--focus-feet);
+  left: var(--focus-x);
+  width: calc(var(--focus-width) * 2.6);
+  height: calc(var(--focus-height) * 1.45);
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(
+      ellipse 44% 8% at 50% 86%,
+      rgb(255 226 170 / 0.34),
+      rgb(255 226 170 / 0.12) 55%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 36% 46% at 50% 50%,
+      rgb(255 236 200 / 0.12),
+      rgb(255 236 200 / 0.04) 60%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(255 236 200 / 0.05) 35%,
+      rgb(255 236 200 / 0.07) 80%,
+      transparent 92%
+    );
+  mask-image: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    #000 55%,
+    transparent 100%
+  );
+  filter: blur(10px);
+  transform: translate(-50%, -86%);
+  transition:
+    opacity 0.35s var(--ease-out),
+    left 1.1s var(--ease-out),
+    top 1.1s var(--ease-out),
+    width 1.1s var(--ease-out),
+    height 1.1s var(--ease-out);
+}
+
+.hero-overlay[data-focus="true"] .hero-spotlight {
+  opacity: 1;
+}
+
+/* Once someone is chosen, the rest of the stage falls into shadow. */
+.hero-overlay::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0;
+  background: radial-gradient(
+    ellipse calc(var(--focus-width) * 1.6) calc(var(--focus-height) * 0.9) at
+      var(--focus-x) var(--focus-centre),
+    transparent 35%,
+    rgb(4 3 8 / 0.55) 100%
+  );
+  transition:
+    opacity 0.6s var(--ease-out),
+    background-position 0.6s var(--ease-out);
+}
+
+.hero-overlay[data-selected="true"]::after {
+  opacity: 1;
+}
+
+.hero-hotspot {
+  position: absolute;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+  border-radius: 45% 45% 12% 12%;
+  background: none;
+  transition:
+    left 1.1s var(--ease-out),
+    top 1.1s var(--ease-out),
+    width 1.1s var(--ease-out),
+    height 1.1s var(--ease-out);
+}
+
+.hero-hotspot:disabled {
+  cursor: default;
+}
+
+/* The floor light at the feet of whoever is hovered or chosen. */
+.hero-hotspot::after {
+  position: absolute;
+  right: -25%;
+  bottom: -6%;
+  left: -25%;
+  height: 16%;
+  content: "";
+  opacity: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(255 226 170 / 0.5),
+    transparent 70%
+  );
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.hero-hotspot[data-focused="true"]::after,
+.hero-hotspot[aria-pressed="true"]::after {
+  opacity: 1;
+}
+
+.hero-hotspot:focus-visible {
+  outline: 1px dashed rgb(255 226 170 / 0.6);
+  outline-offset: 4px;
+}
+
+.hero-member-card {
+  position: absolute;
+  z-index: 3000;
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: 10rem;
+  padding: 0.55rem 0.9rem 0.6rem;
+  pointer-events: none;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--member-class) 55%, transparent);
+  border-radius: 8px;
+  background: rgb(8 7 12 / 0.88);
+  box-shadow:
+    0 0.6rem 1.6rem rgb(0 0 0 / 0.45),
+    inset 0 0 1.2rem color-mix(in srgb, var(--member-class) 14%, transparent);
+  transform: translate(-50%, calc(-100% - 0.6rem));
+  animation: hero-card-in 0.22s var(--ease-out) both;
+  transition:
+    left 1.1s var(--ease-out),
+    top 1.1s var(--ease-out);
+}
+
+.hero-member-card[data-selected="true"] {
+  pointer-events: auto;
+}
+
+.hero-member-card-name {
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.hero-member-card-surname,
+.hero-member-card-facts {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.hero-member-card-facts {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.hero-member-card-link {
+  margin-top: 0.3rem;
+  color: var(--member-class);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.hero-member-card-link:hover,
+.hero-member-card-link:focus-visible {
+  text-decoration: underline;
+}
+
+@keyframes hero-card-in {
+  from {
+    opacity: 0;
+    translate: 0 0.35rem;
+  }
 }
 
 .guild-hero-cast {
@@ -91,23 +381,45 @@
   list-style: none;
 }
 
-@media (min-width: 56.25rem) {
-  .guild-hero-cast {
-    position: absolute;
-    right: 6%;
-    bottom: 0.6rem;
-    left: 6%;
-    z-index: 2;
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem 1.4rem;
-    padding: 0;
-  }
+.guild-hero[data-stage="posters"] .guild-hero-stage {
+  height: 0;
+}
 
-  .guild-hero-member {
-    width: auto;
-    min-width: 5.5rem;
-  }
+.guild-hero[data-stage="posters"] {
+  padding: var(--main-pad-top, 0px) var(--page-pad, 1rem) 0;
+}
+
+.guild-hero[data-stage="posters"] .guild-hero-cast {
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 40%), 1fr));
+  gap: 1rem;
+  padding: 1.5rem 0 0;
+}
+
+.guild-hero-portrait {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--member-class) 45%, transparent);
+  border-radius: 10px;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 85%,
+    color-mix(in srgb, var(--member-class) 28%, transparent),
+    #07060a 75%
+  );
+  box-shadow: inset 0 -2.5rem 2rem -1.5rem
+    color-mix(in srgb, var(--member-class) 35%, transparent);
+}
+
+/* Battle.net renders leave the figure in the middle 55% of a 4:3 frame. */
+.guild-hero-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 53%;
+  transform: scale(1.5);
+  transform-origin: center 55%;
 }
 
 .guild-hero-member {
@@ -119,7 +431,7 @@
   background: none;
 }
 
-.guild-hero-member span {
+.guild-hero-member > span:last-child {
   color: var(--color-muted);
   font-size: 0.75rem;
 }
@@ -215,6 +527,15 @@
   gap: 0.75rem;
 }
 
+.roster-portrait {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-hairline);
+  background: #000;
+}
+
 .roster-identity-text {
   display: grid;
   gap: 0.12rem;
@@ -235,37 +556,24 @@
   font-variant-numeric: tabular-nums;
 }
 
-.character-page {
-  display: grid;
-  gap: 1.5rem;
+.character-poster,
+.cinematic-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
 }
 
-.character-stage {
-  min-height: min(70vh, 38rem);
-  border: 1px solid var(--color-hairline);
-  background: #000;
-}
-
-.character-surname {
-  margin: 0;
-  color: var(--color-muted);
-}
-
-.character-placeholder,
-.guild-about {
-  padding: 1.25rem 0;
-  border-top: 1px solid var(--color-hairline);
+.character-poster[hidden],
+.cinematic-poster[hidden] {
+  display: none;
 }
 
 @media (max-width: 56.24rem) {
-  .guild-hero-cast {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .guild-hero-stage {
-    height: 0;
-  }
-
   .guild-hero-member {
     transform: none !important;
   }
@@ -273,8 +581,19 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wordmark-text,
-  .reveal-name {
+  .reveal-name,
+  .hero-member-card {
     animation: none;
+  }
+
+  .guild-hero-intro,
+  .guild-hero-stage:has(.cinematic[data-state="ready"]) .guild-hero-intro {
+    display: none;
+  }
+
+  .hero-hotspot,
+  .hero-member-card {
+    transition: none;
   }
 }
 

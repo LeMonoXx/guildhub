@@ -66,14 +66,15 @@ flowchart LR
 - The server's existing reverse proxy terminates TLS and routes one hostname by path. GuildHub speaks HTTP on the Docker network and does not bind ports 80 or 443. Web and API share that hostname, so there is no CORS and the session cookie stays `SameSite=Lax`. See [deployment](deployment.md).
 
 Today: `apps/api` serves `/health/live` and `/health/ready`, loads a validated instance config,
-talks to PostgreSQL, and serves a cached guild profile and roster from Battle.net.
+talks to PostgreSQL, and serves a cached guild profile, roster, and character looks from Battle.net.
 `packages/contracts` holds the problem catalog, instance schema, guild HTTP contracts, and
 character-presentation schemas for the portal slice. `instances/traceless` is the first instance.
-`apps/battlenet-stub` fakes client-credentials and guild endpoints. `apphost/` starts Postgres,
-migrate, API, and the stub. `apps/model-baker` has its tested converter skeleton. `apps/web` is a
+`apps/battlenet-stub` fakes client-credentials, guild, and character appearance/equipment/media.
+`apphost/` starts Postgres, migrate, API, web, the stub when opted in, and the model worker when
+the baker DLL is present. `apps/model-baker` bakes looks to glTF/PNG. `apps/web` is a
 React SPA with the guild home, member directory, character detail, and retained cinematic lab
 routes. Home may mount one lazy shared multi-actor WebGL stage on capable devices; mobile and
-reduced-motion keep a static composition. The worker is not built yet.
+reduced-motion keep a static composition.
 
 ## 4. Repository layout (target)
 
@@ -186,10 +187,14 @@ GuildHub uses the ISO/IEC 25010 quality model to name what matters, in this orde
    and `/health/ready`.~~ Done.
 5. ~~Guild module: roster from Battle.net, cached, `GET /api/guild` and `GET /api/guild/roster`.~~ Done.
 6. ~~Scaffold `apps/web` (React), decide styling and UI primitives, build the guild page.~~
-   Done for the first portal slice: home, members, character detail, fixture-backed queries, and
+   Done for the first portal slice: home, members, character detail, live guild queries, and
    an adaptive shared stage. Styling is CSS custom properties (decision 0010 companion in
-   [frontend architecture](architecture/frontend.md) §8). Identity and live Battle.net pages remain.
+   [frontend architecture](architecture/frontend.md) §8).
 7. Identity module: Battle.net login, sessions, `GET /api/me`.
-8. Character module and pages (official renders), then guild extensions.
-9. Character model pipeline, in the order of the [plan](architecture/character-rendering-plan.md): first one fixed look, rendered locally and on the server, then the Battle.net join for real gear. Official renders stay the fallback. The home lineup already clones the current fixed look; it does not skip this pipeline.
+8. ~~Character module and pages (official renders), then guild extensions.~~ Done for roster
+   identity, official renders, and Armory looks on the character page and home troop. 3D in the
+   roster table is later.
+9. ~~Character model pipeline~~ ([plan](architecture/character-rendering-plan.md)): fixed look,
+   then the Battle.net join. Official renders stay the fallback. Remaining: item-catalogue bake
+   and roster miniatures.
 10. Production server, when the first version exists: join the host's proxy, backups, the CD workflow in [deployment](deployment.md).

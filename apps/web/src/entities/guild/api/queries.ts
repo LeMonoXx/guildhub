@@ -14,4 +14,14 @@ export const guildQueries = (source: GuildDataSource) => ({
     queryKey: guildKeys.featured(),
     queryFn: () => source.getFeaturedMembers(),
   }),
+  chronicle: () => ({
+    queryKey: guildKeys.chronicle(),
+    queryFn: () => source.getChronicle(),
+    staleTime: 5 * 60_000,
+  }),
+  history: () => ({
+    queryKey: guildKeys.history(),
+    queryFn: () => source.getHistory(),
+    staleTime: 10 * 60_000,
+  }),
 });

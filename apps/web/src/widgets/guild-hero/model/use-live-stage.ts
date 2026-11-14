@@ -5,15 +5,24 @@ import {
   liveStageMediaQuery,
 } from "../../../shared/lib";
 
+const mediaMatchesNow = () =>
+  typeof matchMedia === "function" && matchMedia(liveStageMediaQuery).matches;
+
+export interface LiveStageState {
+  /** The device may ever show the 3D stage; layout follows this, not scrolling. */
+  readonly capable: boolean;
+  /** The 3D stage renders right now. */
+  readonly live: boolean;
+}
+
 export const useLiveStage = (
   stageRef: RefObject<HTMLElement | null>,
-): boolean => {
-  const [webgl, setWebgl] = useState(false);
+): LiveStageState => {
+  const [webgl] = useState(detectWebGL);
   const [visible, setVisible] = useState(false);
-  const [mediaMatches, setMediaMatches] = useState(false);
+  const [mediaMatches, setMediaMatches] = useState(mediaMatchesNow);
 
   useEffect(() => {
-    setWebgl(detectWebGL());
     if (typeof matchMedia !== "function") return;
     const media = matchMedia(liveStageMediaQuery);
     const syncMedia = () => {
@@ -38,5 +47,8 @@ export const useLiveStage = (
     };
   }, [stageRef]);
 
-  return canUseLiveStage({ webgl, visible, mediaMatches });
+  return {
+    capable: webgl && mediaMatches,
+    live: canUseLiveStage({ webgl, visible, mediaMatches }),
+  };
 };

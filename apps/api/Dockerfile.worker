@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS baker
+WORKDIR /src
+COPY apps/model-baker/GuildHub.ModelBaker.slnx apps/model-baker/
+COPY apps/model-baker/src/GuildHub.ModelBaker/GuildHub.ModelBaker.csproj apps/model-baker/src/GuildHub.ModelBaker/
+COPY apps/model-baker/src/GuildHub.ModelBaker.Cli/GuildHub.ModelBaker.Cli.csproj apps/model-baker/src/GuildHub.ModelBaker.Cli/
+RUN dotnet restore apps/model-baker/src/GuildHub.ModelBaker.Cli/GuildHub.ModelBaker.Cli.csproj
+COPY apps/model-baker/src apps/model-baker/src
+RUN dotnet publish apps/model-baker/src/GuildHub.ModelBaker.Cli/GuildHub.ModelBaker.Cli.csproj \
+    --configuration Release \
+    --no-restore \
+    --output /baker
+
+FROM node:24-bookworm-slim AS api
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    PNPM_HOME=/pnpm
+RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json apps/api/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --filter @guildhub/api...
+COPY tsconfig.base.json ./
+COPY packages/contracts packages/contracts
+COPY apps/api apps/api
+RUN pnpm --filter @guildhub/api... build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm --filter @guildhub/api deploy --prod /out
+
+FROM node:24-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production \
+    INSTANCE_DIR=/app/instance \
+    BAKER_CLI=/baker/GuildHub.ModelBaker.Cli.dll \
+    ASSET_ROOT=/assets \
+    BAKER_CACHE=/cache
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends ca-certificates iputils-ping wget \
+    && wget --quiet https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
+    && dpkg --install packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends aspnetcore-runtime-10.0 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=api --chown=node:node /out ./
+COPY --from=baker --chown=node:node /baker /baker
+ARG INSTANCE
+RUN test -n "$INSTANCE" || (echo "Build with --build-arg INSTANCE=<directory under instances/>" && exit 1)
+COPY --chown=node:node instances/${INSTANCE} ./instance
+RUN mkdir -p /assets /cache && chown -R node:node /assets /cache
+USER node
+VOLUME ["/assets", "/cache"]
+CMD ["node", "--import", "./instrumentation-loader.mjs", "dist/worker.js"]

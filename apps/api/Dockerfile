@@ -24,7 +24,9 @@ WORKDIR /app
 ENV NODE_ENV=production \
     INSTANCE_DIR=/app/instance
 COPY --from=build --chown=node:node /out ./
-COPY --chown=node:node instances/traceless ./instance
+ARG INSTANCE
+RUN test -n "$INSTANCE" || (echo "Build with --build-arg INSTANCE=<directory under instances/>" && exit 1)
+COPY --chown=node:node instances/${INSTANCE} ./instance
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \

@@ -230,6 +230,7 @@ export const defaultTrackEvaluators = new TrackEvaluatorRegistry()
   .register("ui", compileInterpolated)
   .register("emitter", compileInterpolated)
   .register("smoke", compileInterpolated)
+  .register("teleport", compileInterpolated)
   .register("audio", compileAudio);
 
 export const asTimelineTrack = (track: CinematicTrack): TimelineTrack => track;

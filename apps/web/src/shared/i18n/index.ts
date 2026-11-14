@@ -11,5 +11,5 @@ export {
   type Locale,
 } from "./locale";
 export { interpolate, translate, type MessageTree } from "./translate";
-export { enMessages, deMessages, messagesFor } from "./messages";
-export { LocaleProvider, useLocale } from "./context";
+export { LocaleProvider } from "./locale-provider";
+export { useLocale } from "./locale-context";

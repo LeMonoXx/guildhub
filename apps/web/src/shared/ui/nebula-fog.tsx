@@ -16,7 +16,7 @@ export function NebulaFog() {
     }
     let disposed = false;
     let stop: (() => void) | undefined;
-    void import("../lib/nebula-fog-renderer")
+    void import("../lib/nebula-fog/nebula-fog-renderer")
       .then(({ startNebulaFog }) => {
         if (disposed) return;
         stop = startNebulaFog(canvas, {

@@ -26,7 +26,7 @@ choreography, count-ups, reveals, embers, meters) stays as it is; only its colou
   stage floor. Where WebGL 2 can render to half-float textures, the fog is a real fluid: a small GPU
   solver for the incompressible Navier-Stokes equations after Stam's "Stable Fluids"
   (semi-Lagrangian advection, Jacobi pressure projection, vorticity confinement) in
-  `shared/lib/nebula-fog-fluid.ts`. The pointer pushes the fog aside and stirs it into eddies,
+  `shared/lib/nebula-fog/`. The pointer pushes the fog aside and stirs it into eddies,
   scrolling drags it along, a gentle curl-noise breeze keeps it moving, and wiped areas refill
   toward a resting fog field within a few seconds. The fog also follows the guild stage: a
   read-only frame decorator (`FogPresence`) reports each actor's screen position through

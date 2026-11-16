@@ -29,7 +29,7 @@ export function FogVeil({ className }: FogVeilProps) {
     }
     let disposed = false;
     let stop: (() => void) | undefined;
-    void import("../lib/nebula-fog-fluid")
+    void import("../lib/nebula-fog/nebula-fog-fluid")
       .then(({ startFluidFog }) => {
         if (disposed) return;
         const gl = canvas.getContext("webgl2", {

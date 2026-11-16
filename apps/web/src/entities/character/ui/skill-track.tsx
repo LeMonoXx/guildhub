@@ -6,6 +6,7 @@ import {
   professionTiers,
   tierOf,
 } from "../model/profession-tiers";
+import { skillMarkAt, skillShare } from "../model/skill-marks";
 
 interface SkillTrackProps {
   readonly skill: number;
@@ -13,13 +14,6 @@ interface SkillTrackProps {
   readonly label: ReactNode;
   readonly color?: string | undefined;
 }
-
-const share = (value: number, scale: number) =>
-  Math.min(1, Math.max(0, value / scale));
-
-/** Bar and scale place every mark through this, so they always line up. */
-const markAt = (value: number, scale: number) =>
-  `${String(share(value, scale) * 100)}%`;
 
 /**
  * A profession bar on one fixed scale for everybody, so equal skill always
@@ -37,8 +31,8 @@ export function SkillTrack({ skill, maxSkill, label, color }: SkillTrackProps) {
       data-visible={visible}
       data-capped={skill >= maxSkill && maxSkill < scale}
       style={{
-        ["--skill-fill" as string]: String(share(skill, scale)),
-        ["--skill-unlocked" as string]: String(share(maxSkill, scale)),
+        ["--skill-fill" as string]: String(skillShare(skill, scale)),
+        ["--skill-unlocked" as string]: String(skillShare(maxSkill, scale)),
         ["--meter-color" as string]: color ?? "var(--color-gold)",
       }}
     >
@@ -67,29 +61,11 @@ export function SkillTrack({ skill, maxSkill, label, color }: SkillTrackProps) {
             key={entry.tier}
             className="skill-track-tick"
             data-unlocked={entry.cap <= maxSkill}
-            style={{ left: markAt(entry.cap, scale) }}
+            style={{ left: skillMarkAt(entry.cap, scale) }}
           />
         ))}
         <span className="skill-track-cap" />
       </div>
-    </div>
-  );
-}
-
-/** Rank names above a group of skill tracks, aligned with their ticks. */
-export function SkillScale() {
-  const { t } = useLocale();
-  return (
-    <div className="skill-scale" aria-hidden="true">
-      {professionTiers.map((entry) => (
-        <span
-          key={entry.tier}
-          title={t(`profession.tier.${entry.tier}`)}
-          style={{ left: markAt(entry.cap, professionScale) }}
-        >
-          {entry.cap}
-        </span>
-      ))}
     </div>
   );
 }

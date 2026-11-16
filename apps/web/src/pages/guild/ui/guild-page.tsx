@@ -16,7 +16,8 @@ import {
 import { LiveCharacterStage } from "../../../widgets/character-cinematic";
 import { GuildHero } from "../../../widgets/guild-hero";
 import { chronicleSections } from "./chronicle-sections";
-import { Masthead, TitleCard } from "./guild-masthead";
+import { Masthead } from "./guild-masthead";
+import { TitleCard } from "./title-card";
 
 const featuredModels = (featured: FeaturedMembersResponse) =>
   featured.members.map((member) => member.model);

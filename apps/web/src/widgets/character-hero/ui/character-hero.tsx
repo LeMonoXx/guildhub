@@ -6,87 +6,24 @@ import {
   ClassColoredName,
   ClassMark,
   RaceMark,
-  powerColorVar,
   wowClassColorVar,
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatRelativeTime } from "../../../shared/lib";
-import { CountUp, Embers, FallbackImage } from "../../../shared/ui";
+import { CountUp, Embers } from "../../../shared/ui";
+import { heroFacts } from "../model/hero-facts";
+import { UnitFrame } from "./unit-frame";
 
 interface CharacterHeroProps {
   readonly character: CharacterDetailResponse;
   readonly profile?: CharacterProfileResponse | undefined;
 }
 
-function UnitFrame({ character, profile }: CharacterHeroProps) {
-  const { t, locale } = useLocale();
-  const stats = profile?.statistics;
-  const avatar = profile?.avatarUrl;
-  return (
-    <div className="unit-frame">
-      <div className="unit-frame-portrait">
-        <FallbackImage
-          src={avatar}
-          fallback={<RaceMark raceId={character.raceId} />}
-        />
-        <span className="unit-frame-level" title={t("members.level")}>
-          {character.level}
-        </span>
-      </div>
-      <div className="unit-frame-bars">
-        <p className="unit-frame-name">
-          <ClassColoredName classId={character.classId}>
-            {character.name}
-          </ClassColoredName>
-        </p>
-        <div
-          className="unit-frame-bar unit-frame-health"
-          style={{ ["--bar-color" as string]: "var(--power-health)" }}
-        >
-          <span>
-            {stats ? <CountUp value={stats.health} locale={locale} /> : "—"}
-          </span>
-        </div>
-        <div
-          className="unit-frame-bar"
-          style={{
-            ["--bar-color" as string]: powerColorVar(stats?.powerType),
-          }}
-        >
-          <span>
-            {stats ? <CountUp value={stats.power} locale={locale} /> : "—"}{" "}
-            {stats?.powerType ? (
-              <small>{t(`power.${stats.powerType.toLowerCase()}`)}</small>
-            ) : null}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const factsOf = (profile: CharacterProfileResponse | undefined) => {
-  const summary = profile?.summary;
-  return [
-    {
-      key: "itemLevel",
-      value: summary?.equippedItemLevel ?? summary?.averageItemLevel,
-    },
-    { key: "achievementPoints", value: profile?.achievements.points },
-    { key: "questsCompleted", value: profile?.quests.completedCount },
-    { key: "honorableKills", value: profile?.pvp?.honorableKills },
-    { key: "mounts", value: profile?.collections.mounts.length },
-    { key: "companions", value: profile?.collections.pets.length },
-  ].filter(
-    (fact): fact is { key: string; value: number } => fact.value !== undefined,
-  );
-};
-
 /** Who this is and their headline numbers, beside the standing character. */
 export function CharacterHero({ character, profile }: CharacterHeroProps) {
   const { t, locale } = useLocale();
   const summary = profile?.summary;
-  const facts = factsOf(profile);
+  const facts = heroFacts(profile);
   return (
     <header
       className="character-hero"

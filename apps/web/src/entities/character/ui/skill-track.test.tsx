@@ -2,7 +2,8 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import { LocaleProvider } from "../../../shared/i18n";
-import { SkillScale, SkillTrack } from "./skill-track";
+import { SkillScale } from "./skill-scale";
+import { SkillTrack } from "./skill-track";
 
 afterEach(cleanup);
 

@@ -12,5 +12,6 @@ export { Reveal } from "./reveal";
 export { SectionNav, type SectionLink } from "./section-nav";
 export { SkipLink } from "./skip-link";
 export { StatusBlock } from "./status-block";
+export { dailyTrend } from "./daily-trend";
 export { TrendChart, type TrendPoint } from "./trend-chart";
 export { Wordmark } from "./wordmark";

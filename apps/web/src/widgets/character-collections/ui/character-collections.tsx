@@ -1,33 +1,10 @@
 import type { CharacterProfileResponse } from "@guildhub/contracts";
-import type { ReactNode } from "react";
 import { itemQualityColorVar } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import { Reveal } from "../../../shared/ui";
+import { CollectionShelf } from "./collection-shelf";
 
 interface CharacterCollectionsProps {
   readonly profile: CharacterProfileResponse;
-}
-
-function Shelf({
-  title,
-  count,
-  children,
-  delayMs,
-}: {
-  readonly title: string;
-  readonly count: number;
-  readonly children: ReactNode;
-  readonly delayMs: number;
-}) {
-  return (
-    <Reveal className="collection-shelf" delayMs={delayMs} as="article">
-      <header>
-        <h3>{title}</h3>
-        <span className="collection-count">{count}</span>
-      </header>
-      {children}
-    </Reveal>
-  );
 }
 
 export function CharacterCollections({ profile }: CharacterCollectionsProps) {
@@ -35,7 +12,7 @@ export function CharacterCollections({ profile }: CharacterCollectionsProps) {
   const { mounts, pets, toys, heirlooms } = profile.collections;
   const shelves = [
     mounts.length > 0 ? (
-      <Shelf
+      <CollectionShelf
         key="mounts"
         title={t("collections.mounts")}
         count={mounts.length}
@@ -46,10 +23,10 @@ export function CharacterCollections({ profile }: CharacterCollectionsProps) {
             <li key={mount}>{mount}</li>
           ))}
         </ul>
-      </Shelf>
+      </CollectionShelf>
     ) : null,
     pets.length > 0 ? (
-      <Shelf
+      <CollectionShelf
         key="pets"
         title={t("collections.pets")}
         count={pets.length}
@@ -72,10 +49,10 @@ export function CharacterCollections({ profile }: CharacterCollectionsProps) {
             </li>
           ))}
         </ul>
-      </Shelf>
+      </CollectionShelf>
     ) : null,
     profile.hunterPets.length > 0 ? (
-      <Shelf
+      <CollectionShelf
         key="hunter"
         title={t("collections.hunterPets")}
         count={profile.hunterPets.length}
@@ -94,10 +71,10 @@ export function CharacterCollections({ profile }: CharacterCollectionsProps) {
             </li>
           ))}
         </ul>
-      </Shelf>
+      </CollectionShelf>
     ) : null,
     toys.length > 0 ? (
-      <Shelf
+      <CollectionShelf
         key="toys"
         title={t("collections.toys")}
         count={toys.length}
@@ -108,10 +85,10 @@ export function CharacterCollections({ profile }: CharacterCollectionsProps) {
             <li key={toy}>{toy}</li>
           ))}
         </ul>
-      </Shelf>
+      </CollectionShelf>
     ) : null,
     heirlooms.length > 0 ? (
-      <Shelf
+      <CollectionShelf
         key="heirlooms"
         title={t("collections.heirlooms")}
         count={heirlooms.length}
@@ -127,7 +104,7 @@ export function CharacterCollections({ profile }: CharacterCollectionsProps) {
             </li>
           ))}
         </ul>
-      </Shelf>
+      </CollectionShelf>
     ) : null,
   ].filter(Boolean);
 

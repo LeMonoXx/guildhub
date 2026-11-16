@@ -1,45 +1,16 @@
 import type { CharacterDetailResponse } from "@guildhub/contracts";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   bakeStatus,
   raceHeight,
   wowClassColorVar,
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import {
-  liveStageMediaQuery,
-  measureFigureBounds,
-  useMediaQuery,
-  type FigureBounds,
-} from "../../../shared/lib";
-import {
-  FallbackImage,
-  FigureSilhouette,
-  LoadProgress,
-} from "../../../shared/ui";
+import { liveStageMediaQuery, useMediaQuery } from "../../../shared/lib";
+import { LoadProgress } from "../../../shared/ui";
 import { buildCharacterIdleScene } from "../model/build-idle-scene";
+import { CharacterPoster } from "./character-poster";
 import { LiveCharacterStage } from "./live-character-stage";
-
-function CharacterPoster({ src }: { readonly src: string | undefined }) {
-  const [figure, setFigure] = useState<FigureBounds | undefined>();
-  const style = figure && {
-    ["--figure-top" as string]: String(figure.top),
-    ["--figure-height" as string]: String(figure.bottom - figure.top),
-    ["--figure-center" as string]: String((figure.left + figure.right) / 2),
-  };
-  return (
-    <FallbackImage
-      className="character-poster"
-      src={src}
-      fallback={<FigureSilhouette className="character-silhouette" />}
-      data-framed={figure !== undefined}
-      style={style}
-      onLoad={(event) => {
-        setFigure(measureFigureBounds(event.currentTarget));
-      }}
-    />
-  );
-}
 
 /** The character's render as a poster, replaced by the live model where the device can carry it. */
 export function CharacterBackdrop({

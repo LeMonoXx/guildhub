@@ -3,76 +3,27 @@ import { useState } from "react";
 import { useLocale } from "../../../shared/i18n";
 import { formatDate } from "../../../shared/lib";
 import { Reveal } from "../../../shared/ui";
-import {
-  HistoryEventGroup,
-  HistoryEventRow,
-  LevelUpCard,
-  RosterBanner,
-} from "./history-event-text";
+import { groupHistoryByDay, splitHistoryDay } from "../model/history-day";
+import { HistoryEventGroup } from "./history-event-group";
+import { HistoryEventRow } from "./history-event-row";
+import { LevelUpCard } from "./level-up-card";
+import { RosterBanner } from "./roster-banner";
 
 interface HistoryFeedProps {
   readonly events: readonly HistoryEvent[];
   readonly pageSize?: number;
 }
 
-const rowOrder: Record<HistoryEvent["kind"], number> = {
-  joined: 0,
-  left: 0,
-  level: 0,
-  rank: 1,
-  item: 2,
-  achievements: 3,
-  reputation: 4,
-  profession: 5,
-  mount: 6,
-};
-
-type Group = [HistoryEvent, ...HistoryEvent[]];
-
-/** Gear stays one row per piece; the rest bundles per member and kind. */
-const groupRows = (events: readonly HistoryEvent[]): Group[] => {
-  const groups = new Map<string, Group>();
-  events.forEach((event, index) => {
-    const key =
-      event.kind === "item" || event.kind === "achievements"
-        ? String(index)
-        : `${event.slug}:${event.kind}`;
-    const group = groups.get(key);
-    if (group) group.push(event);
-    else groups.set(key, [event]);
-  });
-  return [...groups.values()];
-};
-
 /** Recorded changes, newest day first: level-ups lead each day, then the rest. */
 export function HistoryFeed({ events, pageSize = 80 }: HistoryFeedProps) {
   const { t, locale } = useLocale();
   const [shown, setShown] = useState(pageSize);
-  const days = new Map<string, HistoryEvent[]>();
-  for (const event of events.slice(0, shown)) {
-    const list = days.get(event.day) ?? [];
-    list.push(event);
-    days.set(event.day, list);
-  }
+  const days = groupHistoryByDay(events.slice(0, shown));
   return (
     <div className="history-feed">
       <ol className="history-days">
         {[...days].map(([day, list], dayIndex) => {
-          const levels = list.filter(
-            (event): event is Extract<HistoryEvent, { kind: "level" }> =>
-              event.kind === "level",
-          );
-          const banners = list.filter(
-            (
-              event,
-            ): event is Extract<HistoryEvent, { kind: "joined" | "left" }> =>
-              event.kind === "joined" || event.kind === "left",
-          );
-          const rows = groupRows(
-            list
-              .filter((event) => rowOrder[event.kind] > 0)
-              .sort((a, b) => rowOrder[a.kind] - rowOrder[b.kind]),
-          );
+          const { banners, levels, rows } = splitHistoryDay(list);
           return (
             <Reveal
               key={day}

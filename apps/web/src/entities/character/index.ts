@@ -5,6 +5,11 @@ export { bakeStatus, type BakeStatus } from "./model/bake-status";
 export { useModelPolling } from "./model/use-model-polling";
 export { wowClassColorVar } from "./model/class-color";
 export {
+  firstArmorySelection,
+  gearSummary,
+  type GearSummary,
+} from "./model/gear-summary";
+export {
   durabilityColorVar,
   durabilityShare,
   itemQualityColorVar,
@@ -24,11 +29,11 @@ export {
   raceRadius,
   raceStature,
 } from "./model/race-stature";
+export { AchievementHover } from "./ui/achievement-hover";
 export {
-  AchievementHover,
   AchievementTooltip,
   type AchievementSummary,
-} from "./ui/achievement-hover";
+} from "./ui/achievement-tooltip";
 export { AchievementIcon } from "./ui/achievement-icon";
 export { CharacterLink } from "./ui/character-link";
 export { ClassColoredName } from "./ui/class-colored-name";
@@ -38,4 +43,5 @@ export { ItemIcon } from "./ui/item-icon";
 export { ItemTooltip } from "./ui/item-tooltip";
 export { Money } from "./ui/money";
 export { RaceMark } from "./ui/race-mark";
-export { SkillScale, SkillTrack } from "./ui/skill-track";
+export { SkillScale } from "./ui/skill-scale";
+export { SkillTrack } from "./ui/skill-track";

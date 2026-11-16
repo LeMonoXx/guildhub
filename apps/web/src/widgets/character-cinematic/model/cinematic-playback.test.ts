@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 import type { CinematicTimeline } from "../../../shared/cinematic";
-import { evaluateMotionFrame } from "./CharacterCinematic";
+import { evaluateMotionFrame } from "./cinematic-playback";
 
 describe("reduced motion", () => {
   test("selects the deterministic poster without advancing playback", () => {

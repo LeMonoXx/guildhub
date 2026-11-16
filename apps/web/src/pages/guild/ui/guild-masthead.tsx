@@ -2,33 +2,8 @@ import type { GuildProfileResponse } from "@guildhub/contracts";
 import { Link } from "@tanstack/react-router";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
-import { Reveal, Wordmark } from "../../../shared/ui";
-
-function GuildTitle({
-  guild,
-  heading,
-  showLine = true,
-}: {
-  readonly guild: GuildProfileResponse;
-  readonly heading?: boolean;
-  readonly showLine?: boolean;
-}) {
-  const { t } = useLocale();
-  return (
-    <>
-      <p className={heading ? "eyebrow masthead-eyebrow" : "eyebrow"}>
-        {t("home.eyebrow", { faction: t(`faction.${guild.faction}`) })}
-      </p>
-      <Wordmark text={guild.name} as={heading ? "h1" : "p"} />
-      {showLine ? <p className="guild-tagline">{t("home.tagline")}</p> : null}
-    </>
-  );
-}
-
-/** The guild's name as the opening title over the stage. The line follows on its own. */
-export function TitleCard({ guild }: { readonly guild: GuildProfileResponse }) {
-  return <GuildTitle guild={guild} showLine={false} />;
-}
+import { Reveal } from "../../../shared/ui";
+import { GuildTitle } from "./guild-title";
 
 export function Masthead({ guild }: { readonly guild: GuildProfileResponse }) {
   const { t, locale } = useLocale();

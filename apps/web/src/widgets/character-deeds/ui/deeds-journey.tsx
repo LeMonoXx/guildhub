@@ -1,7 +1,8 @@
 import type { CharacterProfileResponse } from "@guildhub/contracts";
 import { useLocale } from "../../../shared/i18n";
 import { CountUp, Reveal } from "../../../shared/ui";
-import { QuestCard, QuestLink } from "./quest-card";
+import { QuestCard } from "./quest-card";
+import { QuestLink } from "./quest-link";
 
 export function DeedsJourney({
   profile,

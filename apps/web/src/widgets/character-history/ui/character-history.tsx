@@ -2,33 +2,21 @@ import type { CharacterHistoryResponse } from "@guildhub/contracts";
 import { HistoryFeed, wowClassColorVar } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
-import { TrendChart, type TrendPoint } from "../../../shared/ui";
+import { dailyTrend, TrendChart } from "../../../shared/ui";
 
 interface CharacterHistoryProps {
   readonly history: CharacterHistoryResponse;
   readonly classId: string;
 }
 
-const shortDay = (day: string, locale: string) =>
-  new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit" }).format(
-    new Date(`${day}T12:00:00Z`),
-  );
+type Point = CharacterHistoryResponse["series"][number];
 
 export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
   const { t, locale } = useLocale();
   if (history.series.length === 0)
     return <p className="history-empty">{t("history.notStarted")}</p>;
-  const series = (
-    pick: (
-      point: CharacterHistoryResponse["series"][number],
-    ) => number | undefined,
-  ) =>
-    history.series.flatMap((point): TrendPoint[] => {
-      const value = pick(point);
-      return value === undefined
-        ? []
-        : [{ label: shortDay(point.day, locale), value }];
-    });
+  const series = (pick: (point: Point) => number | undefined) =>
+    dailyTrend(history.series, pick, locale);
   const whole = (value: number) => formatNumber(value, locale);
   const itemLevels = series((point) => point.itemLevel);
   return (

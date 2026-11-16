@@ -1,4 +1,4 @@
-import type { RecipeResult, RecipeSource } from "@guildhub/contracts";
+import type { RecipeResult } from "@guildhub/contracts";
 import {
   CharacterLink,
   ItemIcon,
@@ -6,48 +6,7 @@ import {
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber, wowheadUrl } from "../../../shared/lib";
-
-type LocaleContext = Pick<ReturnType<typeof useLocale>, "t" | "locale">;
-
-const sourceViews: {
-  readonly [K in RecipeSource["kind"]]: (
-    source: Extract<RecipeSource, { kind: K }>,
-    context: LocaleContext,
-  ) => React.ReactNode;
-} = {
-  trainer: (_source, { t }) => (
-    <span className="recipe-source is-trainer">
-      {t("recipes.source.trainer")}
-    </span>
-  ),
-  "recipe-item": (source, { t, locale }) => (
-    <a
-      className="recipe-source is-item"
-      href={wowheadUrl("item", source.item.id, locale)}
-      target="_blank"
-      rel="noreferrer"
-      title={t("recipes.source.itemHint")}
-    >
-      <span style={{ color: itemQualityColorVar(source.item.quality) }}>
-        {source.item.name}
-      </span>
-      {source.requiredSkill !== undefined && (
-        <span className="recipe-source-skill">
-          {t("recipes.source.skill", { skill: source.requiredSkill })}
-        </span>
-      )}
-    </a>
-  ),
-};
-
-function SourceBadge({ source }: { readonly source: RecipeSource }) {
-  const { t, locale } = useLocale();
-  const view = sourceViews[source.kind] as (
-    source: RecipeSource,
-    context: LocaleContext,
-  ) => React.ReactNode;
-  return view(source, { t, locale });
-}
+import { RecipeSourceBadge } from "./recipe-source-badge";
 
 interface RecipeCardProps {
   readonly recipe: RecipeResult;
@@ -173,7 +132,7 @@ export function RecipeCard({ recipe, highlightStat }: RecipeCardProps) {
         </div>
         <div className="recipe-origin">
           <span className="recipe-label">{t("recipes.source.label")}</span>
-          <SourceBadge source={recipe.source} />
+          <RecipeSourceBadge source={recipe.source} />
         </div>
       </footer>
     </article>

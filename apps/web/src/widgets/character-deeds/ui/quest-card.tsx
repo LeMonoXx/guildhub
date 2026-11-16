@@ -1,8 +1,9 @@
-import type { QuestLogEntry, QuestRef } from "@guildhub/contracts";
+import type { QuestLogEntry } from "@guildhub/contracts";
 import { useState } from "react";
 import { Money } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import { formatNumber, wowheadUrl } from "../../../shared/lib";
+import { formatNumber } from "../../../shared/lib";
+import { QuestLink } from "./quest-link";
 
 export function QuestCard({
   quest,
@@ -56,25 +57,5 @@ export function QuestCard({
       </ul>
       <QuestLink quest={quest}>{t("deeds.questWowhead")}</QuestLink>
     </details>
-  );
-}
-
-export function QuestLink({
-  quest,
-  children,
-}: {
-  readonly quest: QuestRef;
-  readonly children: string;
-}) {
-  const { locale } = useLocale();
-  return (
-    <a
-      className="quest-link"
-      href={wowheadUrl("quest", quest.id, locale)}
-      target="_blank"
-      rel="noreferrer"
-    >
-      {children}
-    </a>
   );
 }

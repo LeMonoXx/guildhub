@@ -26,10 +26,10 @@ describe("character cinematic architecture", () => {
     }
   });
 
-  test("has one browser animation clock in the React host", () => {
+  test("has one browser animation clock, in the playback model", () => {
     for (const { name, source } of sources) {
       expect(source, name).not.toContain("THREE.Clock");
-      if (name === "ui/CharacterCinematic.tsx") continue;
+      if (name === "model/cinematic-playback.ts") continue;
       expect(source, name).not.toContain("requestAnimationFrame");
       expect(source, name).not.toContain("cancelAnimationFrame");
     }

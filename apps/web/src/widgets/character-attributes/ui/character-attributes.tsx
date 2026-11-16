@@ -1,45 +1,11 @@
 import type { CharacterStatistics } from "@guildhub/contracts";
 import { useLocale } from "../../../shared/i18n";
-import { formatNumber } from "../../../shared/lib";
 import { CountUp, Meter, Reveal } from "../../../shared/ui";
+import { statGroups } from "../model/stat-lines";
+import { StatCard } from "./stat-card";
 
 interface CharacterAttributesProps {
   readonly statistics: CharacterStatistics;
-}
-
-interface Line {
-  readonly key: string;
-  readonly value: number;
-  readonly digits?: number;
-  readonly suffix?: string;
-}
-
-function StatCard({
-  title,
-  lines,
-  delayMs,
-}: {
-  readonly title: string;
-  readonly lines: readonly Line[];
-  readonly delayMs: number;
-}) {
-  const { t, locale } = useLocale();
-  return (
-    <Reveal className="stat-card" delayMs={delayMs}>
-      <h3>{title}</h3>
-      <dl>
-        {lines.map((line) => (
-          <div key={line.key}>
-            <dt>{t(`stat.${line.key}`)}</dt>
-            <dd>
-              {formatNumber(line.value, locale, line.digits ?? 0)}
-              {line.suffix ?? ""}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </Reveal>
-  );
 }
 
 export function CharacterAttributes({ statistics }: CharacterAttributesProps) {
@@ -48,48 +14,7 @@ export function CharacterAttributes({ statistics }: CharacterAttributesProps) {
     1,
     ...statistics.primary.map((stat) => stat.effective),
   );
-  const mainHand = statistics.melee.mainHand;
-  const offHand = statistics.melee.offHand;
-  const melee: Line[] = [
-    { key: "attackPower", value: statistics.melee.attackPower },
-    { key: "crit", value: statistics.melee.crit, digits: 2, suffix: "%" },
-    { key: "hit", value: statistics.melee.hit, digits: 0, suffix: "%" },
-    ...(mainHand
-      ? [
-          { key: "mainHandDps", value: mainHand.dps, digits: 1 },
-          { key: "mainHandSpeed", value: mainHand.speed, digits: 2 },
-        ]
-      : []),
-    ...(offHand && offHand.dps > 2
-      ? [{ key: "offHandDps", value: offHand.dps, digits: 1 }]
-      : []),
-  ];
-  const ranged: Line[] = [
-    { key: "attackPower", value: statistics.ranged.attackPower },
-    { key: "crit", value: statistics.ranged.crit, digits: 2, suffix: "%" },
-    { key: "hit", value: statistics.ranged.hit, suffix: "%" },
-    { key: "damageMin", value: statistics.ranged.min },
-    { key: "damageMax", value: statistics.ranged.max },
-  ];
-  const spell: Line[] = [
-    { key: "spellPower", value: statistics.spell.power },
-    { key: "healing", value: statistics.spell.healing },
-    { key: "crit", value: statistics.spell.crit, digits: 2, suffix: "%" },
-    { key: "hit", value: statistics.spell.hit, suffix: "%" },
-    { key: "manaRegen", value: statistics.spell.manaRegen },
-    { key: "manaRegenCombat", value: statistics.spell.manaRegenCombat },
-  ];
-  const defense: Line[] = [
-    ...(statistics.armor
-      ? [{ key: "armor", value: statistics.armor.effective }]
-      : []),
-    ...(statistics.defense
-      ? [{ key: "defense", value: statistics.defense.effective }]
-      : []),
-    { key: "dodge", value: statistics.defenses.dodge, digits: 2, suffix: "%" },
-    { key: "parry", value: statistics.defenses.parry, digits: 2, suffix: "%" },
-    { key: "block", value: statistics.defenses.block, digits: 2, suffix: "%" },
-  ];
+  const { melee, ranged, spell, defense } = statGroups(statistics);
 
   return (
     <div className="attributes">

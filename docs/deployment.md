@@ -1,6 +1,6 @@
 # Deployment
 
-How GuildHub will be deployed. Not built yet. Build the first version without this. The shape is fixed so the application and the Compose file do not have to be redesigned when CD is added.
+How GuildHub is deployed. The step-by-step setup, rollback, backups, and troubleshooting are in the [deploy runbook](operations/deploy-runbook.md). The files are [`deploy/compose.prod.yaml`](../deploy/compose.prod.yaml), [`deploy/server/`](../deploy/server), and [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
 
 Decision: [0009](decisions/0009-deploy-behind-existing-proxy.md). Images, tags, secrets, and backups stay as in [0007](decisions/0007-deployment-compose-linux.md).
 
@@ -20,7 +20,7 @@ flowchart LR
   web --> assets[(Asset volume)]
 ```
 
-The proxy routes by path on a single hostname:
+The proxy sends the whole hostname to the `web` container. Caddy in that container routes by path:
 
 | Path            | Goes to                       |
 | --------------- | ----------------------------- |
@@ -32,26 +32,29 @@ One hostname is required. The session cookie is `SameSite=Lax` and has no `Domai
 
 The API is told its public URL with `PUBLIC_ORIGIN=https://<hostname>` and trusts `X-Forwarded-Proto` from the proxy, so redirects and the `Secure` cookie match what the browser sees. The Battle.net redirect URI is that origin plus `/auth/callback`.
 
-Two ways to attach, picked to match the proxy that is already there:
+Ways to attach, picked to match the proxy that is already there:
 
-- **Preferred:** both join an external Docker network. The proxy reaches the containers by name. No host port.
-- **Otherwise:** GuildHub publishes `127.0.0.1:<port>` only. The proxy uses `localhost`. The port is not reachable from outside the machine.
+- **Built:** Traefik with the Docker provider. The `web` service carries the router labels (hostname, entrypoint, certificate resolver, port 8080). With Traefik on the host network it reaches the container on GuildHub's own network. No host port.
+- **Traefik on a bridge network:** `web` also joins that network as an external network, plus `traefik.docker.network`.
+- **Another proxy:** GuildHub publishes `127.0.0.1:<port>` only. The proxy uses `localhost`. The port is not reachable from outside the machine.
 
 Postgres is never given a host port.
 
 ## 3. What a deploy does
 
-CI already runs `verify` on every push. CD is a later workflow, on `main`, and only after that workflow is green.
+CI runs `verify` on every push. The `deploy` workflow runs on `main`, and only after `verify` is green for a push to this repository.
 
-1. Build the images for the server's architecture (amd64 until the host says otherwise). Tag them with the full commit SHA. Push them to GHCR.
-2. SSH to the server as the deploy user. The private key is a GitHub Actions secret. The user has no password and no shell beyond the deploy script.
-3. The script writes the SHA into the server's Compose env, pulls those tags, runs the one-shot `migrate` container, and on success runs `docker compose up -d`. A failed migration does not restart the running app.
-4. The script curls the app's health through the local port. A failure exits non-zero so the workflow is red. It does not roll forward past a bad health check.
-5. Rollback is the same script with the previous SHA.
+1. Build `api`, `worker`, and `web` for amd64. Tag them with the full commit SHA. Push them to GHCR.
+2. SSH to the server as the deploy user, with the SHA as the command and `deploy/compose.prod.yaml` on standard input. The private key is a GitHub environment secret. `authorized_keys` forces the key to run the deploy script and nothing else.
+3. The script stores the compose file, pulls those tags, runs the one-shot `migrate` container, and on success runs `docker compose up -d`. A failed migration does not restart the running app.
+4. The script checks the API's readiness, the web container, and the worker inside the containers. A failure starts the previous SHA again and exits non-zero, so the workflow is red. Only a healthy deploy writes its SHA into the server's `.env`.
+5. Rollback is the same workflow, started by hand with an earlier SHA. It skips the build.
 
 A deploy does not run the model baker, does not download game files, and does not renew certificates. The asset volume and the Postgres volume survive the deploy. See [when the baker runs](architecture/character-rendering-plan.md).
 
-Secrets (`BATTLENET_CLIENT_SECRET`, `SESSION_SECRET`, the database password) live only in the server's `.env`, mode 600, owner root. They are not GitHub secrets. The only GitHub secrets for deploy are the SSH key and, if GHCR is private, a read token for the deploy user.
+Secrets (`BATTLENET_CLIENT_SECRET`, `SESSION_SECRET`, the database password) live only on the server, in `.env` and `app.env`, mode 600, owned by the deploy user. They are not GitHub secrets. GitHub holds only the deploy key, the server's address, and its pinned host key. If the GHCR images stay private, the server holds a read token for them.
+
+The repository is public. It names no server, hostname, or directory; those exist only on the server and in the GitHub environment.
 
 Every container writes structured logs to stdout. Docker's configured log driver handles retention.
 No OpenTelemetry collector or vendor sink ships with the first deployment. If the host later gains
@@ -67,11 +70,11 @@ Nothing new is exposed to the internet.
 - SSH is the door CI uses. The deploy user's `authorized_keys` entry has a `command=` restriction that runs only the deploy script, so the key cannot be used as a shell. The key is unique to this repo's deploy workflow.
 - If port 22 is not reachable from GitHub's runners, the SSH goes over Tailscale (or the equivalent already on the machine) instead of opening 22 to the internet. A self-hosted runner is the fallback if SSH from outside is unwanted. It is not the default: a runner on the Docker host can do more than deploy.
 
-The first time, a person with access to the host does four things by hand: create the deploy user, create the directory and the `.env`, add the proxy vhost for the hostname, and confirm a manual `docker compose up` of a pinned SHA. CD automates only the pull and the restart after that.
+The first time, a person with root on the host does the setup in the [runbook](operations/deploy-runbook.md#3-one-time-setup-on-the-server): the deploy user, the directory with `.env` and `app.env`, the two scripts, the restricted key, and the backup cron. The proxy needs no change; the router comes from the labels. CD automates everything after that.
 
 ## 5. What we are not doing
 
 - No Kubernetes.
 - No Watchtower and no `:latest` auto-pull. A deploy is a chosen SHA that passed `verify`.
 - No second Let's Encrypt inside GuildHub, unless the host turns out to have no proxy. That discovery happens at the first manual deploy, and only then would a Caddy container be added in front of the same HTTP services.
-- No CD workflow, no server change, and no DNS change until the first version exists.
+- No automatic update of the server scripts. They are installed by hand and owned by root, so a deploy cannot change what the deploy key is allowed to run.

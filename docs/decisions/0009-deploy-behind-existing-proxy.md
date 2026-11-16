@@ -15,7 +15,7 @@ The wish is continuous deployment later: a green `main` updates the server witho
 
 GuildHub serves plain HTTP on the Docker network only. The host's existing reverse proxy terminates TLS and routes one hostname to it. A deploy pulls images already built by CI and restarts the containers. It does not bake models, issue certificates, or open a new public port.
 
-The steps, the hostname rule, and the SSH setup are in [deployment](../deployment.md). They are written now so the first version fits them. They are not built now.
+The steps, the hostname rule, and the SSH setup are in [deployment](../deployment.md). The setup is in the [deploy runbook](../operations/deploy-runbook.md).
 
 ## Consequences
 

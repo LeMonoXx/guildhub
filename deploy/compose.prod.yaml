@@ -1,0 +1,131 @@
+# Production stack. The deploy script copies this file to the server as
+# compose.yaml and runs it with the server's .env (compose variables) and
+# app.env (application secrets). See docs/operations/deploy-runbook.md.
+name: guildhub-${GUILDHUB_INSTANCE:?set GUILDHUB_INSTANCE in .env}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-hardened: &hardened
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  oom_score_adj: 500
+  logging: *logging
+
+x-app-environment: &app-environment
+  DATABASE_URL: postgres://guildhub:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/guildhub
+  INSTANCE_DIR: /app/instance
+  ASSET_ROOT: /assets
+
+services:
+  postgres:
+    image: postgres:18
+    command:
+      - postgres
+      - -c
+      - shared_buffers=32MB
+      - -c
+      - effective_cache_size=128MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=50
+    environment:
+      POSTGRES_USER: guildhub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: guildhub
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guildhub -d guildhub"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    mem_limit: 256m
+    oom_score_adj: 500
+    logging: *logging
+    restart: unless-stopped
+
+  migrate:
+    <<: *hardened
+    image: ${GUILDHUB_IMAGE_PREFIX:?set GUILDHUB_IMAGE_PREFIX in .env}-api:${GUILDHUB_TAG:?set GUILDHUB_TAG}
+    profiles:
+      - migrate
+    command:
+      ["node", "--import", "./instrumentation-loader.mjs", "dist/migrate.js"]
+    env_file:
+      - app.env
+    environment: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    mem_limit: 256m
+    restart: "no"
+
+  api:
+    <<: *hardened
+    image: ${GUILDHUB_IMAGE_PREFIX}-api:${GUILDHUB_TAG}
+    env_file:
+      - app.env
+    environment:
+      <<: *app-environment
+      NODE_OPTIONS: --max-old-space-size=160
+    volumes:
+      - assets:/assets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    mem_limit: 256m
+    restart: unless-stopped
+
+  worker:
+    <<: *hardened
+    image: ${GUILDHUB_IMAGE_PREFIX}-worker:${GUILDHUB_TAG}
+    env_file:
+      - app.env
+    environment:
+      <<: *app-environment
+      NODE_OPTIONS: --max-old-space-size=160
+      BAKER_CACHE: /cache
+    volumes:
+      - assets:/assets
+      - baker-cache:/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 768m
+    restart: unless-stopped
+
+  web:
+    <<: *hardened
+    image: ${GUILDHUB_IMAGE_PREFIX}-web:${GUILDHUB_TAG}
+    volumes:
+      - assets:/srv/assets:ro
+    tmpfs:
+      - /config
+      - /data
+    read_only: true
+    mem_limit: 96m
+    depends_on:
+      - api
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.guildhub-${GUILDHUB_INSTANCE}.rule=Host(`${PUBLIC_HOST:?set PUBLIC_HOST in .env}`)
+      - traefik.http.routers.guildhub-${GUILDHUB_INSTANCE}.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.guildhub-${GUILDHUB_INSTANCE}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.guildhub-${GUILDHUB_INSTANCE}.loadbalancer.server.port=8080
+    restart: unless-stopped
+
+volumes:
+  postgres:
+  assets:
+  baker-cache:

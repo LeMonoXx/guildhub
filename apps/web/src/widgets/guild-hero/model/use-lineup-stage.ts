@@ -15,9 +15,44 @@ import { LineupFraming } from "./lineup-framing";
 
 const featuredLimit = 6;
 
+/** Everything about a member the stage is built from; bake news is not part of it. */
+const stageKeyOf = (member: FeaturedMember): string =>
+  JSON.stringify({
+    ...member,
+    model: member.model && { ...member.model, bake: undefined },
+  });
+
+/**
+ * Keeps the cast while only bake progress changes, so polling a bake does
+ * not restart the lineup.
+ */
+const useStageCast = (
+  members: readonly FeaturedMember[],
+): readonly FeaturedMember[] => {
+  const latest = members.slice(0, featuredLimit);
+  const key = latest.map(stageKeyOf).join("\n");
+  const [stage, setStage] = useState({ key, cast: latest });
+  if (stage.key !== key) {
+    setStage({ key, cast: latest });
+    return latest;
+  }
+  return stage.cast;
+};
+
 /** The lineup scene plus who is selected, and where everyone stands for it. */
 export const useLineupStage = (members: readonly FeaturedMember[]) => {
-  const cast = useMemo(() => members.slice(0, featuredLimit), [members]);
+  const cast = useStageCast(members);
+  const bakes = useMemo(
+    () =>
+      new Map(
+        members.flatMap((member) =>
+          member.model?.status === "pending"
+            ? [[member.slug, member.model.bake] as const]
+            : [],
+        ),
+      ),
+    [members],
+  );
   const places = useMemo(() => arrangeTroop(cast), [cast]);
   const scene = useMemo(() => buildLineupScene(cast), [cast]);
   const choreography = useMemo(() => new LineupChoreography(places), [places]);
@@ -47,6 +82,7 @@ export const useLineupStage = (members: readonly FeaturedMember[]) => {
 
   return {
     places,
+    bakes,
     scene,
     decorators,
     framing,

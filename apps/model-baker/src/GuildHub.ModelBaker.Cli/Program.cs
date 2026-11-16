@@ -19,6 +19,7 @@ public static class CliApplication
           GuildHub.ModelBaker.Cli bake-looks --looks <dir> [options]
           GuildHub.ModelBaker.Cli bake-file --kind model|texture|animation --file-id <id> [options]
           GuildHub.ModelBaker.Cli bake-proof-scene rogue-t2 [options]
+          GuildHub.ModelBaker.Cli serve [--output <path>] [--cache <path>] [--region <region>]
 
         bake-fixed options:
           --output <path>     Asset directory (default: assets/fixed)
@@ -46,6 +47,16 @@ public static class CliApplication
 
         proof scenes:
           rogue-t2  Human male Rogue in Bloodfang with dual daggers and proof animations
+
+        serve:
+          Reads one JSON request per line on stdin and answers with JSON events on stdout:
+            {"id":"1","command":"look","look":{...look.request.json...}}
+            {"id":"2","command":"fixed"}
+            {"id":"3","command":"file","kind":"texture","fileId":123}
+            {"id":"4","command":"prebake","race":2,"sex":0}
+            {"id":"5","command":"build"}
+          Events: ready, stage (opening, baking), progress (fraction 0..1), done, failed.
+          Logs go to stderr. The game storage stays open until stdin closes.
 
         Commands read product wowf from Blizzard's CDN. Generated game assets stay
         in the gitignored output directory and must never be committed.
@@ -104,6 +115,19 @@ public static class CliApplication
         return 2;
       }
       return await BakeSharedFileAsync(options!, output, error, cancellationToken);
+    }
+    if (args[0] == "serve")
+    {
+      if (!ServeOptions.TryParse(args.Skip(1).ToArray(), out var serveOptions, out var message))
+      {
+        error.WriteLine(message);
+        error.WriteLine("Run with --help for usage.");
+        return 2;
+      }
+      // TACTSharp reports download retries on Console.Out, which carries the protocol here.
+      if (ReferenceEquals(output, Console.Out)) Console.SetOut(Console.Error);
+      return await new ServeCommand(serveOptions!, Console.In, output, error)
+          .RunAsync(cancellationToken);
     }
     if (args[0] == "bake-proof-scene")
     {
@@ -293,7 +317,7 @@ public static class CliApplication
     }
   }
 
-  static async Task<BakeSession> OpenSessionAsync(
+  internal static async Task<BakeSession> OpenSessionAsync(
       string cacheDirectory,
       string region,
       TextWriter output,
@@ -323,15 +347,17 @@ public static class CliApplication
         output.WriteLine);
     var definitions = new DefinitionProvider(Path.Combine(cacheDirectory, "definitions"));
     var tables = new Db2Tables(storage, definitions, source.Version, hotfixPath: null);
-    return new BakeSession(http, new FixedLookBaker(storage, tables, source.Version));
+    return new BakeSession(http, new FixedLookBaker(storage, tables, source.Version), source.Version);
   }
 }
 
 public sealed class BakeSession(
     HttpClient http,
-    FixedLookBaker baker) : IAsyncDisposable
+    FixedLookBaker baker,
+    string build) : IAsyncDisposable
 {
   public FixedLookBaker Baker { get; } = baker;
+  public string Build { get; } = build;
 
   public ValueTask DisposeAsync()
   {

@@ -5,7 +5,8 @@ import type {
 } from "@guildhub/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useRef, type ReactNode } from "react";
+import { modelsPollInterval } from "../../../entities/character";
 import { guildQueries } from "../../../entities/guild";
 import { useLocale } from "../../../shared/i18n";
 import { formatDocumentTitle, formatNumber } from "../../../shared/lib";
@@ -163,7 +164,21 @@ function Masthead({ guild }: { readonly guild: GuildProfileResponse }) {
 export function GuildPage() {
   const { t } = useLocale();
   const profile = useQuery(guildQueries.profile());
-  const featured = useQuery(guildQueries.featured());
+  const pendingSince = useRef<number | undefined>(undefined);
+  const featured = useQuery({
+    ...guildQueries.featured(),
+    refetchInterval: (query) => {
+      const models = (query.state.data?.members ?? []).map(
+        (member) => member.model,
+      );
+      if (!models.some((model) => model?.status === "pending")) {
+        pendingSince.current = undefined;
+        return false;
+      }
+      pendingSince.current ??= Date.now();
+      return modelsPollInterval(models, Date.now() - pendingSince.current);
+    },
+  });
   const chronicle = useQuery(guildQueries.chronicle());
   const history = useQuery(guildQueries.history());
 

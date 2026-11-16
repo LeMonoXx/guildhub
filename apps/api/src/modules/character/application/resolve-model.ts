@@ -5,6 +5,7 @@ import {
   publicManifestUrl,
   publicRenderUrl,
   type CharacterModel,
+  type ModelBake,
 } from "../domain/model.js";
 import type { ModelAssetStore, ModelBuildQueue } from "./ports.js";
 import { lookHash } from "./look-hash.js";
@@ -56,6 +57,7 @@ export async function resolveCharacterModel(input: {
       },
     };
   }
+  const state = await bakeState(input, hash);
   return {
     bake,
     lookManifest: FIXED_LOOK_MANIFEST,
@@ -64,6 +66,18 @@ export async function resolveCharacterModel(input: {
       lookHash: hash,
       clientBuild: input.look.clientBuild,
       renderUrl,
+      ...(state === undefined ? {} : { bake: state }),
     },
   };
+}
+
+async function bakeState(
+  input: { assets: ModelAssetStore; queue: ModelBuildQueue },
+  hash: string,
+): Promise<ModelBake | undefined> {
+  const progress = await input.assets.bakeProgress(hash);
+  if (progress !== undefined)
+    return { state: progress.stage, fraction: progress.fraction };
+  const position = (await input.queue.queuedLooks()).indexOf(hash) + 1;
+  return position > 0 ? { state: "queued", position } : undefined;
 }

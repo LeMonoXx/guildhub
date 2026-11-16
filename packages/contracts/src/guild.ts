@@ -39,6 +39,30 @@ export const guildRosterResponseSchema = z.object({
   stale: z.boolean(),
 });
 
+export const characterModelStatusSchema = z.enum([
+  "ready",
+  "pending",
+  "unavailable",
+]);
+
+/** Where a pending look stands: waiting its turn, or being baked. */
+export const characterModelBakeSchema = z.object({
+  state: z.enum(["queued", "opening", "baking"]),
+  /** Place in the queue, 1 for next. */
+  position: z.number().int().positive().optional(),
+  /** Share of the bake done, 0 to 1. */
+  fraction: z.number().min(0).max(1).optional(),
+});
+
+export const characterModelSchema = z.object({
+  status: characterModelStatusSchema,
+  manifestUrl: z.string().min(1).optional(),
+  renderUrl: z.string().min(1).optional(),
+  lookHash: z.string().min(1),
+  clientBuild: z.string().min(1),
+  bake: characterModelBakeSchema.optional(),
+});
+
 export const characterPresentationSchema = z.object({
   slug: characterSlugSchema,
   pose: z.string().min(1),
@@ -48,28 +72,16 @@ export const characterPresentationSchema = z.object({
   carries: z.array(z.enum(["shield", "two-hand"])).optional(),
 });
 
-export const featuredMemberSchema = guildRosterMemberSchema.extend(
-  characterPresentationSchema.shape,
-);
+export const featuredMemberSchema = guildRosterMemberSchema.extend({
+  ...characterPresentationSchema.shape,
+  /** Absent in fixtures and instance presets, which only name a look. */
+  model: characterModelSchema.optional(),
+});
 
 export const featuredMembersResponseSchema = z.object({
   members: z.array(featuredMemberSchema),
   fetchedAt: z.iso.datetime(),
   stale: z.boolean(),
-});
-
-export const characterModelStatusSchema = z.enum([
-  "ready",
-  "pending",
-  "unavailable",
-]);
-
-export const characterModelSchema = z.object({
-  status: characterModelStatusSchema,
-  manifestUrl: z.string().min(1).optional(),
-  renderUrl: z.string().min(1).optional(),
-  lookHash: z.string().min(1),
-  clientBuild: z.string().min(1),
 });
 
 export const characterDetailResponseSchema = featuredMemberSchema.extend({
@@ -95,3 +107,4 @@ export type CharacterDetailResponse = z.infer<
 >;
 export type CharacterModelStatus = z.infer<typeof characterModelStatusSchema>;
 export type CharacterModel = z.infer<typeof characterModelSchema>;
+export type CharacterModelBake = z.infer<typeof characterModelBakeSchema>;

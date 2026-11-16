@@ -2,6 +2,7 @@ export { CountUp } from "./count-up";
 export { DocumentTitle } from "./document-title";
 export { Embers } from "./embers";
 export { FallbackImage } from "./fallback-image";
+export { FigureSilhouette } from "./figure-silhouette";
 export { FogVeil } from "./fog-veil";
 export { LoadProgress } from "./load-progress";
 export { Meter } from "./meter";

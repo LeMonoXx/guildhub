@@ -3,6 +3,7 @@ import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok } from "../../../platform/kernel/result.js";
 import { rankId, type RosterMember } from "../../guild/index.js";
 import type { CharacterFacts } from "../domain/look.js";
+import type { BakeProgress } from "../domain/model.js";
 import { makeGetCharacter } from "./get-character.js";
 import type {
   CharacterCache,
@@ -54,7 +55,10 @@ function cache(
   };
 }
 
-function assets(readyHashes: readonly string[] = []): ModelAssetStore {
+function assets(
+  readyHashes: readonly string[] = [],
+  progress?: BakeProgress,
+): ModelAssetStore {
   const requests: string[] = [];
   return {
     currentBuild: () => Promise.resolve("1.60.1.70938"),
@@ -63,6 +67,7 @@ function assets(readyHashes: readonly string[] = []): ModelAssetStore {
       requests.push(job.lookHash);
       return Promise.resolve();
     },
+    bakeProgress: () => Promise.resolve(progress),
   };
 }
 
@@ -80,6 +85,7 @@ function queue(): ModelBuildQueue & { looks: string[]; converts: string[] } {
       converts.push(`${job.build}:${String(job.fileId)}`);
       return Promise.resolve();
     },
+    queuedLooks: () => Promise.resolve(looks),
   };
 }
 
@@ -150,6 +156,18 @@ describe("get-character", () => {
     expect(result.value.data.lookManifest).toBe(
       `/assets/looks/${hash}/look.json`,
     );
+  });
+
+  it("reports how far a running bake is", async () => {
+    const result = await getCharacter({
+      assets: assets([], { stage: "baking", fraction: 0.42, updatedAt: now }),
+    })({ guild, slug: "guildmaster-example" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.model.bake).toEqual({
+      state: "baking",
+      fraction: 0.42,
+    });
   });
 
   it("returns character.not_found when the slug is missing", async () => {

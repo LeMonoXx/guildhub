@@ -19,6 +19,11 @@ import {
   toPublicRosterMember,
 } from "../application/present-member.js";
 
+/** A featured member, with the model state the character module may add. */
+type FeaturedPresentation = ReturnType<typeof presentMember> & {
+  readonly model?: { readonly status: string };
+};
+
 export interface RegisterGuildDeps {
   readonly instance: InstanceConfig;
   readonly getGuild: GetGuild;
@@ -32,8 +37,7 @@ export interface RegisterGuildDeps {
   readonly presentFeaturedMembers?: (
     members: readonly RosterMember[],
   ) =>
-    | readonly ReturnType<typeof presentMember>[]
-    | Promise<readonly ReturnType<typeof presentMember>[]>;
+    readonly FeaturedPresentation[] | Promise<readonly FeaturedPresentation[]>;
   readonly onStaleCache: (kind: "profile" | "roster") => void;
 }
 
@@ -80,10 +84,15 @@ export function registerGuild(
     if (!result.ok) return problemResponse(context, result.error);
     if (result.value.stale) deps.onStaleCache("roster");
     setCacheHeaders(context, result.value);
-    const members = await Promise.resolve(
+    const members: readonly FeaturedPresentation[] = await Promise.resolve(
       deps.presentFeaturedMembers?.(result.value.data) ??
         selectFeaturedMembers(result.value.data).map(presentMember),
     );
+    // A bake in progress changes the answer without changing the roster.
+    if (members.some((member) => member.model?.status === "pending")) {
+      context.header("ETag", undefined);
+      context.header("Cache-Control", "no-store");
+    }
     return context.json(
       featuredMembersResponseSchema.parse({
         members,

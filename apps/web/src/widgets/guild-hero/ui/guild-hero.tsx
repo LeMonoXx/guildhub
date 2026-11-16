@@ -78,6 +78,7 @@ export function GuildHero({ members, renderLiveStage, intro }: GuildHeroProps) {
         {live ? (
           <HeroStageOverlay
             places={lineup.places}
+            bakes={lineup.bakes}
             plan={lineup.plan}
             selected={lineup.selected}
             assembled={lineup.assembled}

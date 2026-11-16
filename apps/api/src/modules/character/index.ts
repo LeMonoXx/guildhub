@@ -40,8 +40,16 @@ export { makeHttpCharacterMediaGateway } from "./infrastructure/http-character-m
 export {
   CONVERT_QUEUE,
   LOOK_QUEUE,
+  PREBAKE_QUEUE,
   makeNoopModelBuildQueue,
   makePgBossModelBuildQueue,
+  schedulePrebake,
   startJobQueue,
 } from "./infrastructure/pg-boss-model-build-queue.js";
+export {
+  BakerProcess,
+  type BakerRequest,
+} from "./infrastructure/baker-process.js";
+export { fetchPlayableRaceIds } from "./infrastructure/battle-net-playable-races.js";
+export { reportLookProgress } from "./infrastructure/look-progress-file.js";
 export { registerCharacter } from "./http/routes.js";

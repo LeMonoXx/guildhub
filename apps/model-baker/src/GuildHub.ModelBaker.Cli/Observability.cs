@@ -55,6 +55,8 @@ public sealed class Observability : IDisposable
                     ActivityTrackingOptions.Tags |
                     ActivityTrackingOptions.Baggage;
             });
+            // stdout carries the serve protocol.
+            builder.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
             builder.AddJsonConsole(options =>
             {
                 options.IncludeScopes = true;

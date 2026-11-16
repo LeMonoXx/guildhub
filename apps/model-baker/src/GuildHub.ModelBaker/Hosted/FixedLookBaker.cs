@@ -68,8 +68,12 @@ public sealed class FixedLookBaker
     _items = new(tables);
   }
 
-  public FixedLookManifest Bake(FixedLookRequest request, Action<string>? log = null)
+  public FixedLookManifest Bake(
+      FixedLookRequest request,
+      Action<string>? log = null,
+      Action<double>? progress = null)
   {
+    var steps = new BakeProgress(progress);
     if (request.ClassId <= 0)
       throw new ArgumentOutOfRangeException(
           nameof(request.ClassId),
@@ -115,6 +119,7 @@ public sealed class FixedLookBaker
         request.OutputDirectory,
         EmbeddedAnimationPolicy.StandAndGlobals,
         log);
+    steps.Phase(BakeProgress.Body, 1, 1);
     var bodyMeta = ReadBodyMetadataPath(body.bodyFileDataId);
     var bodyMetaBytes = File.ReadAllBytes(Path.Combine(request.OutputDirectory, Native(bodyMeta)));
     var look = _looks.Resolve(
@@ -138,8 +143,10 @@ public sealed class FixedLookBaker
       textureIds.UnionWith(ItemTextureIds(item));
     }
     var unavailableModels = new HashSet<int>();
+    var modelsDone = 0;
     foreach (var modelId in modelIds)
     {
+      steps.Phase(BakeProgress.Models, modelsDone++, modelIds.Count);
       try
       {
         _ = ConvertModel(
@@ -162,28 +169,16 @@ public sealed class FixedLookBaker
     {
       resolvedItems = resolvedItems.Select(item => WithoutModels(item, unavailableModels)).ToList();
     }
+    steps.Phase(BakeProgress.Models, 1, 1);
     textureIds.UnionWith(AssetConverter.TextureIds(bodyMetaBytes));
 
+    var texturesDone = 0;
     foreach (var textureId in textureIds.Order())
     {
-      var path = TexturePath(textureId);
-      if (Exists(request.OutputDirectory, path))
-      {
-        log?.Invoke($"texture {textureId} exists, skipped");
-        continue;
-      }
-      // Some classic textures are listed in root but absent from every CDN archive; the
-      // client renders those surfaces with its fallback material instead of losing the look.
-      byte[] source;
-      try { source = _files.Open((uint)textureId); }
-      catch (FileNotFoundException error)
-      {
-        log?.Invoke($"texture {textureId} unavailable, skipped: {error.Message}");
-        continue;
-      }
-      Write(request.OutputDirectory, path, AssetConverter.ConvertTexture(source));
-      log?.Invoke($"texture {textureId} -> {path}");
+      steps.Phase(BakeProgress.Textures, texturesDone++, textureIds.Count);
+      ConvertTexture(request.OutputDirectory, textureId, log);
     }
+    steps.Phase(BakeProgress.Textures, 1, 1);
 
     var animations = new List<FixedLookAnimation>();
     var sequenceIds = AssetConverter.SequenceIds(bodyMetaBytes).ToHashSet();
@@ -198,22 +193,11 @@ public sealed class FixedLookBaker
       log?.Invoke(
           $"animation {AnimationNames.Name(animationId)} ({animationId}) unavailable for " +
           $"body {body.bodyFileDataId}, race {request.Race}, sex {request.Sex}; skipped");
+    var animationsDone = 0;
     foreach (var animationId in selectedAnimationIds)
     {
-      var path = AnimationPath(body.bodyFileDataId, animationId);
-      if (!Exists(request.OutputDirectory, path))
-      {
-        Write(
-            request.OutputDirectory,
-            path,
-            AssetConverter.ConvertAnimation(
-                (uint)body.bodyFileDataId,
-                animationId,
-                _files.Open));
-        log?.Invoke($"animation {AnimationNames.Name(animationId)} -> {path}");
-      }
-      else
-        log?.Invoke($"animation {AnimationNames.Name(animationId)} exists, skipped");
+      steps.Phase(BakeProgress.Animations, animationsDone++, selectedAnimationIds.Count);
+      var path = ConvertAnimation(request.OutputDirectory, body.bodyFileDataId, animationId, log);
       animations.Add(new(animationId, AnimationNames.Name(animationId), path));
     }
     if (requestedAnimationIds.Contains(0) && animations.All(a => a.Id != 0))
@@ -240,7 +224,107 @@ public sealed class FixedLookBaker
         request.OutputDirectory,
         "current.json",
         new { build = _build, fixedLook = "looks/fixed/look.json" });
+    steps.Phase(BakeProgress.Animations, 1, 1);
     return manifest;
+  }
+
+  /// <summary>
+  /// Bakes everything a race and sex can look like before any gear: the body, its troop
+  /// animations and the texture of every customization choice. Later looks of that body
+  /// then only convert their items.
+  /// </summary>
+  public PrebakeResult Prebake(
+      string outputDirectory,
+      int race,
+      int sex,
+      IReadOnlyList<int> animationIds,
+      Action<string>? log = null,
+      Action<double>? progress = null)
+  {
+    var steps = new BakeProgress(progress);
+    var body = _looks.Body(race, sex, ModelSet.Hd);
+    if (body == null)
+    {
+      log?.Invoke($"race {race}, sex {sex} has no HD body; skipped");
+      return new(race, sex, 0, Baked: false);
+    }
+    ConvertModel(body.Value.bodyFileDataId, outputDirectory, EmbeddedAnimationPolicy.StandAndGlobals, log);
+    steps.Phase(BakeProgress.Body, 1, 1);
+    var bodyMetaBytes = File.ReadAllBytes(
+        Path.Combine(outputDirectory, Native(MetadataPath(body.Value.bodyFileDataId))));
+    var look = _looks.Resolve(
+        race,
+        sex,
+        LookResolver.DefaultClassId,
+        ModelSet.Hd,
+        _ => AssetConverter.GeosetIds(bodyMetaBytes),
+        customizations: null);
+    var textureIds = new HashSet<int>(AssetConverter.TextureIds(bodyMetaBytes));
+    if (look != null)
+    {
+      foreach (var layer in look.Layers.Concat(
+          look.Options.SelectMany(option => option.Choices).SelectMany(choice => choice.Layers)))
+      {
+        textureIds.Add(layer.FileDataId);
+        if (layer.Candidates != null) textureIds.UnionWith(layer.Candidates);
+      }
+    }
+    textureIds.Remove(0);
+    steps.Phase(BakeProgress.Models, 1, 1);
+    var done = 0;
+    foreach (var textureId in textureIds.Order())
+    {
+      steps.Phase(BakeProgress.Textures, done++, textureIds.Count);
+      ConvertTexture(outputDirectory, textureId, log);
+    }
+    steps.Phase(BakeProgress.Textures, 1, 1);
+    var sequenceIds = AssetConverter.SequenceIds(bodyMetaBytes).ToHashSet();
+    var selected = _animationPolicy.Select(new(race, sex, animationIds, sequenceIds)).ToList();
+    done = 0;
+    foreach (var animationId in selected)
+    {
+      steps.Phase(BakeProgress.Animations, done++, selected.Count);
+      ConvertAnimation(outputDirectory, body.Value.bodyFileDataId, animationId, log);
+    }
+    steps.Phase(BakeProgress.Animations, 1, 1);
+    return new(race, sex, textureIds.Count, Baked: true);
+  }
+
+  // Some classic textures are listed in root but absent from every CDN archive; the
+  // client renders those surfaces with its fallback material instead of losing the look.
+  void ConvertTexture(string outputDirectory, int textureId, Action<string>? log)
+  {
+    var path = TexturePath(textureId);
+    if (Exists(outputDirectory, path))
+    {
+      log?.Invoke($"texture {textureId} exists, skipped");
+      return;
+    }
+    byte[] source;
+    try { source = _files.Open((uint)textureId); }
+    catch (FileNotFoundException error)
+    {
+      log?.Invoke($"texture {textureId} unavailable, skipped: {error.Message}");
+      return;
+    }
+    Write(outputDirectory, path, AssetConverter.ConvertTexture(source));
+    log?.Invoke($"texture {textureId} -> {path}");
+  }
+
+  string ConvertAnimation(string outputDirectory, int bodyFileDataId, int animationId, Action<string>? log)
+  {
+    var path = AnimationPath(bodyFileDataId, animationId);
+    if (Exists(outputDirectory, path))
+    {
+      log?.Invoke($"animation {AnimationNames.Name(animationId)} exists, skipped");
+      return path;
+    }
+    Write(
+        outputDirectory,
+        path,
+        AssetConverter.ConvertAnimation((uint)bodyFileDataId, animationId, _files.Open));
+    log?.Invoke($"animation {AnimationNames.Name(animationId)} -> {path}");
+    return path;
   }
 
   public void BakeSharedFile(

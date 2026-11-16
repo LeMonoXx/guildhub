@@ -26,6 +26,34 @@ describe("guild lineup scene", () => {
     expect(new Set(actors.map((actor) => actor.manifest)).size).toBe(1);
   });
 
+  test("leaves members whose model is still baking out of the scene", async () => {
+    const members = (
+      await createFixtureGuildSource().getFeaturedMembers()
+    ).members.slice(0, 3);
+    const [first, waiting, third] = members;
+    if (!first || !waiting || !third) throw new Error("fixture too small");
+    const scene = buildLineupScene([
+      first,
+      {
+        ...waiting,
+        model: {
+          status: "pending",
+          lookHash: "abc",
+          clientBuild: "1.60.1.70938",
+          bake: { state: "queued", position: 1 },
+        },
+      },
+      third,
+    ]);
+    const actors = scene.declarations
+      .filter((declaration) => declaration.kind === "actor")
+      .map((actor) => actor.id);
+    expect(new Set(actors)).toEqual(new Set([first.slug, third.slug]));
+    expect(scene.tracks.some((track) => track.target === waiting.slug)).toBe(
+      false,
+    );
+  });
+
   test("stops walking before the slot, a shield carrier earlier still", async () => {
     const fixture = (await createFixtureGuildSource().getFeaturedMembers())
       .members;

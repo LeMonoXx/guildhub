@@ -1,6 +1,4 @@
-import { execFile, type ExecFileException } from "node:child_process";
-import { access, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { access } from "node:fs/promises";
 import path from "node:path";
 import { contentLocales } from "@guildhub/contracts";
 import { composeGuild } from "./composition.js";
@@ -9,8 +7,13 @@ import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 import {
+  BakerProcess,
   CONVERT_QUEUE,
   LOOK_QUEUE,
+  PREBAKE_QUEUE,
+  fetchPlayableRaceIds,
+  reportLookProgress,
+  schedulePrebake,
   startJobQueue,
   type ConvertFileJob,
   type LookBakeDocument,
@@ -47,8 +50,28 @@ const logger = createLogger({
 const assetRoot = requiredEnv(env.ASSET_ROOT, "ASSET_ROOT");
 const bakerCli = requiredEnv(env.BAKER_CLI, "BAKER_CLI");
 const bakerCache = env.BAKER_CACHE ?? path.join(assetRoot, ".cache");
-/** One baker at a time: a single bake can need most of a small host's memory. */
-let bakerTurn: Promise<void> = Promise.resolve();
+/** An open game storage holds most of a small host's memory; give it back between runs. */
+const BAKER_IDLE_MS = 2 * 60 * 1000;
+/** Every body comes in both sexes the game knows. */
+const SEXES = [0, 1] as const;
+
+const baker = new BakerProcess({
+  command: bakerCli.endsWith(".dll") ? "dotnet" : bakerCli,
+  args: [
+    ...(bakerCli.endsWith(".dll") ? [bakerCli] : []),
+    "serve",
+    "--output",
+    assetRoot,
+    "--cache",
+    bakerCache,
+    "--region",
+    env.BAKER_REGION,
+  ],
+  idleMs: BAKER_IDLE_MS,
+  log: (line) => {
+    logger.info({ module: "baker" }, line);
+  },
+});
 
 await ensureFixedLook();
 
@@ -134,6 +157,11 @@ await boss.work(RECIPE_QUEUE, async () => {
   );
 });
 
+await schedulePrebake(boss, env.HISTORY_TIME_ZONE);
+await boss.work(PREBAKE_QUEUE, async () => {
+  await prebakeBodies();
+});
+
 logger.info({ module: "lifecycle" }, "model worker listening");
 
 let shuttingDown = false;
@@ -141,6 +169,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ module: "lifecycle", signal }, "worker shutdown started");
+  baker.stop();
   try {
     await boss.stop({ graceful: true, timeout: 10_000 });
   } catch (error) {
@@ -180,15 +209,7 @@ async function ensureFixedLook(): Promise<void> {
   if (present) return;
   logger.info({ module: "baker" }, "fixed look missing, baking it");
   try {
-    await runBaker([
-      "bake-fixed",
-      "--output",
-      assetRoot,
-      "--cache",
-      bakerCache,
-      "--region",
-      env.BAKER_REGION,
-    ]);
+    await baker.run({ command: "fixed" });
     logger.info({ module: "baker" }, "fixed look baked");
   } catch (error) {
     logger.error({ module: "baker", err: error }, "fixed look bake failed");
@@ -196,43 +217,66 @@ async function ensureFixedLook(): Promise<void> {
 }
 
 async function bakeLook(job: LookBakeDocument): Promise<void> {
-  const directory = await mkdtemp(path.join(tmpdir(), "guildhub-look-"));
-  const lookFile = path.join(directory, "look.json");
-  await writeFile(lookFile, `${JSON.stringify(job)}\n`);
-  await runBaker([
-    "bake-look",
-    "--look",
-    lookFile,
-    "--output",
-    assetRoot,
-    "--cache",
-    bakerCache,
-    "--region",
-    env.BAKER_REGION,
-  ]);
+  const progress = reportLookProgress(assetRoot, job.lookHash);
+  const started = Date.now();
+  try {
+    await baker.run({ command: "look", look: job }, { listener: progress });
+    logger.info(
+      { module: "baker", lookHash: job.lookHash, ms: Date.now() - started },
+      "look baked",
+    );
+  } finally {
+    await progress.finish();
+  }
 }
 
 async function bakeFile(job: ConvertFileJob): Promise<void> {
-  const args = [
-    "bake-file",
-    "--kind",
-    job.kind,
-    "--file-id",
-    String(job.fileId),
-    "--output",
-    assetRoot,
-    "--cache",
-    bakerCache,
-    "--region",
-    env.BAKER_REGION,
-  ];
-  if (job.modelFileId !== undefined) {
-    args.push("--model-file-id", String(job.modelFileId));
+  await baker.run({
+    command: "file",
+    kind: job.kind,
+    fileId: job.fileId,
+    ...(job.modelFileId === undefined ? {} : { modelFileId: job.modelFileId }),
+    ...(job.animationId === undefined ? {} : { animationId: job.animationId }),
+  });
+}
+
+/**
+ * Bakes every playable body with all its appearance textures once per game
+ * build, so a member's first look only adds gear. Real looks go first.
+ */
+async function prebakeBodies(): Promise<void> {
+  const races = await fetchPlayableRaceIds(composed.battleNet);
+  if (!races.ok) {
+    logger.warn(
+      { module: "baker", code: races.error.code, detail: races.error.detail },
+      "playable races unavailable",
+    );
+    throw new Error(`playable races unavailable: ${races.error.code}`);
   }
-  if (job.animationId !== undefined) {
-    args.push("--animation-id", String(job.animationId));
+  let baked = 0;
+  let failed = 0;
+  for (const race of races.value) {
+    for (const sex of SEXES) {
+      try {
+        const result = await baker.run(
+          { command: "prebake", race, sex },
+          { priority: "background" },
+        );
+        if (result.skipped !== true) baked++;
+      } catch (error) {
+        failed++;
+        logger.warn(
+          { module: "baker", race, sex, err: error },
+          "prebake failed",
+        );
+      }
+    }
   }
-  await runBaker(args);
+  if (baked > 0 || failed > 0)
+    logger.info(
+      { module: "baker", races: races.value.length, baked, failed },
+      "bodies prebaked",
+    );
 }
 
 function requiredEnv(value: string | undefined, name: string): string {
@@ -242,37 +286,4 @@ function requiredEnv(value: string | undefined, name: string): string {
     `${name} is required for the model worker`,
   );
   throw new Error(`${name} is required for the model worker`);
-}
-
-function runBaker(args: readonly string[]): Promise<void> {
-  const run = bakerTurn.then(() => execBaker(args));
-  bakerTurn = run.catch(() => undefined);
-  return run;
-}
-
-function execBaker(args: readonly string[]): Promise<void> {
-  const command = bakerCli.endsWith(".dll") ? "dotnet" : bakerCli;
-  const commandArgs = bakerCli.endsWith(".dll")
-    ? [bakerCli, ...args]
-    : [...args];
-  logger.info({ module: "baker", args: commandArgs }, "starting baker");
-  return new Promise((resolve, reject) => {
-    execFile(
-      command,
-      commandArgs,
-      (error: ExecFileException | null, stdout: string, stderr: string) => {
-        if (stdout !== "") {
-          process.stdout.write(stdout);
-        }
-        if (stderr !== "") {
-          process.stderr.write(stderr);
-        }
-        if (error !== null) {
-          reject(error instanceof Error ? error : new Error("baker failed"));
-          return;
-        }
-        resolve();
-      },
-    );
-  });
 }

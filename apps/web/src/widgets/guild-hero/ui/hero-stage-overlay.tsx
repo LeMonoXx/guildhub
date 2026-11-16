@@ -1,6 +1,9 @@
+import type { CharacterModelBake } from "@guildhub/contracts";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
+import { bakeStatus, wowClassColorVar } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
+import { FigureSilhouette } from "../../../shared/ui";
 import type { StagePlan } from "../model/stage-plan";
 import {
   StageProjection,
@@ -13,6 +16,8 @@ import { HeroMemberCard } from "./hero-member-card";
 
 interface HeroStageOverlayProps {
   readonly places: readonly TroopPlace[];
+  /** Members whose model is still being baked, and how far it is. */
+  readonly bakes: ReadonlyMap<string, CharacterModelBake | undefined>;
   readonly plan: StagePlan;
   readonly selected: string | undefined;
   readonly assembled: boolean;
@@ -50,6 +55,7 @@ const focusStyle = (box: StageBox, size: Size) =>
  */
 export function HeroStageOverlay({
   places,
+  bakes,
   plan,
   selected,
   assembled,
@@ -97,6 +103,8 @@ export function HeroStageOverlay({
       <div className="hero-spotlight" aria-hidden="true" />
       {spots.map(({ place, box }) => {
         const slug = place.member.slug;
+        const waiting = bakes.has(slug);
+        const status = waiting ? bakeStatus(bakes.get(slug), t) : undefined;
         return (
           <button
             key={slug}
@@ -105,14 +113,18 @@ export function HeroStageOverlay({
             aria-pressed={selected === slug}
             aria-label={t("hero.select", { name: place.member.name })}
             data-focused={focused?.place === place}
+            data-waiting={waiting}
             disabled={!assembled}
-            style={{
-              left: percent(box.left),
-              top: percent(box.top),
-              width: percent(box.width),
-              height: percent(box.height),
-              zIndex: depthLayer(place, plan),
-            }}
+            style={
+              {
+                left: percent(box.left),
+                top: percent(box.top),
+                width: percent(box.width),
+                height: percent(box.height),
+                zIndex: depthLayer(place, plan),
+                "--member-class": wowClassColorVar(place.member.classId),
+              } as CSSProperties
+            }
             onPointerEnter={() => {
               setHovered(slug);
             }}
@@ -128,7 +140,15 @@ export function HeroStageOverlay({
             onClick={() => {
               onToggle(slug);
             }}
-          />
+          >
+            {status ? (
+              <FigureSilhouette
+                name={place.member.name}
+                status={status.label}
+                fraction={status.fraction}
+              />
+            ) : null}
+          </button>
         );
       })}
       {focused && assembled ? (

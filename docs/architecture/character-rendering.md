@@ -4,8 +4,9 @@ How a guild character becomes an animated 3D model on the site. Decision: [0008]
 
 The Armory join is in: Battle.net appearance, equipment, and media become a look hash, the baker
 writes `looks/{lookHash}/look.json` plus shared `builds/{build}/v{N}/` files, and the character
-page plus home troop load those manifests. The roster stays on official 2D renders. A missing bake
-falls back to the fixed look so the troop never shows a broken mesh.
+page plus home troop load those manifests. The roster stays on official 2D renders. A member whose
+look is not baked yet keeps their slot in the troop as a silhouette with their name and the bake's
+place in line or percent, so the troop never shows a broken mesh or someone else's look.
 
 What we copied from Altrobe, and the order it was built: [character rendering plan](character-rendering-plan.md).
 
@@ -126,9 +127,12 @@ Rules:
 
 `status` is `ready`, `pending`, or `unavailable`. `ready` means `looks/{lookHash}/look.json` exists. `renderUrl` is our stable proxy for the official Battle.net image, never a short-lived CDN link in the SPA.
 
+A `pending` model may carry `bake`: `{ state: "queued", position }` from the pg-boss queue (oldest first), or `{ state: "opening" | "baking", fraction }` while the worker bakes it. The worker mirrors the baker's progress events into `looks/{lookHash}/look.progress.json`, refreshed at least every 30 s and removed when the bake ends; the API ignores a file older than two minutes, so a worker that died leaves no stuck percent behind. While any featured member is pending, `/api/guild/featured` answers `no-store`.
+
 - **Two job levels, not mixed.** Convert jobs are singleton `(build, outputVersion, fileId)` so two people in the same chest convert it once (the baker also skips files that already exist). Look jobs are singleton `lookHash`. Featured looks are enqueued when the home troop is presented; the character page may poll.
 - **Invalidation is by hash, not by time.** A newer character snapshot with the same look hash changes nothing. A different look hash enqueues a new build; the old files stay until unreferenced. A new Forever build marks every ready look stale, and the next page view enqueues a rebuild while the previous model keeps showing.
-- **Game files are read once per build.** The daily check asks which `wowf` build is current. Extraction happens after a new build is detected, in the background, not during a request. With 16 members this can prebuild every current look after a patch instead of waiting for a visit.
+- **Game files are read once per build.** The worker keeps one baker in `serve` mode: JSON requests on stdin, `ready`/`stage`/`progress`/`done`/`failed` events on stdout. It opens the game data for the first request of a run, rechecks the `wowf` build every ten minutes, and exits after two idle minutes. Look requests go before background work.
+- **Bodies are prebaked per build.** Hourly and at startup, the worker prebakes every playable race (from Battle.net's playable race index) in both sexes: body, every appearance texture any customization choice can use, and the troop animations. A marker per body and build makes the check cheap when nothing changed. A member's first look then only adds their gear.
 - **Battle.net stays on its existing window.** Character snapshots refresh when viewed and older than the window (start at 15 minutes, configuration, not a constant), and the roster sweep refreshes the rest. The model pipeline consumes the snapshot we already stored. It does not call Battle.net itself.
 - **Postgres does not hold blobs.** It holds snapshot facts and `fetched_at`. Look readiness is the presence of `looks/{hash}/look.json`. The asset store holds bytes. Backups cover Postgres as they do today; the asset store is rebuildable from game files plus snapshots, so it is cached data, not the source of truth.
 
@@ -140,7 +144,7 @@ Sharing the body, the item models, and the texture layers between characters is 
 
 **Character page, model already built.** One API call from Postgres (part of the p95 under 200 ms budget). The browser fetches the body, the worn items, and the texture layers, composites the body on the GPU, and plays the animation. Bodies, items, and layers are usually already in the browser cache from another character. The page paints the official render immediately and swaps to the model when it has loaded.
 
-**Character page, look not built yet.** The API enqueues the job and returns `pending` with `renderUrl`. The page shows the official render and refetches the character query with backoff (2 s, 4 s, 8 s, then every 15 s, giving up after 2 min). Only the open character page polls. The roster never polls.
+**Character page, look not built yet.** The API enqueues the job and returns `pending` with `renderUrl` and, when known, `bake`. The page shows the official render (a silhouette without one) with the place in line or the bake's percent. It refetches every 2 s while baking, every 5 s while queued, and with backoff (2 s, 4 s, 8 s, then every 15 s) without news, giving up after 20 min. The open character page and the guild home with a pending featured member poll. The roster never polls.
 
 **Roster.** Official facts and (when present) official render images. The member index does not
 import Three.js.
@@ -183,13 +187,13 @@ Follows [backend architecture](backend.md). The heavy code is isolated so the AP
 | Ports: `CharacterSource`, `CharacterCache`, `ModelBuildQueue`, `ModelAssetStore` | `character/application`                                                                                                                                                |
 | Battle.net adapter, Drizzle snapshot table, pg-boss enqueue                      | `character/infrastructure` in the API                                                                                                                                  |
 | Indexing, M2 to glTF, BLP to PNG, `bake-look` / `bake-looks` / `bake-file`       | `apps/model-baker`, a .NET tool copied from Altrobe. Its own image and a writable asset volume. See the [plan](character-rendering-plan.md).                           |
-| Job transport                                                                    | pg-boss, the same Postgres. Queues `bake-look` and `convert-file`. The API enqueues; `apps/api/src/worker.ts` runs the baker CLI                                       |
+| Job transport                                                                    | pg-boss, the same Postgres. Queues `bake-look`, `convert-file`, and `prebake-bodies`. The API enqueues; `apps/api/src/worker.ts` drives one baker in `serve` mode      |
 | Contracts: the `model` object on the character JSON                              | `packages/contracts`                                                                                                                                                   |
 | Viewer                                                                           | `apps/web`, slices `widgets/character-model` and `widgets/character-cinematic`. Three.js stays in adapters. Character detail and the capable home stage load it lazily |
 
 `apps/model-baker` is .NET. It does not import the API. The API never parses M2, BLP, or CASC, and it never links the baker. They meet at Postgres (the job queue) and the asset store.
 
-The worker's entry point is its own composition root: open the queue, spawn `bake-look` / `bake-file`, stop on `SIGTERM`. Game files are read from Blizzard's CDN through the baker's existing storage. Neither process starts the game.
+The worker's entry point is its own composition root: open the queue, hand look, file, and prebake requests to the `serve` baker, stop on `SIGTERM`. Game files are read from Blizzard's CDN through the baker's existing storage. Neither process starts the game.
 
 Character clips, material tracks, authored effects, and reusable character-detail intros follow the
 [character cinematics](character-cinematics.md) runtime and ownership boundaries.

@@ -305,6 +305,25 @@
   cursor: default;
 }
 
+/* Waiting members appear in their slot while the others walk in. */
+.hero-hotspot[data-waiting="true"] .figure-silhouette {
+  animation: hero-waiting-appear 1.4s var(--ease-out) 0.6s both;
+  transition: opacity 1.2s var(--ease-out);
+}
+
+/* Behind the title card they stay faint, like the others still walking in. */
+.hero-overlay[data-assembled="false"]
+  .hero-hotspot[data-waiting="true"]
+  .figure-silhouette {
+  opacity: 0.35;
+}
+
+@keyframes hero-waiting-appear {
+  from {
+    opacity: 0;
+  }
+}
+
 /* The floor light at the feet of whoever is hovered or chosen. */
 .hero-hotspot::after {
   position: absolute;
@@ -620,6 +639,10 @@
   .hero-hotspot,
   .hero-member-card {
     transition: none;
+  }
+
+  .hero-hotspot[data-waiting="true"] .figure-silhouette {
+    animation: none;
   }
 }
 

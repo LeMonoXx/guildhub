@@ -1,11 +1,25 @@
 export type ModelStatus = "ready" | "pending" | "unavailable";
 
+/** What the worker last wrote about a bake in progress. */
+export interface BakeProgress {
+  readonly stage: "opening" | "baking";
+  readonly fraction: number;
+  readonly updatedAt: Date;
+}
+
+export interface ModelBake {
+  readonly state: "queued" | "opening" | "baking";
+  readonly position?: number;
+  readonly fraction?: number;
+}
+
 export interface CharacterModel {
   readonly status: ModelStatus;
   readonly lookHash: string;
   readonly clientBuild: string;
   readonly manifestUrl?: string;
   readonly renderUrl?: string;
+  readonly bake?: ModelBake;
 }
 
 export function publicRenderUrl(slug: string): string {

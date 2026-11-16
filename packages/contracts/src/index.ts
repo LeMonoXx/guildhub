@@ -43,6 +43,7 @@ export {
 } from "./cinematic-scene.js";
 export {
   characterDetailResponseSchema,
+  characterModelBakeSchema,
   characterModelSchema,
   characterModelStatusSchema,
   characterPresentationSchema,
@@ -55,6 +56,7 @@ export {
   guildRosterResponseSchema,
   type CharacterDetailResponse,
   type CharacterModel,
+  type CharacterModelBake,
   type CharacterModelStatus,
   type CharacterPresentation,
   type CharacterSlug,

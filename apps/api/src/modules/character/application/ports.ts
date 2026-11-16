@@ -2,6 +2,7 @@ import type { ContentLocale } from "@guildhub/contracts";
 import type { AppError } from "../../../platform/kernel/app-error.js";
 import type { Result } from "../../../platform/kernel/result.js";
 import type { CharacterFacts, LookBakeDocument } from "../domain/look.js";
+import type { BakeProgress } from "../domain/model.js";
 import type {
   CharacterProfileData,
   CharacterProfileSnapshot,
@@ -65,12 +66,16 @@ export interface ConvertFileJob {
 export interface ModelBuildQueue {
   enqueueLook(job: LookBakeDocument): Promise<void>;
   enqueueConvert(job: ConvertFileJob): Promise<void>;
+  /** Hashes of looks waiting to be baked, next first. */
+  queuedLooks(): Promise<readonly string[]>;
 }
 
 export interface ModelAssetStore {
   currentBuild(): Promise<string | undefined>;
   hasLook(lookHash: string): Promise<boolean>;
   writeLookRequest(job: LookBakeDocument): Promise<void>;
+  /** Undefined when no bake of this look is running. */
+  bakeProgress(lookHash: string): Promise<BakeProgress | undefined>;
 }
 
 export interface CharacterMediaGateway {

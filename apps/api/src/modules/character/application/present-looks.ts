@@ -38,6 +38,7 @@ export const makePresentFeaturedMembers =
       lookManifest: view.lookManifest,
       renderUrl: view.renderUrl,
       carries: view.carries,
+      model: view.model,
     }));
   };
 

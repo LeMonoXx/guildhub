@@ -50,7 +50,9 @@ What runs on the server, all in one Compose project named `guildhub-<instance>`:
 
 Only `web` is reachable, through the host's Traefik. No GuildHub container publishes a port. Every container has `oom_score_adj: 500`, so if the host runs out of memory the kernel stops GuildHub before the host's other services.
 
-The worker runs one bake at a time. The first bake of a Blizzard build reads about five million CDN index entries and peaks near 1 GB for a few minutes; later bakes reuse the `baker-cache` volume and need far less. `DOTNET_GCHeapHardLimit` in the compose file lets .NET use swap for that peak, because .NET otherwise sizes its heap from physical RAM only. On first start, when `looks/fixed/look.json` is missing, the worker bakes the fixed look before it takes jobs; characters show it until their own look is baked.
+The worker keeps one baker process (`serve` mode) and hands it one bake at a time. Only the first bake of a run pays for opening Blizzard's CDN indexes and tables; the next ones take seconds. After two idle minutes the worker closes the baker, which gives its memory back. Opening a Blizzard build reads about five million CDN index entries and peaks near 1 GB; the `baker-cache` volume makes later openings far cheaper. `DOTNET_GCHeapHardLimit` in the compose file lets .NET use swap for that peak, because .NET otherwise sizes its heap from physical RAM only. On first start, when `looks/fixed/look.json` is missing, the worker bakes the fixed look before it takes jobs.
+
+Every hour, and once at startup, the worker asks Battle.net for the playable races and prebakes each race and sex: body, every appearance texture, and the lineup animations. A marker per body under `builds/<build>/v<version>/prebake/` makes an unchanged build a cheap check that does not open the game data. A new Blizzard build therefore gets prebaked within the hour, one body after another, and real looks go first. A first prebake of a build takes a while on a small host and holds the baker's memory peak for that time.
 
 ## 2. What the server needs
 
@@ -264,4 +266,4 @@ docker compose start api worker
 | Containers restart with exit code 137              | Out of memory; `docker stats`, and the swap in 3.7                                                        |
 | Worker log: `OutOfMemoryException` in a bake       | `DOTNET_GCHeapHardLimit` and the worker's `mem_limit`; both must exceed about 1 GB                        |
 | Worker log: `Exhausted all CDNs`                   | The baker could not reach or ping Blizzard's CDN; `ping` in the worker image must have no file capability |
-| Characters stay on the fixed look                  | `docker compose logs worker` for `Bake failed`; `looks/<hash>/look.json` appears when done                |
+| Characters stay a silhouette                       | `docker compose logs worker` for `bake failed`; `looks/<hash>/look.json` appears when done                |

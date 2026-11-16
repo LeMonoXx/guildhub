@@ -2,6 +2,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ModelAssetStore } from "../application/ports.js";
 import type { LookBakeDocument } from "../domain/look.js";
+import { readLookProgress } from "./look-progress-file.js";
 
 export function makeFilesystemModelAssetStore(
   root: string | undefined,
@@ -28,6 +29,8 @@ export function makeFilesystemModelAssetStore(
         return false;
       }
     },
+    bakeProgress: async (lookHash) =>
+      root === undefined ? undefined : readLookProgress(root, lookHash),
     writeLookRequest: async (job) => {
       if (root === undefined) return;
       const directory = path.join(root, "looks", job.lookHash);

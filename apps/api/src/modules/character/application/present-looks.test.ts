@@ -50,6 +50,7 @@ describe("present featured members", () => {
       currentBuild: () => Promise.resolve("1.60.1.70938"),
       hasLook: () => Promise.resolve(false),
       writeLookRequest: () => Promise.resolve(),
+      bakeProgress: () => Promise.resolve(undefined),
     };
     const queue: ModelBuildQueue = {
       enqueueLook: (job) => {
@@ -57,6 +58,7 @@ describe("present featured members", () => {
         return Promise.resolve();
       },
       enqueueConvert: () => Promise.resolve(),
+      queuedLooks: () => Promise.resolve(looks),
     };
     const presented = await makePresentFeaturedMembers({
       source,
@@ -70,6 +72,10 @@ describe("present featured members", () => {
     expect(presented[0]?.lookManifest).toBe("/assets/looks/fixed/look.json");
     expect(presented[0]?.renderUrl).toBe("/api/characters/ann-example/render");
     expect(looks).toHaveLength(1);
+    expect(presented[0]?.model).toMatchObject({
+      status: "pending",
+      bake: { state: "queued", position: 1 },
+    });
   });
 
   it("points featured members at their baked look when it exists", async () => {
@@ -84,10 +90,12 @@ describe("present featured members", () => {
         currentBuild: () => Promise.resolve("1.60.1.70938"),
         hasLook: () => Promise.resolve(true),
         writeLookRequest: () => Promise.resolve(),
+        bakeProgress: () => Promise.resolve(undefined),
       },
       queue: {
         enqueueLook: () => Promise.resolve(),
         enqueueConvert: () => Promise.resolve(),
+        queuedLooks: () => Promise.resolve([]),
       },
       clock: { now: () => new Date("2026-11-13T12:00:00.000Z") },
       maxAgeMs: 900_000,

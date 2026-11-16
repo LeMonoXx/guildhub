@@ -245,8 +245,20 @@
   display: none;
 }
 
-.character-backdrop:has(.cinematic[data-state="ready"]) .character-poster {
+.character-backdrop:has(.cinematic[data-state="ready"]) .character-poster,
+.character-backdrop:has(.cinematic[data-state="ready"]) .character-silhouette {
   display: none;
+}
+
+/* Without a portrait, a shape stands where the bust would be. */
+.character-backdrop .character-silhouette {
+  --member-class: var(--hero-class);
+  position: absolute;
+  top: 8cqh;
+  left: 56cqw;
+  width: 40cqh;
+  height: 104cqh;
+  transform: translateX(-50%);
 }
 
 /* Battle.net renders leave the figure in the middle 55% of a 4:3 frame. */

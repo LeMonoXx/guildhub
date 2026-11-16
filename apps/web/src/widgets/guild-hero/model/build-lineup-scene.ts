@@ -33,6 +33,10 @@ export const planLineupEntrances = (
 export const lineupAssembledAt = (entrances: readonly Entrance[]): number =>
   Math.max(0, ...entrances.map((entrance) => entrance.settledAt)) + settleMs;
 
+/** Their slot stays free for a silhouette until the model is baked. */
+export const awaitsModel = (member: FeaturedMember): boolean =>
+  member.model?.status === "pending";
+
 /**
  * The featured troop walks on stage once, turns to the camera and stays.
  * Live interaction takes over from the "hold" phase on.
@@ -51,12 +55,14 @@ export const buildLineupScene = (
     durationMs,
     loop: false,
     declarations: [
-      ...places.map((place) => ({
-        kind: "actor" as const,
-        id: place.member.slug,
-        manifest: place.member.lookManifest,
-        character: place.member.slug,
-      })),
+      ...places
+        .filter((place) => !awaitsModel(place.member))
+        .map((place) => ({
+          kind: "actor" as const,
+          id: place.member.slug,
+          manifest: place.member.lookManifest,
+          character: place.member.slug,
+        })),
       ...stageDeclarations,
     ],
     markers: [
@@ -71,7 +77,7 @@ export const buildLineupScene = (
       ...stageTracks(durationMs),
       ...places.flatMap((place, index) => {
         const entrance = entrances[index];
-        return entrance === undefined
+        return entrance === undefined || awaitsModel(place.member)
           ? []
           : new ActorTrackBuilder(
               place,

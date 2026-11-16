@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  bakeStatus,
   CharacterNotFoundError,
   characterQueries,
   modelPollInterval,
@@ -34,6 +35,7 @@ import {
 import {
   DocumentTitle,
   FallbackImage,
+  FigureSilhouette,
   LoadProgress,
   PanelSection,
   SectionNav,
@@ -68,7 +70,7 @@ function CharacterPoster({ src }: { readonly src: string | undefined }) {
     <FallbackImage
       className="character-poster"
       src={src}
-      fallback={null}
+      fallback={<FigureSilhouette className="character-silhouette" />}
       data-framed={figure !== undefined}
       style={style}
       onLoad={(event) => {
@@ -87,6 +89,7 @@ function CharacterBackdrop({
   const liveCapable = useMediaQuery(liveStageMediaQuery);
   const live = liveCapable && detail.model.status === "ready";
   const baking = liveCapable && detail.model.status === "pending";
+  const bake = baking ? bakeStatus(detail.model.bake, t) : undefined;
   const figureHeight = raceHeight(detail.raceId);
   const scene = useMemo(
     () =>
@@ -130,7 +133,10 @@ function CharacterBackdrop({
         ) : null}
         {baking ? (
           <div className="model-loading">
-            <LoadProgress label={t("model.baking")} />
+            <LoadProgress
+              label={bake?.label ?? t("model.baking")}
+              fraction={bake?.fraction}
+            />
           </div>
         ) : null}
       </div>
@@ -219,7 +225,7 @@ export function CharacterPage() {
       }
       pendingSince.current ??= Date.now();
       return modelPollInterval(
-        query.state.data.model.status,
+        query.state.data.model,
         Date.now() - pendingSince.current,
       );
     },

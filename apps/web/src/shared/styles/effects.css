@@ -224,6 +224,79 @@
   }
 }
 
+/* A figure still waiting for its model: dark shape, faint class rim, status at the feet. */
+.figure-silhouette {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.figure-silhouette-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: rgb(5 7 11 / 0.82);
+  filter: drop-shadow(
+      0 0 1px
+        color-mix(
+          in srgb,
+          var(--member-class, var(--color-wisp)) 70%,
+          transparent
+        )
+    )
+    drop-shadow(
+      0 0 14px
+        color-mix(
+          in srgb,
+          var(--member-class, var(--color-wisp)) 35%,
+          transparent
+        )
+    );
+  animation: figure-silhouette-breathe 3.2s ease-in-out infinite;
+}
+
+.figure-silhouette-status {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: max-content;
+  transform: translateX(-50%);
+}
+
+.figure-silhouette-status .load-progress {
+  width: 12rem;
+  padding: 0.5rem 0.65rem 0.6rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.figure-silhouette-name {
+  color: var(--member-class, var(--color-light));
+  font-family: var(--font-fantasy);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.8);
+}
+
+@keyframes figure-silhouette-breathe {
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .figure-silhouette-shape {
+    animation: none;
+  }
+}
+
 /* Embers */
 .embers {
   position: absolute;

@@ -134,7 +134,7 @@ function FogLine({
 }) {
   return (
     <p ref={lineRef} className="fog-line" aria-hidden="true">
-      {[...text].map((char, index) => {
+      {Array.from(text).map((char, index) => {
         const shift = drift(index);
         return (
           <span

@@ -193,7 +193,7 @@ Follows [backend architecture](backend.md). The heavy code is isolated so the AP
 
 `apps/model-baker` is .NET. It does not import the API. The API never parses M2, BLP, or CASC, and it never links the baker. They meet at Postgres (the job queue) and the asset store.
 
-The worker's entry point is its own composition root: open the queue, hand look, file, and prebake requests to the `serve` baker, stop on `SIGTERM`. Game files are read from Blizzard's CDN through the baker's existing storage. Neither process starts the game.
+The worker's entry point is its own composition root and only wires: the use cases `makeBakeLook`, `makeEnsureFixedLook`, and `makePrebakeBodies` in `character/application` talk to the `ModelBaker`, `BakeProgressSink`, and `PlayableRaceSource` ports; `makeServeModelBaker` implements the baker port with the `serve` process, and `registerModelJobs` owns the queues, schedule, and handlers. The worker stops the baker on `SIGTERM`. Game files are read from Blizzard's CDN through the baker's existing storage. Neither process starts the game.
 
 Character clips, material tracks, authored effects, and reusable character-detail intros follow the
 [character cinematics](character-cinematics.md) runtime and ownership boundaries.

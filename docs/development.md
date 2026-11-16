@@ -55,7 +55,7 @@ const migrate = await builder
   .waitFor(db);
 
 const api = await builder
-  .addNodeApp("api", "../apps/api", "src/main.ts")
+  .addNodeApp("api", "../apps/api", "src/index.ts")
   .withHttpEndpoint({ env: "PORT" })
   .withHttpHealthCheck("/health/ready")
   .withReference(db)

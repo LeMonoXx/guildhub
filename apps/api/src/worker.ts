@@ -1,38 +1,34 @@
-import { access } from "node:fs/promises";
 import path from "node:path";
 import { contentLocales } from "@guildhub/contracts";
 import { composeGuild } from "./composition.js";
+import {
+  makeBakeLook,
+  makeEnsureFixedLook,
+  makePrebakeBodies,
+  publicIconUrl,
+} from "./modules/character/index.js";
+import {
+  BakerProcess,
+  makeBattleNetPlayableRaceSource,
+  makeFileBakeProgressSink,
+  makeFilesystemModelAssetStore,
+  makeServeModelBaker,
+  registerModelJobs,
+} from "./modules/character/infrastructure/index.js";
+import { makeRefreshRecipeCatalog } from "./modules/crafting/index.js";
+import {
+  makeBattleNetRecipeCatalogSource,
+  makeDrizzleRecipeCatalogStore,
+  registerRecipeJobs,
+} from "./modules/crafting/infrastructure/index.js";
+import { calendarDay, makeRecordGuildDay } from "./modules/history/index.js";
+import { registerHistoryJobs } from "./modules/history/infrastructure/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
-import { startTelemetry } from "./platform/observability/telemetry.js";
-import {
-  BakerProcess,
-  CONVERT_QUEUE,
-  LOOK_QUEUE,
-  PREBAKE_QUEUE,
-  fetchPlayableRaceIds,
-  reportLookProgress,
-  schedulePrebake,
-  startJobQueue,
-  type ConvertFileJob,
-  type LookBakeDocument,
-} from "./modules/character/index.js";
-import {
-  HISTORY_QUEUE,
-  calendarDay,
-  makeRecordGuildDay,
-  scheduleHistory,
-} from "./modules/history/index.js";
-import { publicIconUrl } from "./modules/character/index.js";
-import {
-  RECIPE_QUEUE,
-  makeBattleNetRecipeCatalogSource,
-  makeDrizzleRecipeCatalogStore,
-  makeRefreshRecipeCatalog,
-  scheduleRecipeCatalog,
-} from "./modules/crafting/index.js";
+import { startJobQueue } from "./platform/jobs/queue.js";
 import { systemClock } from "./platform/kernel/clock.js";
+import { startTelemetry } from "./platform/observability/telemetry.js";
 
 const env = readEnv(process.env);
 const telemetry = startTelemetry({
@@ -52,18 +48,15 @@ const bakerCli = requiredEnv(env.BAKER_CLI, "BAKER_CLI");
 const bakerCache = env.BAKER_CACHE ?? path.join(assetRoot, ".cache");
 /** An open game storage holds most of a small host's memory; give it back between runs. */
 const BAKER_IDLE_MS = 2 * 60 * 1000;
-/** Every body comes in both sexes the game knows. */
-const SEXES = [0, 1] as const;
-let shuttingDown = false;
-
 /** The baker yields the CPU to the site; on a one-core host a bake would otherwise stall requests. */
 const lowPriority = process.platform === "linux" ? ["nice", "-n", "10"] : [];
 const bakerCommand = [
   ...lowPriority,
   ...(bakerCli.endsWith(".dll") ? ["dotnet", bakerCli] : [bakerCli]),
 ];
+let shuttingDown = false;
 
-const baker = new BakerProcess({
+const bakerProcess = new BakerProcess({
   command: bakerCommand[0] ?? bakerCli,
   args: [
     ...bakerCommand.slice(1),
@@ -80,22 +73,19 @@ const baker = new BakerProcess({
     logger.info({ module: "baker" }, line);
   },
 });
+const baker = makeServeModelBaker(bakerProcess);
+const assets = makeFilesystemModelAssetStore(assetRoot);
 
-await ensureFixedLook();
+try {
+  const fixed = await makeEnsureFixedLook({ assets, baker })();
+  if (fixed === "baked") logger.info({ module: "baker" }, "fixed look baked");
+} catch (error) {
+  logger.error({ module: "baker", err: error }, "fixed look bake failed");
+}
 
 const boss = await startJobQueue(env.DATABASE_URL);
 boss.on("error", (error) => {
   logger.error({ module: "jobs", err: error }, "job queue error");
-});
-await boss.work(LOOK_QUEUE, async (jobs) => {
-  for (const job of jobs) {
-    await bakeLook(job.data as LookBakeDocument);
-  }
-});
-await boss.work(CONVERT_QUEUE, async (jobs) => {
-  for (const job of jobs) {
-    await bakeFile(job.data as ConvertFileJob);
-  }
 });
 
 const database = createDatabase(env.DATABASE_URL);
@@ -104,70 +94,46 @@ const composed = await composeGuild({
   instance: await loadInstanceConfig(env.INSTANCE_DIR),
   database,
 });
-const recordGuildDay = makeRecordGuildDay({
-  getGuild: composed.getGuild,
-  getRoster: composed.getGuildRoster,
-  loadProfiles: composed.loadProfiles,
-  locales: contentLocales,
-  ...composed.history,
-});
-await scheduleHistory(
-  boss,
-  { cron: env.HISTORY_CRON, timeZone: env.HISTORY_TIME_ZONE },
-  calendarDay(composed.history.clock.now(), env.HISTORY_TIME_ZONE),
-);
-await boss.work(HISTORY_QUEUE, async () => {
-  const recorded = await recordGuildDay(composed.guild);
-  if (!recorded.ok) {
-    logger.warn(
-      { module: "history", code: recorded.error.code },
-      "guild day not recorded",
-    );
-    throw new Error(`guild day not recorded: ${recorded.error.code}`);
-  }
-  logger.info(
-    {
-      module: "history",
-      day: recorded.value.day,
-      members: recorded.value.members.length,
-    },
-    "guild day recorded",
-  );
-});
+const today = calendarDay(systemClock.now(), env.HISTORY_TIME_ZONE);
 
-const refreshRecipes = makeRefreshRecipeCatalog({
-  source: makeBattleNetRecipeCatalogSource(composed.battleNet, publicIconUrl),
-  store: makeDrizzleRecipeCatalogStore(database),
-  clock: systemClock,
-  locales: contentLocales,
+await registerModelJobs(boss, {
+  bakeLook: makeBakeLook({
+    baker,
+    progress: makeFileBakeProgressSink(assetRoot),
+  }),
+  bakeFile: (job) => baker.bakeFile(job),
+  prebakeBodies: makePrebakeBodies({
+    baker,
+    races: makeBattleNetPlayableRaceSource(composed.battleNet),
+  }),
+  stopping: () => shuttingDown,
+  timeZone: env.HISTORY_TIME_ZONE,
+  log: logger,
 });
-await scheduleRecipeCatalog(
-  boss,
-  env.HISTORY_TIME_ZONE,
-  calendarDay(systemClock.now(), env.HISTORY_TIME_ZONE),
-);
-await boss.work(RECIPE_QUEUE, async () => {
-  const refreshed = await refreshRecipes();
-  if (!refreshed.ok) {
-    logger.warn(
-      {
-        module: "crafting",
-        code: refreshed.error.code,
-        detail: refreshed.error.detail,
-      },
-      "recipe catalog not refreshed",
-    );
-    throw new Error(`recipe catalog not refreshed: ${refreshed.error.code}`);
-  }
-  logger.info(
-    { module: "crafting", recipes: refreshed.value.recipes },
-    "recipe catalog refreshed",
-  );
+await registerHistoryJobs(boss, {
+  guild: composed.guild,
+  recordGuildDay: makeRecordGuildDay({
+    getGuild: composed.getGuild,
+    getRoster: composed.getGuildRoster,
+    loadProfiles: composed.loadProfiles,
+    locales: contentLocales,
+    ...composed.history,
+  }),
+  cron: env.HISTORY_CRON,
+  timeZone: env.HISTORY_TIME_ZONE,
+  today,
+  log: logger,
 });
-
-await schedulePrebake(boss, env.HISTORY_TIME_ZONE);
-await boss.work(PREBAKE_QUEUE, async () => {
-  await prebakeBodies();
+await registerRecipeJobs(boss, {
+  refreshRecipes: makeRefreshRecipeCatalog({
+    source: makeBattleNetRecipeCatalogSource(composed.battleNet, publicIconUrl),
+    store: makeDrizzleRecipeCatalogStore(database),
+    clock: systemClock,
+    locales: contentLocales,
+  }),
+  timeZone: env.HISTORY_TIME_ZONE,
+  today,
+  log: logger,
 });
 
 logger.info({ module: "lifecycle" }, "model worker listening");
@@ -176,7 +142,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ module: "lifecycle", signal }, "worker shutdown started");
-  baker.stop();
+  bakerProcess.stop();
   try {
     await boss.stop({ graceful: true, timeout: 10_000 });
   } catch (error) {
@@ -205,87 +171,6 @@ process.once("SIGTERM", (signal) => {
 process.once("SIGINT", (signal) => {
   void shutdown(signal);
 });
-
-/** Pending and unpublished characters show the fixed look, and only the baker writes current.json. */
-async function ensureFixedLook(): Promise<void> {
-  const fixedLook = path.join(assetRoot, "looks", "fixed", "look.json");
-  const present = await access(fixedLook).then(
-    () => true,
-    () => false,
-  );
-  if (present) return;
-  logger.info({ module: "baker" }, "fixed look missing, baking it");
-  try {
-    await baker.run({ command: "fixed" });
-    logger.info({ module: "baker" }, "fixed look baked");
-  } catch (error) {
-    logger.error({ module: "baker", err: error }, "fixed look bake failed");
-  }
-}
-
-async function bakeLook(job: LookBakeDocument): Promise<void> {
-  const progress = reportLookProgress(assetRoot, job.lookHash);
-  const started = Date.now();
-  try {
-    await baker.run({ command: "look", look: job }, { listener: progress });
-    logger.info(
-      { module: "baker", lookHash: job.lookHash, ms: Date.now() - started },
-      "look baked",
-    );
-  } finally {
-    await progress.finish();
-  }
-}
-
-async function bakeFile(job: ConvertFileJob): Promise<void> {
-  await baker.run({
-    command: "file",
-    kind: job.kind,
-    fileId: job.fileId,
-    ...(job.modelFileId === undefined ? {} : { modelFileId: job.modelFileId }),
-    ...(job.animationId === undefined ? {} : { animationId: job.animationId }),
-  });
-}
-
-/**
- * Bakes every playable body with all its appearance textures once per game
- * build, so a member's first look only adds gear. Real looks go first.
- */
-async function prebakeBodies(): Promise<void> {
-  const races = await fetchPlayableRaceIds(composed.battleNet);
-  if (!races.ok) {
-    logger.warn(
-      { module: "baker", code: races.error.code, detail: races.error.detail },
-      "playable races unavailable",
-    );
-    throw new Error(`playable races unavailable: ${races.error.code}`);
-  }
-  let baked = 0;
-  let failed = 0;
-  for (const race of races.value) {
-    for (const sex of SEXES) {
-      if (shuttingDown) return;
-      try {
-        const result = await baker.run(
-          { command: "prebake", race, sex },
-          { priority: "background" },
-        );
-        if (result.skipped !== true) baked++;
-      } catch (error) {
-        failed++;
-        logger.warn(
-          { module: "baker", race, sex, err: error },
-          "prebake failed",
-        );
-      }
-    }
-  }
-  if (baked > 0 || failed > 0)
-    logger.info(
-      { module: "baker", races: races.value.length, baked, failed },
-      "bodies prebaked",
-    );
-}
 
 function requiredEnv(value: string | undefined, name: string): string {
   if (value !== undefined) return value;

@@ -1,19 +1,20 @@
 import type { InstanceConfig } from "@guildhub/contracts";
 import {
-  makeBattleNetCharacterProfileSource,
-  makeDrizzleCharacterProfileCache,
   makeLoadMemberProfiles,
   publicAvatarUrl,
   publicIconUrl,
 } from "./modules/character/index.js";
 import {
-  createGuildBattleNetClient,
+  makeBattleNetCharacterProfileSource,
+  makeDrizzleCharacterProfileCache,
+} from "./modules/character/infrastructure/index.js";
+import { makeGetGuild, makeGetGuildRoster } from "./modules/guild/index.js";
+import {
   makeBattleNetGuildSource,
   makeDrizzleGuildCache,
-  makeGetGuild,
-  makeGetGuildRoster,
-} from "./modules/guild/index.js";
-import { makeDrizzleHistoryStore } from "./modules/history/index.js";
+} from "./modules/guild/infrastructure/index.js";
+import { makeDrizzleHistoryStore } from "./modules/history/infrastructure/index.js";
+import { createBattleNetClient } from "./platform/blizzard/client.js";
 import type { Env } from "./platform/config/env.js";
 import type { Database } from "./platform/db/client.js";
 import { systemClock } from "./platform/kernel/clock.js";
@@ -25,7 +26,7 @@ export async function composeGuild(deps: {
   database: Database;
 }) {
   const { env, instance, database } = deps;
-  const battleNet = await createGuildBattleNetClient({
+  const battleNet = await createBattleNetClient({
     key: env.BATTLENET_CLIENT_ID,
     secret: env.BATTLENET_CLIENT_SECRET,
     origin: instance.region,

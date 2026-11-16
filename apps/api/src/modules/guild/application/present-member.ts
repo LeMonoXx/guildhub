@@ -1,6 +1,5 @@
+import { FIXED_LOOK_MANIFEST } from "@guildhub/contracts";
 import type { RosterMember } from "../domain/roster-member.js";
-
-export const FIXED_LOOK_MANIFEST = "/assets/looks/fixed/look.json";
 
 export function toPublicRosterMember(member: RosterMember) {
   return {

@@ -54,6 +54,9 @@ export const characterModelBakeSchema = z.object({
   fraction: z.number().min(0).max(1).optional(),
 });
 
+/** The look every character stands in until their own is baked. */
+export const FIXED_LOOK_MANIFEST = "/assets/looks/fixed/look.json";
+
 export const characterModelSchema = z.object({
   status: characterModelStatusSchema,
   manifestUrl: z.string().min(1).optional(),

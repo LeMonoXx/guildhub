@@ -1,7 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { afterEach, describe, expect, it } from "vitest";
-import { createGuildBattleNetClient } from "../../guild/infrastructure/blizzard-api-client.js";
+import { createBattleNetClient } from "../../../platform/blizzard/client.js";
 import { makeBattleNetCharacterProfileSource } from "./battle-net-character-profile-source.js";
 
 const character = {
@@ -48,7 +48,7 @@ async function startStub(quests: 404 | 503): Promise<string> {
 }
 
 async function sourceFor(quests: 404 | 503) {
-  const client = await createGuildBattleNetClient({
+  const client = await createBattleNetClient({
     key: "local",
     secret: "local",
     origin: "eu",

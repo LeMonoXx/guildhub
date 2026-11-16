@@ -4,22 +4,24 @@ import {
 } from "./modules/chronicle/index.js";
 import { composeGuild } from "./composition.js";
 import {
-  makeBattleNetCharacterSource,
-  makeDrizzleCharacterCache,
-  makeFilesystemModelAssetStore,
   makeGetCharacter,
   makeGetCharacterAvatar,
   makeGetCharacterProfile,
   makeGetCharacterRender,
   makeGetItemIcon,
-  makeHttpCharacterMediaGateway,
-  makeNoopModelBuildQueue,
-  makePgBossModelBuildQueue,
   makePresentFeaturedMembers,
   makePresentRosterMembers,
   registerCharacter,
-  startJobQueue,
 } from "./modules/character/index.js";
+import {
+  ensureModelQueues,
+  makeBattleNetCharacterSource,
+  makeDrizzleCharacterCache,
+  makeFilesystemModelAssetStore,
+  makeHttpCharacterMediaGateway,
+  makeNoopModelBuildQueue,
+  makePgBossModelBuildQueue,
+} from "./modules/character/infrastructure/index.js";
 import {
   makeGetFeaturedMembers,
   registerGuild,
@@ -30,14 +32,15 @@ import {
   registerHistory,
 } from "./modules/history/index.js";
 import {
-  makeDrizzleRecipeCatalogStore,
   makeLoadGuildCrafters,
   makeSearchRecipes,
   registerCrafting,
 } from "./modules/crafting/index.js";
+import { makeDrizzleRecipeCatalogStore } from "./modules/crafting/infrastructure/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
+import { startJobQueue } from "./platform/jobs/queue.js";
 import { systemClock } from "./platform/kernel/clock.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 
@@ -77,6 +80,7 @@ let jobQueue = makeNoopModelBuildQueue();
 let jobBoss: Awaited<ReturnType<typeof startJobQueue>> | undefined;
 try {
   jobBoss = await startJobQueue(env.DATABASE_URL);
+  await ensureModelQueues(jobBoss);
   jobQueue = makePgBossModelBuildQueue(jobBoss);
 } catch (error) {
   logger.warn(

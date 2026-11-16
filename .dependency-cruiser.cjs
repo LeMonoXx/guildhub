@@ -262,7 +262,7 @@ module.exports = {
     {
       name: "guild-application-isolation",
       comment:
-        "Application code may import only its own domain and application, platform/kernel, and other modules' public index.",
+        "Application code may import only its own domain and application, platform/kernel, contracts, and other modules' public index.",
       severity: "error",
       from: {
         path: "^apps/api/src/modules/([^/]+)/application/",
@@ -273,6 +273,7 @@ module.exports = {
           "^apps/api/src/modules/$1/(?:domain|application)/",
           "^apps/api/src/modules/[^/]+/index[.]ts$",
           "^apps/api/src/platform/kernel/",
+          "^packages/contracts/",
         ],
         dependencyTypesNot: ["type-only"],
       },
@@ -312,6 +313,29 @@ module.exports = {
           "^apps/api/src/modules/(?!$1/)[^/]+/(?!index[.]ts$).+",
         ],
       },
+    },
+    {
+      name: "module-index-without-adapters",
+      comment:
+        "A module's index is its public API for other modules. Adapters are exported by infrastructure/index.ts, for the composition roots only.",
+      severity: "error",
+      from: { path: "^apps/api/src/modules/([^/]+)/index[.]ts$" },
+      to: { path: "^apps/api/src/modules/$1/infrastructure/" },
+    },
+    {
+      name: "adapters-only-in-composition-roots",
+      comment:
+        "Only the composition roots in apps/api/src wire a module's adapters.",
+      severity: "error",
+      from: {
+        path: "^apps/api/src/",
+        pathNot: [
+          "^apps/api/src/[^/]+[.]ts$",
+          "^apps/api/src/modules/([^/]+)/",
+          "[.](?:int[.])?test[.]ts$",
+        ],
+      },
+      to: { path: "^apps/api/src/modules/[^/]+/infrastructure/index[.]ts$" },
     },
     {
       name: "no-framework-in-core",

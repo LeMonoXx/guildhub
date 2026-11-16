@@ -78,6 +78,34 @@ export interface ModelAssetStore {
   bakeProgress(lookHash: string): Promise<BakeProgress | undefined>;
 }
 
+export type BakeUpdate = Omit<BakeProgress, "updatedAt">;
+
+/** Turns looks and game files into the model assets the viewer loads. */
+export interface ModelBaker {
+  bakeLook(
+    look: LookBakeDocument,
+    onUpdate: (update: BakeUpdate) => void,
+  ): Promise<void>;
+  bakeFile(job: ConvertFileJob): Promise<void>;
+  bakeFixedLook(): Promise<void>;
+  /** `baked` is false when the current game build already has this body. */
+  prebakeBody(race: number, sex: number): Promise<{ readonly baked: boolean }>;
+}
+
+/** Publishes how far a running bake is, for the API to read. */
+export interface BakeProgressSink {
+  track(lookHash: string): {
+    update(update: BakeUpdate): void;
+    finish(): Promise<void>;
+  };
+}
+
+export interface PlayableRaceSource {
+  playableRaceIds(): Promise<
+    Result<readonly number[], AppError<"upstream.unavailable">>
+  >;
+}
+
 export interface CharacterMediaGateway {
   fetchRender(
     url: string,

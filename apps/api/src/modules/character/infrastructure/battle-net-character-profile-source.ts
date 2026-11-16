@@ -3,12 +3,12 @@ import type { ContentLocale } from "@guildhub/contracts";
 import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok } from "../../../platform/kernel/result.js";
 import type { CharacterProfileSource } from "../application/ports.js";
+import type { BattleNetResource } from "../../../platform/blizzard/request.js";
+import { mapLimited } from "../../../platform/kernel/map-limited.js";
 import {
   forCharacter,
-  mapLimited,
-  sendBattleNet,
-  sendBattleNetPatiently,
-  type BattleNetResource,
+  sendCharacterRequest,
+  sendCharacterRequestPatiently,
 } from "./battle-net-request.js";
 import {
   mapCharacterProfile,
@@ -70,7 +70,7 @@ export function makeBattleNetCharacterProfileSource(
           [
             key,
             forCharacter(
-              await sendBattleNetPatiently(client, resource, {
+              await sendCharacterRequestPatiently(client, resource, {
                 locale,
                 attempts: PROFILE_ATTEMPTS,
               }),
@@ -130,7 +130,7 @@ async function loadIcons(
 ): Promise<void> {
   const missing = ids.filter((id) => !cache.has(id));
   await mapLimited(missing, REQUEST_CONCURRENCY, async (id) => {
-    const media = await sendBattleNet(client, itemMediaEndpoint(id));
+    const media = await sendCharacterRequest(client, itemMediaEndpoint(id));
     if (media.ok) cache.set(id, iconIdOf(media.value));
     else if (media.error.code === "character.not_found")
       cache.set(id, undefined);

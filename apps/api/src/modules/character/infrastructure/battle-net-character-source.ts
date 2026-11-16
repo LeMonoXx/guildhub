@@ -6,7 +6,10 @@ import type {
   CharacterSourceError,
 } from "../application/ports.js";
 import type { CharacterFacts } from "../domain/look.js";
-import { forCharacter, sendBattleNetPatiently } from "./battle-net-request.js";
+import {
+  forCharacter,
+  sendCharacterRequestPatiently,
+} from "./battle-net-request.js";
 import { mapCharacterFacts } from "./map-character-facts.js";
 import {
   characterAppearanceEndpoint,
@@ -35,7 +38,9 @@ async function fetchFacts(
         characterEquipmentEndpoint(character.name, character.surname),
         characterMediaEndpoint(character.name, character.surname),
       ].map((resource) =>
-        sendBattleNetPatiently(client, resource, { attempts: FACT_ATTEMPTS }),
+        sendCharacterRequestPatiently(client, resource, {
+          attempts: FACT_ATTEMPTS,
+        }),
       ),
     )
   ).map((result) => forCharacter(result, character.characterId)) as [

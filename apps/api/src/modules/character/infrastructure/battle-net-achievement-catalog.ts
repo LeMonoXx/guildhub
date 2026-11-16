@@ -4,11 +4,9 @@ import {
   type AchievementDetails,
   type ContentLocale,
 } from "@guildhub/contracts";
-import {
-  mapLimited,
-  sendBattleNet,
-  type BattleNetResource,
-} from "./battle-net-request.js";
+import type { BattleNetResource } from "../../../platform/blizzard/request.js";
+import { mapLimited } from "../../../platform/kernel/map-limited.js";
+import { sendCharacterRequest } from "./battle-net-request.js";
 import {
   achievementEndpoint,
   achievementMediaEndpoint,
@@ -61,7 +59,11 @@ export class BattleNetAchievementCatalog {
   private async fetch(
     resource: BattleNetResource,
   ): Promise<{ settled: boolean; body?: unknown }> {
-    const result = await sendBattleNet(this.client, resource, this.locale);
+    const result = await sendCharacterRequest(
+      this.client,
+      resource,
+      this.locale,
+    );
     if (result.ok) return { settled: true, body: result.value };
     return { settled: result.error.code === "character.not_found" };
   }

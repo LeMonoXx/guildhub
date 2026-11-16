@@ -1,4 +1,4 @@
-import { FIXED_LOOK_MANIFEST } from "../../guild/index.js";
+import { FIXED_LOOK_MANIFEST } from "@guildhub/contracts";
 import type { LookBakeDocument, LookDescription } from "../domain/look.js";
 import { toLookBakeDocument } from "../domain/look.js";
 import {

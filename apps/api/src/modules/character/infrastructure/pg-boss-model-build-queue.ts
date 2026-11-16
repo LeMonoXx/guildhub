@@ -1,29 +1,11 @@
-import { PgBoss } from "pg-boss";
-import { toPostgresUrl } from "../../../platform/db/connection-url.js";
+import {
+  ensureStatelyQueue,
+  type PgBoss,
+} from "../../../platform/jobs/queue.js";
 import type { ModelBuildQueue } from "../application/ports.js";
 
 export const LOOK_QUEUE = "bake-look";
 export const CONVERT_QUEUE = "convert-file";
-export const PREBAKE_QUEUE = "prebake-bodies";
-
-/** A new game build shows up within the hour; an unchanged one is a cheap check. */
-const HOURLY = "17 * * * *";
-/** Every playable body of a fresh build, one after another, on a small host. */
-const PREBAKE_SECONDS = 4 * 60 * 60;
-
-/** Hourly, plus once at startup so a fresh install starts right away. */
-export async function schedulePrebake(
-  boss: PgBoss,
-  timeZone: string,
-): Promise<void> {
-  if ((await boss.getQueue(PREBAKE_QUEUE)) === null)
-    await boss.createQueue(PREBAKE_QUEUE, {
-      policy: "stately",
-      expireInSeconds: PREBAKE_SECONDS,
-    });
-  await boss.schedule(PREBAKE_QUEUE, HOURLY, {}, { tz: timeZone });
-  await boss.send(PREBAKE_QUEUE, {});
-}
 
 export function makeNoopModelBuildQueue(): ModelBuildQueue {
   return {
@@ -74,15 +56,8 @@ export function makePgBossModelBuildQueue(
   };
 }
 
-export async function startJobQueue(databaseUrl: string): Promise<PgBoss> {
-  const boss = new PgBoss({ connectionString: toPostgresUrl(databaseUrl) });
-  await boss.start();
-  await ensureQueue(boss, LOOK_QUEUE);
-  await ensureQueue(boss, CONVERT_QUEUE);
-  return boss;
-}
-
-async function ensureQueue(boss: PgBoss, name: string): Promise<void> {
-  if ((await boss.getQueue(name)) !== null) return;
-  await boss.createQueue(name, { policy: "stately" });
+/** The API enqueues into these, so it creates them as the worker does. */
+export async function ensureModelQueues(boss: PgBoss): Promise<void> {
+  await ensureStatelyQueue(boss, LOOK_QUEUE);
+  await ensureStatelyQueue(boss, CONVERT_QUEUE);
 }

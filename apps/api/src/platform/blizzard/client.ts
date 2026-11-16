@@ -12,7 +12,7 @@ export interface BattleNetClientConfig {
   readonly apiBaseUrl?: string;
 }
 
-export async function createGuildBattleNetClient(
+export async function createBattleNetClient(
   config: BattleNetClientConfig,
 ): Promise<BlizzardApiClient> {
   const options: ClientOptions = {

@@ -9,14 +9,14 @@ import {
   type RecipeStat,
   type ContentLocale,
 } from "@guildhub/contracts";
-import { appError } from "../../../platform/kernel/app-error.js";
-import { err, ok } from "../../../platform/kernel/result.js";
 import {
   battleNetLocaleOf,
-  mapLimited,
   sendBattleNetPatiently,
   type BattleNetResource,
-} from "../../character/index.js";
+} from "../../../platform/blizzard/request.js";
+import { appError } from "../../../platform/kernel/app-error.js";
+import { mapLimited } from "../../../platform/kernel/map-limited.js";
+import { err, ok } from "../../../platform/kernel/result.js";
 import type { RecipeCatalogSource } from "../application/ports.js";
 
 /** Leaves room for profile refreshes that share the same API quota. */
@@ -53,7 +53,10 @@ export function makeBattleNetRecipeCatalogSource(
     resource: BattleNetResource,
     locale: ContentLocale,
   ): Promise<Record<string, unknown> | undefined> => {
-    const result = await sendBattleNetPatiently(client, resource, { locale });
+    const result = await sendBattleNetPatiently(client, resource, {
+      locale,
+      notFound: "request.not_found",
+    });
     return result.ok ? rec(result.value) : undefined;
   };
 

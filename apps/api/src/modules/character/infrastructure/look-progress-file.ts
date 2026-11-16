@@ -1,5 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import type { BakeProgressSink, BakeUpdate } from "../application/ports.js";
 import type { BakeProgress } from "../domain/model.js";
 
 /** A worker that died mid-bake leaves its file behind; this old, it no longer counts. */
@@ -30,49 +31,41 @@ export async function clearLookProgress(
 }
 
 /**
- * Mirrors a running bake into its progress file. The heartbeat keeps the file
+ * Mirrors running bakes into their progress files. The heartbeat keeps a file
  * fresh through long steps that report nothing, so it never reads as stale.
  */
-export function reportLookProgress(
+export function makeFileBakeProgressSink(
   root: string,
-  lookHash: string,
   heartbeatMs = 30_000,
-): {
-  onStage(stage: BakeProgress["stage"]): void;
-  onProgress(fraction: number): void;
-  finish(): Promise<void>;
-} {
-  let latest: Omit<BakeProgress, "updatedAt"> = {
-    stage: "opening",
-    fraction: 0,
-  };
-  let finished = false;
-  let writing: Promise<void> = Promise.resolve();
-  const flush = () => {
-    const snapshot = latest;
-    writing = writing
-      .then(() =>
-        finished ? undefined : writeLookProgress(root, lookHash, snapshot),
-      )
-      .catch(() => undefined);
-  };
-  flush();
-  const heartbeat = setInterval(flush, heartbeatMs);
-  heartbeat.unref();
+): BakeProgressSink {
   return {
-    onStage: (stage) => {
-      latest = { ...latest, stage };
+    track: (lookHash) => {
+      let latest: BakeUpdate = { stage: "opening", fraction: 0 };
+      let finished = false;
+      let writing: Promise<void> = Promise.resolve();
+      const flush = () => {
+        const snapshot = latest;
+        writing = writing
+          .then(() =>
+            finished ? undefined : writeLookProgress(root, lookHash, snapshot),
+          )
+          .catch(() => undefined);
+      };
       flush();
-    },
-    onProgress: (fraction) => {
-      latest = { stage: "baking", fraction };
-      flush();
-    },
-    finish: async () => {
-      clearInterval(heartbeat);
-      finished = true;
-      await writing;
-      await clearLookProgress(root, lookHash).catch(() => undefined);
+      const heartbeat = setInterval(flush, heartbeatMs);
+      heartbeat.unref();
+      return {
+        update: (update) => {
+          latest = update;
+          flush();
+        },
+        finish: async () => {
+          clearInterval(heartbeat);
+          finished = true;
+          await writing;
+          await clearLookProgress(root, lookHash).catch(() => undefined);
+        },
+      };
     },
   };
 }

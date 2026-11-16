@@ -2,7 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { afterEach, describe, expect, it } from "vitest";
 import { makeBattleNetGuildSource } from "./battle-net-guild-source.js";
-import { createGuildBattleNetClient } from "./blizzard-api-client.js";
+import { createBattleNetClient } from "../../../platform/blizzard/client.js";
 
 const profile = {
   id: 1,
@@ -80,7 +80,7 @@ afterEach(() => {
 describe("Battle.net guild source", () => {
   it("maps a guild profile and roster from the official client", async () => {
     const baseUrl = await startStub();
-    const client = await createGuildBattleNetClient({
+    const client = await createBattleNetClient({
       key: "local",
       secret: "local",
       origin: "eu",
@@ -113,7 +113,7 @@ describe("Battle.net guild source", () => {
   it("maps a missing guild to guild.not_found", async () => {
     const baseUrl = await startStub("404");
     const source = makeBattleNetGuildSource(
-      await createGuildBattleNetClient({
+      await createBattleNetClient({
         key: "local",
         secret: "local",
         origin: "eu",
@@ -127,7 +127,7 @@ describe("Battle.net guild source", () => {
   it("maps 503 to upstream.unavailable", async () => {
     const baseUrl = await startStub("503");
     const source = makeBattleNetGuildSource(
-      await createGuildBattleNetClient({
+      await createBattleNetClient({
         key: "local",
         secret: "local",
         origin: "eu",

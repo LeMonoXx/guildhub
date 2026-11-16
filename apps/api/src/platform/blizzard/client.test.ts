@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rewriteBattleNetRequest } from "./blizzard-api-client.js";
+import { rewriteBattleNetRequest } from "./client.js";
 
 describe("rewriteBattleNetRequest", () => {
   it("rewrites API and OAuth hosts onto the configured base", () => {

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clearLookProgress,
   readLookProgress,
-  reportLookProgress,
+  makeFileBakeProgressSink,
   writeLookProgress,
 } from "./look-progress-file.js";
 
@@ -37,9 +37,8 @@ describe("look progress file", () => {
 
   it("mirrors a bake and removes the file when it ends", async () => {
     const assets = await root();
-    const progress = reportLookProgress(assets, "abc");
-    progress.onStage("baking");
-    progress.onProgress(0.25);
+    const progress = makeFileBakeProgressSink(assets).track("abc");
+    progress.update({ stage: "baking", fraction: 0.25 });
     await vi.waitFor(async () => {
       expect(await readLookProgress(assets, "abc")).toMatchObject({
         stage: "baking",

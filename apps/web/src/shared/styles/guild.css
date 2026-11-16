@@ -56,6 +56,12 @@
       transparent 75%
     ),
     linear-gradient(180deg, transparent 55%, var(--color-obsidian));
+  /* It ends inside the masthead; fade glow and beams out so the clip shows no edge. */
+  mask-image: linear-gradient(
+    180deg,
+    #000 calc(100% - var(--stage-bleed) * 1.6),
+    transparent
+  );
 }
 
 /* Warm ground light under the troop, fading into the page below. */

@@ -1,11 +1,9 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import { wowForever } from "@blizzard-api/wow-forever";
 import { defaultContentLocale, type ContentLocale } from "@guildhub/contracts";
-import {
-  mapLimited,
-  sendBattleNetPatiently,
-  type BattleNetResource,
-} from "./battle-net-request.js";
+import type { BattleNetResource } from "../../../platform/blizzard/request.js";
+import { mapLimited } from "../../../platform/kernel/map-limited.js";
+import { sendCharacterRequestPatiently } from "./battle-net-request.js";
 
 const REQUEST_CONCURRENCY = 6;
 
@@ -154,7 +152,7 @@ export class BattleNetTalentTreeCatalog {
 
   /** Settled means the answer will not change: a body, or a definite "not found". */
   private async fetch(resource: BattleNetResource): Promise<Settled<unknown>> {
-    const result = await sendBattleNetPatiently(this.client, resource, {
+    const result = await sendCharacterRequestPatiently(this.client, resource, {
       locale: this.locale,
     });
     if (result.ok) return { settled: true, value: result.value };

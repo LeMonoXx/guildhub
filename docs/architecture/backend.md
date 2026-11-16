@@ -10,28 +10,33 @@ These rules are binding. `dependency-cruiser` enforces the import rules in `pnpm
 apps/api/
   drizzle/                     SQL migrations (generated, committed)
   src/
-    main.ts                    HTTP entry point: composition root
+    index.ts                   HTTP entry point: composition root
     worker.ts                  Job worker entry point: composition root
+    composition.ts             Wiring both roots share (Battle.net client, guild and character use cases)
     migrate.ts                 One-shot migration entry point
     platform/                  Technical building blocks, no business rules
       config/                  Env schema (zod), instance config loading
       http/                    App factory, middleware, problem responses, validation hook
       db/                      Drizzle client, transaction helper
+      blizzard/                Battle.net client (token, retries, rate limit) and request helpers
+      jobs/                    pg-boss start and queue setup
       observability/           OpenTelemetry setup, logger
-      kernel/                  Result, AppError base, Clock and IdGenerator ports
+      kernel/                  Result, AppError base, Clock and IdGenerator ports, mapLimited
     modules/
       guild/
         domain/                Entities, value objects, domain errors, pure rules
         application/           Use cases, ports (interfaces), DTOs of the module
-        infrastructure/        Adapters: Drizzle repositories, Battle.net client, job handlers
+        infrastructure/        Adapters: Drizzle repositories, Battle.net sources, job handlers
+          index.ts             The module's adapters, for the composition roots only
         http/                  Routes, request parsing, response mapping
         index.ts               The module's public API and its register function
       character/
-      identity/
+      history/
+      crafting/
       ...
 ```
 
-Today the composition root is `src/index.ts`. Shared HTTP, config, kernel, db, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. `src/worker.ts` is the model-worker composition root.
+Shared HTTP, config, kernel, db, Battle.net, jobs, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. `src/worker.ts` is the model-worker composition root.
 
 ## 2. Layers and what they may import
 
@@ -39,7 +44,7 @@ Arrows point from the importer to what it may import. Nothing else is allowed.
 
 ```mermaid
 flowchart TD
-  main[main.ts / worker.ts\ncomposition root] --> http
+  main[index.ts / worker.ts\ncomposition root] --> http
   main --> infrastructure
   main --> application
   main --> platform
@@ -49,27 +54,30 @@ flowchart TD
   http --> platformHttp[platform/http, kernel]
   infrastructure[infrastructure] --> application
   infrastructure --> domain
-  infrastructure --> platformInfra[platform/db, observability, kernel]
+  infrastructure --> platformInfra[platform/db, blizzard, jobs, observability, kernel]
   application[application] --> domain
   application --> kernel[platform/kernel]
+  application --> contracts
   domain[domain] --> kernel
 ```
 
-| Layer (importer)       | May import                                                                                                                               | Must not import                                                                                     |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `domain`               | Own module's `domain`, `platform/kernel`                                                                                                 | Anything else: no zod, no Hono, no Drizzle, no `fetch`, no `process`, no `Date.now()` (use `Clock`) |
-| `application`          | Own `domain`, own `application`, `platform/kernel`, other modules' `index.ts` (public API only)                                          | `infrastructure`, `http`, `platform/db`, `platform/http`, Hono, Drizzle, Battle.net packages        |
-| `infrastructure`       | Own `application` (to implement its ports), own `domain`, `platform/db`, `platform/observability`, `platform/kernel`, external libraries | `http`, other modules' internals                                                                    |
-| `http`                 | Own `application`, `import type` from own `domain`, `packages/contracts`, `platform/http`, `platform/kernel`                             | `infrastructure`, Drizzle, Battle.net packages, other modules' internals                            |
-| `platform/*`           | Other `platform/*` folders, external libraries                                                                                           | Any `modules/*`                                                                                     |
-| `index.ts` (module)    | Everything inside its own module                                                                                                         | Other modules' internals                                                                            |
-| `main.ts`, `worker.ts` | Everything                                                                                                                               | —                                                                                                   |
+| Layer (importer)                          | May import                                                                                                            | Must not import                                                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `domain`                                  | Own module's `domain`, `platform/kernel`                                                                              | Anything else: no zod, no Hono, no Drizzle, no `fetch`, no `process`, no `Date.now()` (use `Clock`) |
+| `application`                             | Own `domain`, own `application`, `platform/kernel`, `packages/contracts`, other modules' `index.ts` (public API only) | `infrastructure`, `http`, `platform/db`, `platform/http`, Hono, Drizzle, Battle.net packages        |
+| `infrastructure`                          | Own `application` (to implement its ports), own `domain`, `platform/*` except `http`, external libraries              | `http`, other modules' internals                                                                    |
+| `http`                                    | Own `application`, `import type` from own `domain`, `packages/contracts`, `platform/http`, `platform/kernel`          | `infrastructure`, Drizzle, Battle.net packages, other modules' internals                            |
+| `platform/*`                              | Other `platform/*` folders, external libraries                                                                        | Any `modules/*`                                                                                     |
+| `index.ts` (module)                       | Its own `domain`, `application`, and `http`                                                                           | Its own `infrastructure`, other modules' internals                                                  |
+| `infrastructure/index.ts`                 | Its own `infrastructure`                                                                                              | —; only the composition roots import it                                                             |
+| `index.ts`, `worker.ts`, `composition.ts` | Everything                                                                                                            | —                                                                                                   |
 
 Rules that follow from the table:
 
-- **Dependency inversion.** The application layer declares a port (an interface), for example `GuildRosterSource`. Infrastructure implements it (`BattleNetGuildRosterSource`). `main.ts` passes the implementation into the use case. The use case never knows Battle.net or Drizzle exist.
+- **Dependency inversion.** The application layer declares a port (an interface), for example `GuildRosterSource`. Infrastructure implements it (`BattleNetGuildRosterSource`). The composition root passes the implementation into the use case. The use case never knows Battle.net or Drizzle exist.
 - **No framework in the core.** `domain` and `application` are plain TypeScript. They can be tested without a database, a server, or the network.
-- **Modules meet only at `index.ts`.** A module exports use cases or a small facade, never repositories, tables, or Battle.net types. Module A never imports `modules/b/domain/...`.
+- **Modules meet only at `index.ts`.** A module exports use cases or a small facade, never repositories, tables, or Battle.net types. Module A never imports `modules/b/domain/...`. Adapters are exported separately by `infrastructure/index.ts`, so only a composition root can reach them.
+- **Jobs are adapters.** A module's `pg-boss-*-jobs.ts` registers its queues, schedules, and handlers; the handler calls a use case. The worker only wires them.
 - **No cycles** between modules. If two modules need each other, the shared part becomes its own module, or one side publishes an event.
 - **Tables belong to a module.** Only the owning module's infrastructure touches its tables, including in joins.
 
@@ -150,7 +158,7 @@ export const makeGetGuildRoster =
 
 ## 4. Composition root
 
-`main.ts` is the only place that knows every concrete class. It:
+`index.ts` and `worker.ts` (with the shared `composition.ts`) are the only places that know every concrete class. `index.ts`:
 
 1. Starts telemetry.
 2. Parses env and the instance config. Fails fast on errors.
@@ -222,7 +230,7 @@ Rules:
 ## 10. Code conventions
 
 - TypeScript `strict`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`. No `any`, no non-null `!` without a comment saying why it holds.
-- Named exports only. One barrel file per module (`index.ts`); no barrels elsewhere.
+- Named exports only. Two barrels per module (`index.ts` and `infrastructure/index.ts`); no barrels elsewhere.
 - File names in `kebab-case`. Types and interfaces in `PascalCase`, functions and variables in `camelCase`, constants that are configuration in `SCREAMING_SNAKE_CASE`.
 - No TypeScript `enum`; use `as const` objects or string unions.
 - zod is used at the edges (env, HTTP input, Battle.net responses, instance config). Inside the core, types are plain TypeScript.

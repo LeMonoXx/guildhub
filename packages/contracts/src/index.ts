@@ -45,6 +45,7 @@ export {
   characterDetailResponseSchema,
   characterModelBakeSchema,
   characterModelSchema,
+  FIXED_LOOK_MANIFEST,
   characterModelStatusSchema,
   characterPresentationSchema,
   characterSlugSchema,

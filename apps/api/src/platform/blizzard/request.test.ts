@@ -1,6 +1,6 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import { describe, expect, it } from "vitest";
-import { sendBattleNetPatiently } from "./battle-net-request.js";
+import { sendBattleNetPatiently } from "./request.js";
 
 const throttled = (retryAfter: string) =>
   Object.assign(new Error("Too Many Requests"), {
@@ -32,6 +32,7 @@ describe("sendBattleNetPatiently", () => {
     const { client, calls } = clientAnswering(throttled("2"), { id: 1 });
     const waits: number[] = [];
     const result = await sendBattleNetPatiently(client, resource, {
+      notFound: "character.not_found",
       sleep: (ms) => {
         waits.push(ms);
         return Promise.resolve();
@@ -45,6 +46,7 @@ describe("sendBattleNetPatiently", () => {
   it("gives up after the last attempt", async () => {
     const { client, calls } = clientAnswering(throttled("1"));
     const result = await sendBattleNetPatiently(client, resource, {
+      notFound: "character.not_found",
       attempts: 3,
       sleep: () => Promise.resolve(),
     });
@@ -58,6 +60,7 @@ describe("sendBattleNetPatiently", () => {
     });
     const { client, calls } = clientAnswering(missing);
     const result = await sendBattleNetPatiently(client, resource, {
+      notFound: "character.not_found",
       sleep: () => Promise.resolve(),
     });
     expect(result).toMatchObject({

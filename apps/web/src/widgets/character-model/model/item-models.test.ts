@@ -2,18 +2,17 @@ import { describe, expect, test } from "vitest";
 import { itemDisplayModels } from "./item-models";
 import type { ResolvedItem } from "./types";
 
-const item = (patch: Partial<ResolvedItem>): ResolvedItem =>
-  ({
-    itemId: 1,
-    name: "Blade",
-    inventoryType: null,
-    equipSlot: 16,
-    geosetGroup: [],
-    helmHideGeosetGroups: [],
-    models: [],
-    bodyTextures: [],
-    ...patch,
-  }) as ResolvedItem;
+const item = (patch: Partial<ResolvedItem>): ResolvedItem => ({
+  itemId: 1,
+  name: "Blade",
+  inventoryType: null,
+  equipSlot: 16,
+  geosetGroup: [],
+  helmHideGeosetGroups: [],
+  models: [],
+  bodyTextures: [],
+  ...patch,
+});
 
 describe("itemDisplayModels", () => {
   test("keeps a weapon mesh and skips a second copy of the same file", () => {

@@ -4,6 +4,14 @@ import {
   type AchievementDetails,
   type ContentLocale,
 } from "@guildhub/contracts";
+import {
+  iconIdOf,
+  list,
+  name,
+  optional,
+  rec,
+  str,
+} from "../../../platform/blizzard/document.js";
 import type { BattleNetResource } from "../../../platform/blizzard/request.js";
 import { mapLimited } from "../../../platform/kernel/map-limited.js";
 import { sendCharacterRequest } from "./battle-net-request.js";
@@ -70,13 +78,13 @@ export class BattleNetAchievementCatalog {
 }
 
 export function detailsOf(body: unknown): AchievementDetails | undefined {
-  const record = asRecord(body);
-  const description = text(record.description);
+  const record = rec(body);
+  const description = str(record.description);
   const criteria = criteriaOf(record.criteria, description);
   const details: AchievementDetails = {
     ...optional("description", description),
-    ...optional("category", text(asRecord(record.category).name)),
-    ...optional("reward", text(record.reward_description)),
+    ...optional("category", name(record.category)),
+    ...optional("reward", str(record.reward_description)),
     ...(criteria.length === 0 ? {} : { criteria }),
   };
   return Object.keys(details).length === 0 ? undefined : details;
@@ -84,40 +92,12 @@ export function detailsOf(body: unknown): AchievementDetails | undefined {
 
 /** Child criteria are the checklist; a lone criterion that repeats the description adds nothing. */
 function criteriaOf(value: unknown, description: string | undefined): string[] {
-  const root = asRecord(value);
-  const children = Array.isArray(root.child_criteria)
-    ? root.child_criteria
-    : [];
+  const root = rec(value);
+  const children = list(root.child_criteria);
   const lines = (children.length > 0 ? children : [root])
-    .map((child) => text(asRecord(child).description))
+    .map((child) => str(rec(child).description))
     .filter(
       (line): line is string => line !== undefined && line !== description,
     );
   return [...new Set(lines)].slice(0, CRITERIA_LIMIT);
-}
-
-function iconIdOf(media: unknown): number | undefined {
-  const assets = asRecord(media).assets;
-  if (!Array.isArray(assets)) return undefined;
-  const icon = assets.map(asRecord).find((asset) => asset.key === "icon");
-  return typeof icon?.file_data_id === "number" ? icon.file_data_id : undefined;
-}
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() !== ""
-    ? value.trim()
-    : undefined;
-}
-
-function optional<K extends string, V>(
-  key: K,
-  value: V | undefined,
-): { [P in K]?: V } {
-  return value === undefined ? {} : ({ [key]: value } as { [P in K]: V });
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
 }

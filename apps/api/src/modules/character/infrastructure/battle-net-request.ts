@@ -1,5 +1,6 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import type { ContentLocale } from "@guildhub/contracts";
+import { rec } from "../../../platform/blizzard/document.js";
 import {
   sendBattleNet,
   sendBattleNetPatiently,
@@ -39,8 +40,8 @@ export function describesCharacter(
   body: unknown,
   characterId: string,
 ): boolean {
-  const record = asRecord(body);
-  const id = asRecord(record.character).id ?? record.id;
+  const record = rec(body);
+  const id = rec(record.character).id ?? record.id;
   return typeof id !== "number" || String(id) === characterId;
 }
 
@@ -52,10 +53,4 @@ export function forCharacter(
     return result;
   }
   return err(appError("character.not_found"));
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
 }

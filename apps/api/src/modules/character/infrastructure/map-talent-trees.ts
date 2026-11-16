@@ -1,4 +1,12 @@
 import type { TalentNode, TalentTree } from "@guildhub/contracts";
+import {
+  list,
+  nonNegativeInt,
+  optional,
+  rec,
+  str,
+} from "../../../platform/blizzard/document.js";
+import { activeSpecializations } from "./map-character-skills.js";
 import type {
   TalentNodeLayout,
   TalentTreeLayout,
@@ -126,59 +134,29 @@ function nodeOf(
       node.iconId === undefined ? undefined : iconUrl(node.iconId),
     ),
     ...optional("castTime", node.castTime),
-    ...optional("description", text(current)),
-    ...optional("nextDescription", text(next)),
+    ...optional("description", str(current)),
+    ...optional("nextDescription", str(next)),
     requires: [...node.requires],
   };
 }
 
 /** Ranks by talent id and points by spec, from the active specialization group. */
 function learnedOf(value: unknown): Learned {
-  const groups = list(rec(value).specialization_groups);
-  const active =
-    groups.find((group) => rec(group).is_active === true) ?? groups[0];
   const ranks = new Map<number, number>();
   const spentBySpec = new Map<number, number>();
-  for (const entry of list(rec(active).specializations)) {
+  for (const entry of activeSpecializations(value)) {
     const spec = rec(entry);
-    const specId = int(rec(spec.specialization).id);
-    const spent = int(spec.spent_points);
+    const specId = nonNegativeInt(rec(spec.specialization).id);
+    const spent = nonNegativeInt(spec.spent_points);
     if (specId !== undefined && spent !== undefined)
       spentBySpec.set(specId, spent);
     for (const talent of list(spec.talents)) {
       const record = rec(talent);
-      const talentId = int(rec(record.talent).id);
-      const rank = int(record.talent_rank);
+      const talentId = nonNegativeInt(rec(record.talent).id);
+      const rank = nonNegativeInt(record.talent_rank);
       if (talentId !== undefined && rank !== undefined)
         ranks.set(talentId, rank);
     }
   }
   return { ranks, spentBySpec };
-}
-
-function text(value: string | undefined): string | undefined {
-  return value === undefined || value.trim() === "" ? undefined : value;
-}
-
-function optional<K extends string, V>(
-  key: K,
-  value: V | undefined,
-): { [P in K]?: V } {
-  return value === undefined ? {} : ({ [key]: value } as { [P in K]: V });
-}
-
-function rec(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function list(value: unknown): unknown[] {
-  return Array.isArray(value) ? (value as unknown[]) : [];
-}
-
-function int(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0
-    ? value
-    : undefined;
 }

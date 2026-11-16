@@ -1,3 +1,4 @@
+import { rec } from "../../../platform/blizzard/document.js";
 import {
   MAIN_HAND_SLOT,
   OFF_HAND_SLOT,
@@ -25,7 +26,7 @@ export function mapCharacterFacts(input: {
   fallbackRaceId: number;
   fallbackClassId: number;
 }): CharacterFacts {
-  const appearance = asRecord(input.appearance);
+  const appearance = rec(input.appearance);
   const customizations = mapCustomizations(appearance.customizations);
   const equipped = mapEquipment(input.equipment);
   const appearanceItems = mapAppearanceItems(appearance.items);
@@ -51,10 +52,10 @@ function pickAsset(value: unknown, key: string): string | undefined {
 }
 
 function mediaAssets(value: unknown): { key: string; url: string }[] {
-  const record = asRecord(value);
+  const record = rec(value);
   const assets = Array.isArray(record.assets) ? record.assets : [];
   return assets.flatMap((asset) => {
-    const entry = asRecord(asset);
+    const entry = rec(asset);
     const key = namedType(entry.key).toLowerCase();
     const url = typeof entry.value === "string" ? entry.value : undefined;
     if (url === undefined || !/^https?:\/\//.test(url)) return [];
@@ -66,7 +67,7 @@ function mapCustomizations(value: unknown): readonly LookCustomization[] {
   if (!Array.isArray(value)) return [];
   const mapped: LookCustomization[] = [];
   for (const entry of value) {
-    const record = asRecord(entry);
+    const record = rec(entry);
     const optionId = idOf(record.option);
     const choiceId = idOf(record.choice);
     if (optionId === undefined || choiceId === undefined) continue;
@@ -80,7 +81,7 @@ function mapEquipment(value: unknown): {
   overrides: readonly EquipmentOverride[];
   carries: readonly CarriedGear[];
 } {
-  const record = asRecord(value);
+  const record = rec(value);
   const items = Array.isArray(record.equipped_items)
     ? record.equipped_items
     : [];
@@ -90,7 +91,7 @@ function mapEquipment(value: unknown): {
   const seen = new Set<number>();
   for (const item of items) {
     const carried =
-      CARRIED_BY_INVENTORY_TYPE[namedType(asRecord(item).inventory_type)];
+      CARRIED_BY_INVENTORY_TYPE[namedType(rec(item).inventory_type)];
     if (carried !== undefined) carries.add(carried);
     const mapped = mapEquippedItem(item);
     if (mapped === undefined || seen.has(mapped.itemId)) continue;
@@ -107,8 +108,8 @@ function mapEquippedItem(value: unknown):
       override?: EquipmentOverride;
     }
   | undefined {
-  const record = asRecord(value);
-  const transmog = asRecord(record.transmog);
+  const record = rec(value);
+  const transmog = rec(record.transmog);
   const itemId = idOf(transmog.item) ?? idOf(record.item);
   if (itemId === undefined) return undefined;
   const slot = slotType(record.slot);
@@ -124,7 +125,7 @@ function mapAppearanceItems(value: unknown): readonly number[] {
   const ids: number[] = [];
   const seen = new Set<number>();
   for (const item of value) {
-    const id = idOf(asRecord(item));
+    const id = idOf(rec(item));
     if (id === undefined || seen.has(id)) continue;
     seen.add(id);
     ids.push(id);
@@ -147,22 +148,16 @@ function pickRenderAsset(value: unknown): string | undefined {
 
 function namedType(value: unknown): string {
   if (typeof value === "string") return value;
-  const type = asRecord(value).type;
+  const type = rec(value).type;
   return typeof type === "string" ? type : "";
 }
 
 function slotType(value: unknown): string | undefined {
-  const record = asRecord(value);
+  const record = rec(value);
   return typeof record.type === "string" ? record.type : undefined;
 }
 
 function idOf(value: unknown): number | undefined {
-  const record = asRecord(value);
+  const record = rec(value);
   return typeof record.id === "number" && record.id > 0 ? record.id : undefined;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
 }

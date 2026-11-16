@@ -3,6 +3,14 @@ import type { ContentLocale } from "@guildhub/contracts";
 import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok } from "../../../platform/kernel/result.js";
 import type { CharacterProfileSource } from "../application/ports.js";
+import {
+  iconIdOf,
+  int,
+  list,
+  positiveInt,
+  rec,
+  str,
+} from "../../../platform/blizzard/document.js";
 import type { BattleNetResource } from "../../../platform/blizzard/request.js";
 import { mapLimited } from "../../../platform/kernel/map-limited.js";
 import {
@@ -154,65 +162,40 @@ function knownIcons(
 
 /** Ids of recent and listed achievements, the ones the site shows. */
 function achievementIds(achievements: unknown): number[] {
-  const record = asRecord(achievements);
-  const entries = [record.recent_events, record.achievements].flatMap((list) =>
-    Array.isArray(list) ? (list as unknown[]) : [],
+  const record = rec(achievements);
+  return uniqueIds(
+    [...list(record.recent_events), ...list(record.achievements)].map(
+      (entry) => rec(rec(entry).achievement).id,
+    ),
   );
-  const ids = new Set<number>();
-  for (const entry of entries) {
-    const id = asRecord(asRecord(entry).achievement).id;
-    if (typeof id === "number" && id > 0) ids.add(id);
-  }
-  return [...ids];
 }
 
 function classIdOf(summary: unknown): number {
-  const id = asRecord(asRecord(summary).character_class).id;
-  return typeof id === "number" ? id : 0;
+  return int(rec(rec(summary).character_class).id) ?? 0;
 }
 
 function mediaIds(equipment: unknown): number[] {
-  const items = asRecord(equipment).equipped_items;
-  if (!Array.isArray(items)) return [];
-  const ids = new Set<number>();
-  for (const item of items) {
-    const record = asRecord(item);
-    const id = asRecord(record.media).id ?? asRecord(record.item).id;
-    if (typeof id === "number" && id > 0) ids.add(id);
-  }
-  return [...ids];
+  return uniqueIds(
+    list(rec(equipment).equipped_items).map((item) => {
+      const record = rec(item);
+      return rec(record.media).id ?? rec(record.item).id;
+    }),
+  );
 }
 
-function iconIdOf(media: unknown): number | undefined {
-  const assets = asRecord(media).assets;
-  if (!Array.isArray(assets)) return undefined;
-  for (const asset of assets) {
-    const record = asRecord(asset);
-    if (record.key === "icon" && typeof record.file_data_id === "number") {
-      return record.file_data_id;
-    }
-  }
-  return undefined;
-}
-
-function avatarAssetUrl(media: unknown): string | undefined {
-  const assets = asRecord(media).assets;
-  if (!Array.isArray(assets)) return undefined;
-  for (const asset of assets) {
-    const record = asRecord(asset);
-    if (record.key === "avatar" && typeof record.value === "string") {
-      return record.value;
-    }
-  }
-  return undefined;
+function uniqueIds(values: readonly unknown[]): number[] {
+  return [
+    ...new Set(
+      values.flatMap((value) => {
+        const id = positiveInt(value);
+        return id === undefined ? [] : [id];
+      }),
+    ),
+  ];
 }
 
 function hasAvatar(media: unknown): boolean {
-  return avatarAssetUrl(media) !== undefined;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
+  return list(rec(media).assets)
+    .map(rec)
+    .some((asset) => asset.key === "avatar" && str(asset.value) !== undefined);
 }

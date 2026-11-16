@@ -1,6 +1,14 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import { wowForever } from "@blizzard-api/wow-forever";
 import { defaultContentLocale, type ContentLocale } from "@guildhub/contracts";
+import {
+  iconIdOf,
+  list,
+  optional,
+  positiveInt,
+  rec,
+  str,
+} from "../../../platform/blizzard/document.js";
 import type { BattleNetResource } from "../../../platform/blizzard/request.js";
 import { mapLimited } from "../../../platform/kernel/map-limited.js";
 import { sendCharacterRequestPatiently } from "./battle-net-request.js";
@@ -99,7 +107,7 @@ export class BattleNetTalentTreeCatalog {
       wowForever.talentTree(entry.treeId, entry.specId),
     );
     if (!body.settled) return;
-    const classId = num(rec(rec(body.value).playable_class).id);
+    const classId = positiveInt(rec(rec(body.value).playable_class).id);
     if (classId !== undefined) this.classOfTree.set(entry.treeId, classId);
     this.trees.set(entry.specId, treeLayoutOf(entry.specId, body.value));
   }
@@ -197,11 +205,11 @@ function nodeLayoutOf(value: unknown): TalentNodeLayout | undefined {
   const first = ranks[0];
   const talent = rec(first?.talent);
   const spell = rec(first?.spell_tooltip);
-  const id = num(node.id);
-  const talentId = num(talent.id);
+  const id = positiveInt(node.id);
+  const talentId = positiveInt(talent.id);
   const name = str(talent.name) ?? str(rec(spell.spell).name);
-  const row = num(node.display_row);
-  const column = num(node.display_col);
+  const row = positiveInt(node.display_row);
+  const column = positiveInt(node.display_col);
   if (
     id === undefined ||
     talentId === undefined ||
@@ -216,50 +224,14 @@ function nodeLayoutOf(value: unknown): TalentNodeLayout | undefined {
     name,
     row,
     column,
-    ...optional("spellId", num(rec(spell.spell).id)),
+    ...optional("spellId", positiveInt(rec(spell.spell).id)),
     ...optional("castTime", str(spell.cast_time)),
     rankDescriptions: ranks.map(
       (rank) => str(rec(rank.spell_tooltip).description) ?? "",
     ),
     requires: list(node.locked_by).flatMap((required) => {
-      const requiredId = num(required);
+      const requiredId = positiveInt(required);
       return requiredId === undefined ? [] : [requiredId];
     }),
   };
-}
-
-function iconIdOf(media: unknown): number | undefined {
-  const icon = list(rec(media).assets)
-    .map(rec)
-    .find((asset) => asset.key === "icon");
-  return num(icon?.file_data_id);
-}
-
-function optional<K extends string, V>(
-  key: K,
-  value: V | undefined,
-): { [P in K]?: V } {
-  return value === undefined ? {} : ({ [key]: value } as { [P in K]: V });
-}
-
-function rec(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function list(value: unknown): unknown[] {
-  return Array.isArray(value) ? (value as unknown[]) : [];
-}
-
-function num(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value > 0
-    ? value
-    : undefined;
-}
-
-function str(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() !== ""
-    ? value.trim()
-    : undefined;
 }

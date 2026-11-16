@@ -10,6 +10,13 @@ import {
   type ContentLocale,
 } from "@guildhub/contracts";
 import {
+  iconIdOf,
+  list,
+  positiveInt,
+  rec,
+  str,
+} from "../../../platform/blizzard/document.js";
+import {
   battleNetLocaleOf,
   sendBattleNetPatiently,
   type BattleNetResource,
@@ -70,7 +77,7 @@ export function makeBattleNetRecipeCatalogSource(
       .filter((entry) => !str(entry.name)?.includes("[DNT]"));
     const tiers = (
       await mapLimited(professions, REQUEST_CONCURRENCY, async (entry) => {
-        const professionId = int(entry.id);
+        const professionId = positiveInt(entry.id);
         const profession =
           professionId === undefined
             ? undefined
@@ -78,7 +85,7 @@ export function makeBattleNetRecipeCatalogSource(
         return list(profession?.skill_tiers).map((tier) => ({
           professionId: professionId ?? 0,
           profession: str(profession?.name) ?? str(entry.name) ?? "",
-          tierId: int(rec(tier).id),
+          tierId: positiveInt(rec(tier).id),
         }));
       })
     ).flat();
@@ -93,7 +100,7 @@ export function makeBattleNetRecipeCatalogSource(
         );
         return list(body?.categories).flatMap((category) =>
           list(rec(category).recipes).flatMap((recipe) => {
-            const id = int(rec(recipe).id);
+            const id = positiveInt(rec(recipe).id);
             return id === undefined
               ? []
               : [
@@ -135,7 +142,7 @@ export function makeBattleNetRecipeCatalogSource(
         rec(rec(result).data),
       );
       for (const data of results) {
-        const id = int(data.id);
+        const id = positiveInt(data.id);
         const name = str(rec(data.name)[battleNetLocaleOf(locale)]);
         const quality = itemQualitySchema.safeParse(rec(data.quality).type);
         const taught = name?.split(": ").slice(1).join(": ");
@@ -152,7 +159,10 @@ export function makeBattleNetRecipeCatalogSource(
           quality: quality.data,
         });
       }
-      const last = Math.max(0, ...results.map((data) => int(data.id) ?? 0));
+      const last = Math.max(
+        0,
+        ...results.map((data) => positiveInt(data.id) ?? 0),
+      );
       if (results.length < SEARCH_PAGE_SIZE || last < from) break;
       from = last + 1;
     }
@@ -171,7 +181,9 @@ export function makeBattleNetRecipeCatalogSource(
       const detail = await get(wowForever.item(item.id), locale);
       skills.set(
         item.id,
-        int(rec(rec(rec(detail?.preview_item).requirements).skill).level),
+        positiveInt(
+          rec(rec(rec(detail?.preview_item).requirements).skill).level,
+        ),
       );
     }
     const requiredSkill = skills.get(item.id);
@@ -203,7 +215,7 @@ export function makeBattleNetRecipeCatalogSource(
           if (!body || !name) return undefined;
           const icon = iconIdOf(media);
           const crafted = rec(body.crafted_item);
-          const craftedId = int(crafted.id);
+          const craftedId = positiveInt(crafted.id);
           const craftedItem =
             craftedId === undefined
               ? undefined
@@ -223,13 +235,13 @@ export function makeBattleNetRecipeCatalogSource(
             ...(craftedItem === undefined ? {} : { craftedItem }),
             craftedQuantity: Math.max(
               1,
-              int(rec(body.crafted_quantity).value) ?? 1,
+              positiveInt(rec(body.crafted_quantity).value) ?? 1,
             ),
             reagents: list(body.reagents).flatMap((reagent) => {
               const record = rec(reagent);
-              const itemId = int(rec(record.reagent).id);
+              const itemId = positiveInt(rec(record.reagent).id);
               const reagentName = str(rec(record.reagent).name);
-              const quantity = int(record.quantity);
+              const quantity = positiveInt(record.quantity);
               return itemId === undefined ||
                 reagentName === undefined ||
                 quantity === undefined
@@ -265,7 +277,7 @@ function craftedItemOf(
   if (!body || !name || !quality.success) return undefined;
   const preview = rec(body.preview_item);
   const slot = rec(body.inventory_type);
-  const itemLevel = int(body.level);
+  const itemLevel = positiveInt(body.level);
   return {
     id,
     name,
@@ -301,35 +313,4 @@ function statsOf(preview: Record<string, unknown>): RecipeStat[] {
   return typeof armor === "number" && armor > 0
     ? [{ type: "ARMOR", name: "Armor", value: armor }, ...stats]
     : stats;
-}
-
-function iconIdOf(
-  media: Record<string, unknown> | undefined,
-): number | undefined {
-  const icon = list(media?.assets)
-    .map(rec)
-    .find((asset) => asset.key === "icon");
-  return int(icon?.file_data_id);
-}
-
-function rec(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function list(value: unknown): unknown[] {
-  return Array.isArray(value) ? (value as unknown[]) : [];
-}
-
-function int(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value > 0
-    ? value
-    : undefined;
-}
-
-function str(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() !== ""
-    ? value.trim()
-    : undefined;
 }

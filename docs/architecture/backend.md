@@ -236,3 +236,4 @@ Rules:
 - No TypeScript `enum`; use `as const` objects or string unions.
 - zod is used at the edges (env, HTTP input, Battle.net responses, instance config). Inside the core, types are plain TypeScript.
 - Comments explain constraints the code cannot show, nothing else.
+- One responsibility per file. No `else if` chains and no nested ternaries: branch on data with a lookup table or a strategy map, or use early returns. ESLint enforces both for all TypeScript in the repo.

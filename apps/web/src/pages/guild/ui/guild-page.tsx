@@ -41,6 +41,14 @@ export function GuildPage() {
   const sections = chronicle.data
     ? chronicleSections(chronicle.data, history.data, guild, t)
     : [];
+  const chronicleFallback = chronicle.isError ? (
+    <p className="page-notice">{t("home.chronicleError")}</p>
+  ) : (
+    <div className="chronicle-loading" aria-live="polite">
+      <span className="rune-spinner" aria-hidden="true" />
+      {t("home.chronicleLoading")}
+    </div>
+  );
   return (
     <article className="guild-page">
       <DocumentTitle value={formatDocumentTitle(guild.name)} />
@@ -91,13 +99,8 @@ export function GuildPage() {
             </PanelSection>
           ))}
         </>
-      ) : chronicle.isError ? (
-        <p className="page-notice">{t("home.chronicleError")}</p>
       ) : (
-        <div className="chronicle-loading" aria-live="polite">
-          <span className="rune-spinner" aria-hidden="true" />
-          {t("home.chronicleLoading")}
-        </div>
+        chronicleFallback
       )}
       <Reveal className="guild-about">
         <h2>{t("home.aboutTitle")}</h2>

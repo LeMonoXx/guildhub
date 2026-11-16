@@ -21,6 +21,17 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      "no-nested-ternary": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "IfStatement > IfStatement.alternate",
+          message:
+            "No else-if chains: use a lookup table, a strategy map or early returns.",
+        },
+      ],
+    },
   },
   {
     files: ["**/*.{js,mjs,cjs}"],

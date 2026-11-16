@@ -56,6 +56,11 @@ export function CharacterPage() {
   const sections = available
     ? profileSections(available, detail, history.data, t)
     : [];
+  const profileFallback = profile.isPending ? (
+    <StatusBlock>{t("character.profileLoading")}</StatusBlock>
+  ) : (
+    <p className="page-notice">{t("character.profileUnavailable")}</p>
+  );
 
   return (
     <article className="character-page">
@@ -74,23 +79,19 @@ export function CharacterPage() {
         {detail.published ? null : (
           <p className="page-notice">{t("character.unpublished")}</p>
         )}
-        {sections.length > 0 ? (
-          sections.map((section) => (
-            <PanelSection
-              key={section.link.id}
-              id={section.link.id}
-              eyebrow={section.eyebrow}
-              title={section.link.label}
-              lead={section.lead}
-            >
-              {section.body}
-            </PanelSection>
-          ))
-        ) : profile.isPending ? (
-          <StatusBlock>{t("character.profileLoading")}</StatusBlock>
-        ) : (
-          <p className="page-notice">{t("character.profileUnavailable")}</p>
-        )}
+        {sections.length > 0
+          ? sections.map((section) => (
+              <PanelSection
+                key={section.link.id}
+                id={section.link.id}
+                eyebrow={section.eyebrow}
+                title={section.link.label}
+                lead={section.lead}
+              >
+                {section.body}
+              </PanelSection>
+            ))
+          : profileFallback}
       </div>
     </article>
   );

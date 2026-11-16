@@ -138,6 +138,7 @@ Every component test covers the error state for at least one `ApiError` code.
 React rules:
 
 - Function components and hooks only. One component per file, file name in `kebab-case`, component name in `PascalCase`.
+- No `else if` chains and no nested ternaries, also not in JSX. Pick a fallback element before `return`, or give the variant its own component with early returns. ESLint enforces this.
 - No manual `useMemo`, `useCallback`, or `React.memo` for performance; the React Compiler handles memoisation. Use them only when a library needs a stable identity, with a comment.
 - No `useEffect` for data fetching or for deriving state. Data comes from queries and loaders; derived values are computed during render.
 - Route files in `app/routes/` stay thin: params validation, loader, and rendering the page from `pages/`. Business UI lives in the layers.

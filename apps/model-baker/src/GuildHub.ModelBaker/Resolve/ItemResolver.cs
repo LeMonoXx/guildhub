@@ -11,170 +11,25 @@
 // hide geosets indexed by sex (DBItemGeosets.get_helmet_hide_geosets), and shoulder left/right by
 // PositionIndex (src/js/db/caches/DBItemModels.js).
 
-using System.Text.Json.Serialization;
 using GuildHub.ModelBaker.Tables;
 using T = GuildHub.ModelBaker.Tables.GameTableNames;
 
 namespace GuildHub.ModelBaker.Resolve;
 
-public sealed record FilePick(
-    int FileDataId,
-    string Match,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Position = null);
-
-public sealed record ModelSlot(int Slot, int ModelResourcesId, IReadOnlyList<FilePick> Models, IReadOnlyList<FilePick> Textures);
-
-public sealed record BodyTexture(int Section, IReadOnlyList<FilePick> Textures);
-
-public sealed record GeosetChange(int Group, int Geoset);
-
-public sealed record Attachment(int Slot, int AttachmentId, int ModelFileDataId, int? TextureFileDataId);
-
-// An effect model (a weapon glow) attached to the item's own model at its attachment `AttachmentId`,
-// whichever hand the item is in.
-public sealed record ItemEffect(int AttachmentId, int ModelFileDataId);
-
-// An explicit effective equipment slot. This is request policy, not item-table data: the item's
-// InventoryType remains unchanged while all slot-dependent placement is recomputed.
-public sealed record EquipmentSlotOverride(int ItemId, int EquipSlot);
-
-// A geoset group a helmet hides. `KeepWithOptionFlags` is HelmetGeosetData's unnamed last column when
-// every row for the group sets it (seen: 32), else 0: the group stays when the customization option
-// filling it has one of those flags. The Undead jaw (Jaw Features, flags 40) is in groups 1 and 2,
-// which Helm of Might hides with 32. The column is undocumented.
-public sealed record HelmHide(int Group, int KeepWithOptionFlags);
-
-public sealed record ResolvedItem
-{
-  public string Build { get; init; } = "";
-  public int Race { get; init; }
-  public int Sex { get; init; }
-  // "hd" or "sd". Item files are chosen by race and sex only: no table the resolver reads
-  // distinguishes HD from SD bodies, and item section numbers map onto either body's layout.
-  public string ModelSet { get; init; } = "hd";
-  public int ItemId { get; init; }
-  public string Name { get; init; } = "";
-  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Error { get; init; }
-  public int? InventoryType { get; init; }
-  public int? EquipSlot { get; init; }
-  public int? LayerPriority { get; init; }
-  public int? ItemAppearanceId { get; init; }
-  public int? ItemDisplayInfoId { get; init; }
-  public int[] GeosetGroup { get; init; } = [];
-  public int[] AttachmentGeosetGroup { get; init; } = [];
-  public IReadOnlyList<int> HelmHideGeosetGroups { get; init; } = [];
-  public IReadOnlyList<HelmHide> HelmHides { get; init; } = [];
-  public IReadOnlyList<ModelSlot> Models { get; init; } = [];
-  public IReadOnlyList<BodyTexture> BodyTextures { get; init; } = [];
-  public IReadOnlyList<GeosetChange> Geosets { get; init; } = [];
-  public IReadOnlyDictionary<int, int> BodyReplaceableTextures { get; init; } = new Dictionary<int, int>();
-  public IReadOnlyList<Attachment> Attachments { get; init; } = [];
-  public IReadOnlyList<ItemEffect> Effects { get; init; } = [];
-  // Item.SheatheType (where a sheathed weapon goes: 1 back, 2 large weapon on the back, 3 hip,
-  // 4 shield on the back, else it stays in hand) and Item.SubclassID (bow, gun, ...).
-  public int? SheatheType { get; init; }
-  public int? ItemSubclass { get; init; }
-}
-
 public sealed class ItemResolver
 {
-  public const int ShoulderLeft = 3, ShoulderRight = 30, BackSlot = 15, MainHandSlot = 16, OffHandSlot = 17, RangedSlot = 18;
-  public const int OneHandInventoryType = 13;
+  public const int ShoulderLeft = EquipmentSlotTables.ShoulderLeft;
+  public const int ShoulderRight = EquipmentSlotTables.ShoulderRight;
+  public const int BackSlot = EquipmentSlotTables.BackSlot;
+  public const int MainHandSlot = EquipmentSlotTables.MainHandSlot;
+  public const int OffHandSlot = EquipmentSlotTables.OffHandSlot;
+  public const int RangedSlot = EquipmentSlotTables.RangedSlot;
+  public const int OneHandInventoryType = EquipmentSlotTables.OneHandInventoryType;
   // The name of an item the game files don't name (no ItemSparse row).
   public const string NoName = "(no ItemSparse row)";
   const string HelmKeepColumn = "Field_10_0_0_46047_003";
   const long BareFeetFlag = 0x2;
   const int FootSection = 7;
-
-  // Inventory type -> equipment slot (EquipmentSlots.js INVENTORY_TYPE_TO_SLOT_ID).
-  public static readonly IReadOnlyDictionary<int, int> InventoryTypeToSlot = new Dictionary<int, int>
-  {
-    [1] = 1,
-    [2] = 2,
-    [3] = ShoulderLeft,
-    [4] = 4,
-    [5] = 5,
-    [6] = 6,
-    [7] = 7,
-    [8] = 8,
-    [9] = 9,
-    [10] = 10,
-    [13] = 16,
-    [14] = 17,
-    [15] = RangedSlot,
-    [16] = BackSlot,
-    [17] = 16,
-    [19] = 19,
-    [20] = 5,
-    [21] = 16,
-    [22] = 17,
-    [23] = 17,
-    [25] = RangedSlot,
-    [26] = RangedSlot,
-  };
-
-  // M2 attachment IDs per slot, in ItemDisplayInfo model order (EquipmentSlots.js ATTACHMENT_ID).
-  static readonly Dictionary<int, int[]> SlotToAttachment = new()
-  {
-    // A ranged weapon in the right hand; the viewer puts a bow in the left (it knows the subclass).
-    [1] = [11],
-    [ShoulderLeft] = [6],
-    [ShoulderRight] = [5],
-    [BackSlot] = [12],
-    [16] = [1],
-    [17] = [2, 0],
-    [RangedSlot] = [1],
-  };
-
-  // Texture layer priority per slot: lower draws first (EquipmentSlots.js SLOT_LAYER).
-  static readonly Dictionary<int, int> SlotLayer = new()
-  {
-    [4] = 10,
-    [7] = 10,
-    [1] = 11,
-    [8] = 11,
-    [3] = 13,
-    [30] = 13,
-    [5] = 13,
-    [19] = 17,
-    [6] = 18,
-    [9] = 19,
-    [10] = 20,
-    [16] = 21,
-    [17] = 22,
-    [15] = 23,
-  };
-
-  // Body texture sections each equipment slot paints (0 arm upper, 1 arm lower, 2 hand, 3 torso upper,
-  // 4 torso lower, 5 leg upper, 6 leg lower, 7 foot). Some late displays list sections outside their
-  // slot (tier 2.5 shoulders carry legs, the Frostfire Bindings a red torso) that the game doesn't
-  // show. Taken from the data: each slot's own sections appear on 90-100% of its items, strays on 3-7%.
-  static readonly Dictionary<int, int[]> SlotSections = new()
-  {
-    [4] = [0, 1, 3, 4],
-    [5] = [0, 1, 3, 4, 5, 6],
-    [6] = [4, 5],
-    [7] = [5, 6],
-    [8] = [6, 7],
-    [9] = [1],
-    [10] = [1, 2],
-    [19] = [3, 4, 5],
-  };
-
-  // Slot -> (ItemDisplayInfo.GeosetGroup index, character geoset group, is-feet) (DBItemGeosets.js).
-  static readonly Dictionary<int, (int index, int group, bool feet)[]> SlotGeosets = new()
-  {
-    [1] = [(0, 27, false), (1, 21, false)],
-    [ShoulderLeft] = [(0, 26, false)],
-    [4] = [(0, 8, false), (1, 10, false)],
-    [5] = [(0, 8, false), (1, 10, false), (2, 13, false), (3, 22, false), (4, 28, false)],
-    [6] = [(0, 18, false)],
-    [7] = [(0, 11, false), (1, 9, false), (2, 13, false)],
-    [8] = [(0, 5, false), (1, 20, true)],
-    [10] = [(0, 4, false), (1, 23, false)],
-    [BackSlot] = [(0, 15, false)],
-    [19] = [(0, 12, false)],
-  };
 
   readonly Dictionary<int, Row> _item, _itemSparse, _itemAppearance, _itemDisplayInfo, _componentModel, _componentTexture, _chrRaces, _itemVisuals;
   readonly Dictionary<int, List<Row>> _imaByItem, _matResByDisplay, _modelFilesByRes, _textureFilesByRes, _helmetGeosetsByVis;
@@ -220,7 +75,7 @@ public sealed class ItemResolver
 
     // Some items have a model but no ItemSparse row (tier 2 in the Forever beta); Item has the slot too.
     int? inventoryType = sparse?.Int("InventoryType") ?? (_item.TryGetValue(itemId, out var itemRow) ? itemRow.Int("InventoryType") : null);
-    int? equipSlot = inventoryType is { } it && InventoryTypeToSlot.TryGetValue(it, out var s) ? s : null;
+    int? equipSlot = inventoryType is { } it && EquipmentSlotTables.InventoryTypeToSlot.TryGetValue(it, out var s) ? s : null;
     if (equipSlotOverride is { } requestedSlot)
     {
       if (requestedSlot is not MainHandSlot and not OffHandSlot)
@@ -233,7 +88,7 @@ public sealed class ItemResolver
     // ChrRaces flag 0x2, "Bare Feet" (wowdev.wiki DB/ChrRaces): Tauren and Trolls keep their own feet in
     // boots, so the foot texture is skipped, as WoW Model Viewer does. The leg texture and geosets stay.
     var bareFeet = _chrRaces.TryGetValue(raceId, out var race) && (race.Long("Flags") & BareFeetFlag) != 0;
-    var slotSections = equipSlot is { } bs ? SlotSections.GetValueOrDefault(bs, []) : [];
+    var slotSections = equipSlot is { } bs ? EquipmentSlotTables.SlotSections.GetValueOrDefault(bs, []) : [];
     var bodyTextures = _matResByDisplay.Of(display.Int("ID"))
         .Where(m => slotSections.Contains(m.Int("ComponentSection")) && !(bareFeet && m.Int("ComponentSection") == FootSection))
         .Select(m => new BodyTexture(
@@ -260,7 +115,7 @@ public sealed class ItemResolver
       Name = name,
       InventoryType = inventoryType,
       EquipSlot = equipSlot,
-      LayerPriority = equipSlot is { } es && SlotLayer.TryGetValue(es, out var layer) ? layer : null,
+      LayerPriority = equipSlot is { } es && EquipmentSlotTables.SlotLayer.TryGetValue(es, out var layer) ? layer : null,
       ItemAppearanceId = ima.Int("ItemAppearanceID"),
       ItemDisplayInfoId = display.Int("ID"),
       GeosetGroup = geosetGroup,
@@ -286,17 +141,17 @@ public sealed class ItemResolver
   // wow.export: a group's geoset is group * 100 + 1 + GeosetGroup[n]; feet use GeosetGroup[1] as
   // is, and 2 when it is 0.
   static List<GeosetChange> Geosets(int slot, int[] geosetGroup) =>
-      (SlotGeosets.GetValueOrDefault(slot) ?? []).Select(m =>
+      (EquipmentSlotTables.SlotGeosets.GetValueOrDefault(slot) ?? []).Select(m =>
       {
         var g = m.index < geosetGroup.Length ? geosetGroup[m.index] : 0;
-        var value = m.feet ? (g == 0 ? 2 : g) : 1 + g;
-        return new GeosetChange(m.group, m.group * 100 + value);
+        return new GeosetChange(m.group, m.group * 100 + GeosetVariant(g, m.feet));
       }).ToList();
 
-  // M2 attachment 0, the shield point on the forearm. wow.export's table lists it second for the off
-  // hand, so following it puts a one-model shield in the left hand (2), through the arm.
-  const int ShieldAttachment = 0;
-  const int ShieldInventoryType = 14;
+  static int GeosetVariant(int geosetGroupValue, bool feet)
+  {
+    if (!feet) return 1 + geosetGroupValue;
+    return geosetGroupValue == 0 ? 2 : geosetGroupValue;
+  }
 
   static List<Attachment> Attachments(int equipSlot, List<ModelSlot> models, int? inventoryType)
   {
@@ -304,8 +159,8 @@ public sealed class ItemResolver
     // Shoulders fill both shoulder slots from one item.
     foreach (var slot in equipSlot == ShoulderLeft ? [ShoulderLeft, ShoulderRight] : new[] { equipSlot })
     {
-      if (!SlotToAttachment.TryGetValue(slot, out var ids)) continue;
-      if (inventoryType == ShieldInventoryType) ids = [ShieldAttachment];
+      if (!EquipmentSlotTables.SlotToAttachment.TryGetValue(slot, out var ids)) continue;
+      if (inventoryType == EquipmentSlotTables.ShieldInventoryType) ids = [EquipmentSlotTables.ShieldAttachment];
       List<(FilePick model, IReadOnlyList<FilePick> textures)> picks;
       if (slot is ShoulderLeft or ShoulderRight)
       {
@@ -365,6 +220,10 @@ public sealed class ItemResolver
     return neutral;
   }
 
-  int FallbackRace(int raceId, int sex, string kind) =>
-      _chrRaces.TryGetValue(raceId, out var r) ? r.Int(sex == 0 ? $"Male{kind}FallbackRaceID" : $"Female{kind}FallbackRaceID") : 0;
+  int FallbackRace(int raceId, int sex, string kind)
+  {
+    if (!_chrRaces.TryGetValue(raceId, out var r)) return 0;
+    var column = sex == 0 ? $"Male{kind}FallbackRaceID" : $"Female{kind}FallbackRaceID";
+    return r.Int(column);
+  }
 }

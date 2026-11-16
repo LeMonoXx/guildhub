@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using GuildHub.ModelBaker.Cli;
+using GuildHub.ModelBaker.Cli.Serve;
 
 namespace GuildHub.ModelBaker.Tests;
 

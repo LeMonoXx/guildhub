@@ -16,6 +16,9 @@ sealed class GltfBinaryBuilder
     public JsonArray Accessors { get; } = [];
     public long Length => _bin.Length;
 
+    public static byte[] Bytes<T>(T[] values) where T : struct =>
+        System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()).ToArray();
+
     public void Pad()
     {
         while (_bin.Length % 4 != 0) _bin.WriteByte(0);

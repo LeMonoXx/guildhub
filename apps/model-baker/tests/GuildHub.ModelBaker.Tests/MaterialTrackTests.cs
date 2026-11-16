@@ -274,7 +274,8 @@ public class MaterialTrackTests
 
         var color = Alloc(40);
         Track(color, 12, (at, i) => { F32(body, at, i + 1); F32(body, at + 4, i + 2); F32(body, at + 8, i + 3); });
-        Track(color + 20, 2, (at, i) => I16(body, at, i == 0 ? -32767 : i == 1 ? 16384 : 32767));
+        var alphaKeys = new[] { -32767, 16384, 32767 };
+        Track(color + 20, 2, (at, i) => I16(body, at, alphaKeys[i]));
         Arr(0x48, 1, color);
         var texture = Alloc(16);
         U32(body, texture, 9);

@@ -1,4 +1,6 @@
 using GuildHub.ModelBaker.Cli;
+using GuildHub.ModelBaker.Cli.Options;
+using GuildHub.ModelBaker.Cli.ProofScenes;
 using GuildHub.ModelBaker.Resolve;
 
 namespace GuildHub.ModelBaker.Tests;

@@ -36,3 +36,4 @@ What gets easier, what gets harder, what we must watch.
 | [0009](0009-deploy-behind-existing-proxy.md)    | Deploy behind the host's existing proxy           | Accepted |
 | [0010](0010-adaptive-shared-character-stage.md) | Adaptive shared character stage on the guild home | Accepted |
 | [0011](0011-nebelmoor-visual-direction.md)      | Nebelmoor visual direction, page fog, typefaces   | Accepted |
+| [0012](0012-domain-uses-contract-types.md)      | The domain may use contract shapes as types       | Accepted |

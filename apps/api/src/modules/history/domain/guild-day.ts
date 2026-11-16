@@ -36,10 +36,10 @@ export interface MemberDay {
   readonly mounts: readonly string[];
 }
 
-/** One recorded day of the guild. Recording the same day again replaces it. */
 /** Days recorded before languages were kept are English. */
 export const legacyDayLocale: ContentLocale = "en";
 
+/** One recorded day of the guild. Recording the same day again replaces it. */
 export interface GuildDay {
   readonly day: string;
   /** The language of the game texts, `legacyDayLocale` when not recorded. */

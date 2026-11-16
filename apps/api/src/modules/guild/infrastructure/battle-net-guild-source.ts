@@ -1,5 +1,9 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import { z } from "zod";
+import {
+  sendBattleNet,
+  type BattleNetResource,
+} from "../../../platform/blizzard/request.js";
 import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok, type Result } from "../../../platform/kernel/result.js";
 import type { GuildSource, GuildSourceError } from "../application/ports.js";
@@ -66,52 +70,13 @@ export function makeBattleNetGuildSource(
 
 async function send<T>(
   client: BlizzardApiClient,
-  resource: Parameters<BlizzardApiClient["sendRequest"]>[0],
+  resource: BattleNetResource,
   map: (body: unknown) => Result<T, GuildSourceError>,
 ): Promise<Result<T, GuildSourceError>> {
-  try {
-    await ensureToken(client);
-    const body = await client.sendRequest(resource);
-    if (body === undefined) return err(appError("upstream.unavailable"));
-    return map(body);
-  } catch (error) {
-    return err(mapUpstreamError(error));
-  }
-}
-
-async function ensureToken(client: BlizzardApiClient): Promise<void> {
-  if (client.defaults.token !== undefined) return;
-  await client.refreshAccessToken();
-}
-
-function mapUpstreamError(error: unknown): GuildSourceError {
-  const status = httpStatus(error);
-  if (status === 404) return appError("guild.not_found");
-  if (status === 429) {
-    return appError("upstream.unavailable", {
-      retryAfterSeconds: retryAfterSeconds(error) ?? 1,
-    });
-  }
-  return appError("upstream.unavailable");
-}
-
-function httpStatus(error: unknown): number | undefined {
-  if (typeof error !== "object" || error === null || !("response" in error)) {
-    return undefined;
-  }
-  const response = (error as { response?: { status?: number } }).response;
-  return response?.status;
-}
-
-function retryAfterSeconds(error: unknown): number | undefined {
-  if (typeof error !== "object" || error === null || !("response" in error)) {
-    return undefined;
-  }
-  const response = (error as { response?: Response }).response;
-  const header = response?.headers.get("Retry-After");
-  if (header === null || header === undefined) return undefined;
-  const seconds = Number(header);
-  return Number.isFinite(seconds) ? seconds : undefined;
+  const body = await sendBattleNet(client, resource, {
+    notFound: "guild.not_found",
+  });
+  return body.ok ? map(body.value) : body;
 }
 
 function toProfile(body: z.infer<typeof blizzardGuildSchema>): GuildProfile {

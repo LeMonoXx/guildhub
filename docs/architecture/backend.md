@@ -59,18 +59,19 @@ flowchart TD
   application --> kernel[platform/kernel]
   application --> contracts
   domain[domain] --> kernel
+  domain -. import type .-> contracts
 ```
 
-| Layer (importer)                          | May import                                                                                                            | Must not import                                                                                     |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `domain`                                  | Own module's `domain`, `platform/kernel`                                                                              | Anything else: no zod, no Hono, no Drizzle, no `fetch`, no `process`, no `Date.now()` (use `Clock`) |
-| `application`                             | Own `domain`, own `application`, `platform/kernel`, `packages/contracts`, other modules' `index.ts` (public API only) | `infrastructure`, `http`, `platform/db`, `platform/http`, Hono, Drizzle, Battle.net packages        |
-| `infrastructure`                          | Own `application` (to implement its ports), own `domain`, `platform/*` except `http`, external libraries              | `http`, other modules' internals                                                                    |
-| `http`                                    | Own `application`, `import type` from own `domain`, `packages/contracts`, `platform/http`, `platform/kernel`          | `infrastructure`, Drizzle, Battle.net packages, other modules' internals                            |
-| `platform/*`                              | Other `platform/*` folders, external libraries                                                                        | Any `modules/*`                                                                                     |
-| `index.ts` (module)                       | Its own `domain`, `application`, and `http`                                                                           | Its own `infrastructure`, other modules' internals                                                  |
-| `infrastructure/index.ts`                 | Its own `infrastructure`                                                                                              | —; only the composition roots import it                                                             |
-| `index.ts`, `worker.ts`, `composition.ts` | Everything                                                                                                            | —                                                                                                   |
+| Layer (importer)                          | May import                                                                                                                                  | Must not import                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `domain`                                  | Own module's `domain`, `platform/kernel`, `import type` from `packages/contracts` ([0012](../decisions/0012-domain-uses-contract-types.md)) | Anything else: no zod, no Hono, no Drizzle, no `fetch`, no `process`, no `Date.now()` (use `Clock`) |
+| `application`                             | Own `domain`, own `application`, `platform/kernel`, `packages/contracts`, other modules' `index.ts` (public API only)                       | `infrastructure`, `http`, `platform/db`, `platform/http`, Hono, Drizzle, Battle.net packages        |
+| `infrastructure`                          | Own `application` (to implement its ports), own `domain`, `platform/*` except `http`, external libraries                                    | `http`, other modules' internals                                                                    |
+| `http`                                    | Own `application`, `import type` from own `domain`, `packages/contracts`, `platform/http`, `platform/kernel`                                | `infrastructure`, Drizzle, Battle.net packages, other modules' internals                            |
+| `platform/*`                              | Other `platform/*` folders, external libraries                                                                                              | Any `modules/*`                                                                                     |
+| `index.ts` (module)                       | Its own `domain`, `application`, and `http`                                                                                                 | Its own `infrastructure`, other modules' internals                                                  |
+| `infrastructure/index.ts`                 | Its own `infrastructure`                                                                                                                    | —; only the composition roots import it                                                             |
+| `index.ts`, `worker.ts`, `composition.ts` | Everything                                                                                                                                  | —                                                                                                   |
 
 Rules that follow from the table:
 

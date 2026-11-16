@@ -272,7 +272,7 @@ module.exports = {
     {
       name: "guild-domain-isolation",
       comment:
-        "Domain code may import only its own domain and platform/kernel.",
+        "Domain code may import only its own domain, platform/kernel, and types from packages/contracts (decision 0012).",
       severity: "error",
       from: {
         path: "^apps/api/src/modules/([^/]+)/domain/",
@@ -282,7 +282,21 @@ module.exports = {
         pathNot: [
           "^apps/api/src/modules/$1/domain/",
           "^apps/api/src/platform/kernel/",
+          "^packages/contracts/",
         ],
+      },
+    },
+    {
+      name: "domain-contracts-types-only",
+      comment:
+        "Domain code uses contract shapes as types only; zod schemas stay out of the core (decision 0012).",
+      severity: "error",
+      from: {
+        path: "^apps/api/src/modules/[^/]+/domain/",
+        pathNot: "[.](?:int[.])?test[.]ts$",
+      },
+      to: {
+        path: "^packages/contracts/",
         dependencyTypesNot: ["type-only"],
       },
     },
@@ -302,7 +316,6 @@ module.exports = {
           "^apps/api/src/platform/kernel/",
           "^packages/contracts/",
         ],
-        dependencyTypesNot: ["type-only"],
       },
     },
     {

@@ -6,10 +6,8 @@ import {
   emptyProfileData,
   type CharacterProfileSnapshot,
 } from "../domain/profile.js";
-import {
-  loadMemberProfiles,
-  makeGetCharacterProfile,
-} from "./get-character-profile.js";
+import { makeGetCharacterProfile } from "./get-character-profile.js";
+import { loadMemberProfiles } from "./load-member-profiles.js";
 import type { CharacterProfileCache, CharacterProfileSource } from "./ports.js";
 
 const now = new Date("2026-11-14T00:00:00.000Z");

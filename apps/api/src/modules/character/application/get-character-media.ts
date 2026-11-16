@@ -5,10 +5,13 @@ import type {
   GuildRef,
   GuildSourceError,
 } from "../../guild/index.js";
+import {
+  findRosterMember,
+  type CharacterNotFound as NotFound,
+} from "./find-roster-member.js";
 import type { CharacterRender } from "./get-character-render.js";
 import type { CharacterCache, CharacterMediaGateway } from "./ports.js";
 
-type NotFound = ReturnType<typeof appError<"character.not_found">>;
 type MediaNotFound = ReturnType<typeof appError<"media.not_found">>;
 
 export const makeGetCharacterAvatar =
@@ -23,11 +26,9 @@ export const makeGetCharacterAvatar =
   }): Promise<
     Result<CharacterRender, GuildSourceError | NotFound | MediaNotFound>
   > => {
-    const roster = await deps.getRoster(query.guild);
-    if (!roster.ok) return roster;
-    const member = roster.value.data.find((item) => item.slug === query.slug);
-    if (member === undefined) return err(appError("character.not_found"));
-    const snapshot = await deps.cache.latest(member.characterId);
+    const found = await findRosterMember(deps.getRoster, query);
+    if (!found.ok) return found;
+    const snapshot = await deps.cache.latest(found.value.member.characterId);
     const url = snapshot?.facts.avatarAssetUrl;
     if (url === undefined) return err(appError("media.not_found"));
     const fetched = await deps.media.fetchRender(url);

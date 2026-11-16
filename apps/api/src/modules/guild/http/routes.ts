@@ -15,14 +15,11 @@ import type { RosterMember } from "../domain/roster-member.js";
 import { selectFeaturedMembers } from "../application/featured.js";
 
 import {
+  lineupIsSettled,
   presentMember,
   toPublicRosterMember,
+  type FeaturedPresentation,
 } from "../application/present-member.js";
-
-/** A featured member, with the model state the character module may add. */
-type FeaturedPresentation = ReturnType<typeof presentMember> & {
-  readonly model?: { readonly status: string };
-};
 
 export interface RegisterGuildDeps {
   readonly instance: InstanceConfig;
@@ -88,8 +85,7 @@ export function registerGuild(
       deps.presentFeaturedMembers?.(result.value.data) ??
         selectFeaturedMembers(result.value.data).map(presentMember),
     );
-    // A bake in progress changes the answer without changing the roster.
-    if (members.some((member) => member.model?.status === "pending")) {
+    if (!lineupIsSettled(members)) {
       context.header("ETag", undefined);
       context.header("Cache-Control", "no-store");
     }

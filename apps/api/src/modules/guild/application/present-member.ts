@@ -22,3 +22,13 @@ export function presentMember(member: RosterMember) {
     lookManifest: FIXED_LOOK_MANIFEST,
   };
 }
+
+/** A featured member, with the model state the character module may add. */
+export type FeaturedPresentation = ReturnType<typeof presentMember> & {
+  readonly model?: { readonly status: string };
+};
+
+/** A bake in progress changes the lineup without changing the roster. */
+export const lineupIsSettled = (
+  members: readonly FeaturedPresentation[],
+): boolean => members.every((member) => member.model?.status !== "pending");

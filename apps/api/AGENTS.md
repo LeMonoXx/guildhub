@@ -15,7 +15,7 @@ main.ts / worker.ts   -> anything (composition root)
 modules/<m>/http      -> own application, `import type` from own domain, packages/contracts, platform/http, platform/kernel
 modules/<m>/infrastructure -> own application ports, own domain, platform/db, platform/observability, platform/kernel, libraries
 modules/<m>/application    -> own domain, platform/kernel, other modules' index.ts only
-modules/<m>/domain         -> own domain, platform/kernel — nothing else
+modules/<m>/domain         -> own domain, platform/kernel, `import type` from packages/contracts — nothing else
 platform/*            -> platform/*, libraries — never modules/*
 ```
 

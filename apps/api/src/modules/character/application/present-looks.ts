@@ -7,9 +7,10 @@ import {
 } from "../../guild/index.js";
 import { publicAvatarUrl, publicRenderUrl } from "../domain/model.js";
 import type { CharacterCache } from "./ports.js";
-import { loadCharacterView } from "./get-character.js";
-
-type LookDeps = Parameters<typeof loadCharacterView>[0];
+import {
+  loadCharacterView,
+  type CharacterViewDeps as LookDeps,
+} from "./load-character-view.js";
 
 /**
  * Takes candidates in featuring order and shows the first members whose

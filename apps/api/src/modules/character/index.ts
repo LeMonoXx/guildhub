@@ -1,6 +1,5 @@
 export {
   makeGetCharacter,
-  loadCharacterView,
   type GetCharacter,
 } from "./application/get-character.js";
 export {
@@ -11,12 +10,12 @@ export {
   makeGetCharacterAvatar,
   makeGetItemIcon,
 } from "./application/get-character-media.js";
+export { makeGetCharacterProfile } from "./application/get-character-profile.js";
 export {
-  makeGetCharacterProfile,
   makeLoadMemberProfiles,
   type LoadMemberProfiles,
   type MemberProfile,
-} from "./application/get-character-profile.js";
+} from "./application/load-member-profiles.js";
 export {
   makePresentFeaturedMembers,
   makePresentRosterMembers,

@@ -5,6 +5,10 @@ import type {
   GuildRef,
   GuildSourceError,
 } from "../../guild/index.js";
+import {
+  findRosterMember,
+  type CharacterNotFound,
+} from "./find-roster-member.js";
 import type { CharacterCache, CharacterMediaGateway } from "./ports.js";
 
 export type CharacterRender = {
@@ -14,7 +18,7 @@ export type CharacterRender = {
 
 export type GetCharacterRenderResult = Result<
   CharacterRender,
-  GuildSourceError | ReturnType<typeof appError<"character.not_found">>
+  GuildSourceError | CharacterNotFound
 >;
 
 export const makeGetCharacterRender =
@@ -27,11 +31,9 @@ export const makeGetCharacterRender =
     guild: GuildRef;
     slug: string;
   }): Promise<GetCharacterRenderResult> => {
-    const roster = await deps.getRoster(query.guild);
-    if (!roster.ok) return roster;
-    const member = roster.value.data.find((item) => item.slug === query.slug);
-    if (member === undefined) return err(appError("character.not_found"));
-    const snapshot = await deps.cache.latest(member.characterId);
+    const found = await findRosterMember(deps.getRoster, query);
+    if (!found.ok) return found;
+    const snapshot = await deps.cache.latest(found.value.member.characterId);
     const url = snapshot?.facts.renderAssetUrl;
     if (url === undefined) return err(appError("character.not_found"));
     const fetched = await deps.media.fetchRender(url);

@@ -54,6 +54,25 @@ describe("battle-net character source", () => {
     });
   });
 
+  it("fails instead of baking a bare figure when appearance does not answer", async () => {
+    const source = makeBattleNetCharacterSource({
+      defaults: { token: "stub" },
+      refreshAccessToken: () => Promise.resolve(),
+      sendRequest: (resource: { path: string }) =>
+        resource.path.includes("/appearance")
+          ? Promise.reject(httpError(503))
+          : Promise.resolve({
+              equipped_items: [
+                { item: { id: 16820 }, slot: { type: "CHEST" } },
+              ],
+            }),
+    } as never);
+    await expect(source.fetchFacts(character)).resolves.toMatchObject({
+      ok: false,
+      error: { code: "upstream.unavailable" },
+    });
+  }, 15_000);
+
   it("returns character.not_found when every profile call is missing", async () => {
     const source = makeBattleNetCharacterSource({
       defaults: { token: "stub" },

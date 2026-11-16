@@ -40,6 +40,15 @@ export function makeServeModelBaker(baker: BakerProcess): ModelBaker {
     bakeFixedLook: async () => {
       await baker.run({ command: "fixed" });
     },
+    currentBuild: async () => {
+      const result = await baker.run(
+        { command: "build" },
+        { priority: "background" },
+      );
+      if (typeof result.build !== "string")
+        throw new Error("the baker reported no game build");
+      return result.build;
+    },
     prebakeBody: async (race, sex) => {
       const result = await baker.run(
         { command: "prebake", race, sex },

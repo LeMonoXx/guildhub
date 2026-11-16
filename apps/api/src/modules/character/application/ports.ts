@@ -88,8 +88,23 @@ export interface ModelBaker {
   ): Promise<void>;
   bakeFile(job: ConvertFileJob): Promise<void>;
   bakeFixedLook(): Promise<void>;
+  /** The game build Blizzard serves right now. */
+  currentBuild(): Promise<string>;
   /** `baked` is false when the current game build already has this body. */
   prebakeBody(race: number, sex: number): Promise<{ readonly baked: boolean }>;
+}
+
+/** What the last prebakes established; kept across restarts. */
+export interface PrebakeRecord {
+  /** The playable races, as Battle.net listed them for this build. */
+  readonly races?: { readonly build: string; readonly ids: readonly number[] };
+  /** The last build whose every body is baked. */
+  readonly completeBuild?: string;
+}
+
+export interface PrebakeLedger {
+  read(): Promise<PrebakeRecord>;
+  write(record: PrebakeRecord): Promise<void>;
 }
 
 /** Publishes how far a running bake is, for the API to read. */

@@ -17,8 +17,8 @@ import {
 
 export const PREBAKE_QUEUE = "prebake-bodies";
 
-/** A new game build shows up within the hour; an unchanged one is a cheap check. */
-const HOURLY = "17 * * * *";
+/** After European maintenance; an unchanged build answers from the ledger alone. */
+const DAILY = "17 11 * * *";
 /** Every playable body of a fresh build, one after another, on a small host. */
 const PREBAKE_SECONDS = 4 * 60 * 60;
 
@@ -32,7 +32,7 @@ export interface ModelJobs {
   readonly log: JobLog;
 }
 
-/** Look, file, and prebake jobs; prebakes run hourly and once at startup. */
+/** Look, file, and prebake jobs; prebakes run daily and once at startup. */
 export async function registerModelJobs(
   boss: PgBoss,
   jobs: ModelJobs,
@@ -69,19 +69,18 @@ export async function registerModelJobs(
       );
       throw new Error(`playable races unavailable: ${summary.error.code}`);
     }
-    for (const failure of summary.value.failed)
-      jobs.log.warn({ module: "baker", ...failure }, "prebake failed");
-    if (summary.value.baked > 0 || summary.value.failed.length > 0)
-      jobs.log.info(
-        {
-          module: "baker",
-          races: summary.value.races,
-          baked: summary.value.baked,
-          failed: summary.value.failed.length,
-        },
-        "bodies prebaked",
-      );
+    const { build, current, races, baked, failed } = summary.value;
+    if (current) {
+      jobs.log.info({ module: "baker", build }, "game build unchanged");
+      return;
+    }
+    for (const failure of failed)
+      jobs.log.warn({ module: "baker", build, ...failure }, "prebake failed");
+    jobs.log.info(
+      { module: "baker", build, races, baked, failed: failed.length },
+      "bodies prebaked",
+    );
   });
-  await boss.schedule(PREBAKE_QUEUE, HOURLY, {}, { tz: jobs.timeZone });
+  await boss.schedule(PREBAKE_QUEUE, DAILY, {}, { tz: jobs.timeZone });
   await boss.send(PREBAKE_QUEUE, {});
 }

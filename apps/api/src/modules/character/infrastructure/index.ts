@@ -6,6 +6,7 @@ export { makeDrizzleCharacterCache } from "./drizzle-character-cache.js";
 export { makeDrizzleCharacterProfileCache } from "./drizzle-character-profile-cache.js";
 export { makeFilesystemModelAssetStore } from "./filesystem-model-asset-store.js";
 export { makeHttpCharacterMediaGateway } from "./http-character-media-gateway.js";
+export { makeFilePrebakeLedger } from "./file-prebake-ledger.js";
 export { makeFileBakeProgressSink } from "./look-progress-file.js";
 export {
   ensureModelQueues,

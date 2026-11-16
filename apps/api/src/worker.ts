@@ -11,6 +11,7 @@ import {
   BakerProcess,
   makeBattleNetPlayableRaceSource,
   makeFileBakeProgressSink,
+  makeFilePrebakeLedger,
   makeFilesystemModelAssetStore,
   makeServeModelBaker,
   registerModelJobs,
@@ -105,6 +106,7 @@ await registerModelJobs(boss, {
   prebakeBodies: makePrebakeBodies({
     baker,
     races: makeBattleNetPlayableRaceSource(composed.battleNet),
+    ledger: makeFilePrebakeLedger(path.join(bakerCache, "prebake.json")),
   }),
   stopping: () => shuttingDown,
   timeZone: env.HISTORY_TIME_ZONE,

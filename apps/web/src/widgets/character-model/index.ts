@@ -1,8 +1,5 @@
 export { CharacterModelViewer } from "./ui/CharacterModelViewer";
-export {
-  ItemTurntable,
-  type ItemTurntableProps,
-} from "./ui/item-turntable";
+export { ItemTurntable, type ItemTurntableProps } from "./ui/item-turntable";
 export type { CharacterHandle } from "./model/character-handle";
 export { AssetStore } from "./lib/asset-store";
 export {

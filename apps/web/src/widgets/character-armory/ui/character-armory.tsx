@@ -4,6 +4,7 @@ import {
   ItemIcon,
   ItemTooltip,
   Money,
+  durabilityColorVar,
   durabilityShare,
   itemQualityColorVar,
   itemsBySlot,
@@ -129,13 +130,7 @@ function ItemDetail({
         <Meter
           value={item.durability.current}
           max={item.durability.max}
-          color={
-            durability > 0.5
-              ? "var(--color-signal)"
-              : durability > 0.2
-                ? "var(--color-gold)"
-                : "var(--color-danger)"
-          }
+          color={durabilityColorVar(durability)}
           label={t("armory.durability")}
           detail={`${String(item.durability.current)} / ${String(item.durability.max)}`}
         />

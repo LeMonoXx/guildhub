@@ -9,3 +9,10 @@ export const stringValue = (value: unknown): string | undefined =>
 
 export const numberValue = (value: unknown): number | undefined =>
   typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
+/** A number from a URL search value, which arrives either parsed or as text. */
+export const searchNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string" || value === "") return undefined;
+  return Number(value);
+};

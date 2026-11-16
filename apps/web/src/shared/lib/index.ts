@@ -9,7 +9,7 @@ export {
 } from "./format";
 export { useMediaQuery } from "./media-query";
 export { prefersReducedMotion, useCountUp, useInView } from "./motion";
-export { asRecord, numberValue, stringValue } from "./records";
+export { asRecord, numberValue, searchNumber, stringValue } from "./records";
 export {
   canUseLiveStage,
   detectWebGL,

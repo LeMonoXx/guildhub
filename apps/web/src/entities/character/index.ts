@@ -5,6 +5,7 @@ export { bakeStatus, type BakeStatus } from "./model/bake-status";
 export { useModelPolling } from "./model/use-model-polling";
 export { wowClassColorVar } from "./model/class-color";
 export {
+  durabilityColorVar,
   durabilityShare,
   itemQualityColorVar,
   itemsBySlot,

@@ -79,3 +79,12 @@ export const durabilityShare = (item: EquippedItem): number | undefined =>
   item.durability && item.durability.max > 0
     ? item.durability.current / item.durability.max
     : undefined;
+
+const durabilityBands = [
+  { above: 0.5, color: "var(--color-signal)" },
+  { above: 0.2, color: "var(--color-gold)" },
+] as const;
+
+export const durabilityColorVar = (share: number): string =>
+  durabilityBands.find((band) => share > band.above)?.color ??
+  "var(--color-danger)";

@@ -326,6 +326,21 @@ const keyframeValue = (keyframe: unknown) => {
   return value;
 };
 
+const loopedTrackIssue = (
+  keyframes: readonly { readonly timeMs: number }[],
+  durationMs: number,
+): string | undefined => {
+  const first = keyframes[0];
+  const last = keyframes.at(-1);
+  if (first?.timeMs !== 0 || last?.timeMs !== durationMs)
+    return "Looped tracks must span time 0 through durationMs";
+  if (
+    JSON.stringify(keyframeValue(first)) !== JSON.stringify(keyframeValue(last))
+  )
+    return "Looped track endpoints must match";
+  return undefined;
+};
+
 export const cinematicSceneSchema = z
   .strictObject({
     id: idSchema,
@@ -399,25 +414,16 @@ export const cinematicSceneSchema = z
         previousTime = timeMs;
       });
 
-      if (scene.loop && track.kind !== "audio") {
-        const first = track.keyframes[0];
-        const last = track.keyframes.at(-1);
-        if (first?.timeMs !== 0 || last?.timeMs !== scene.durationMs) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Looped tracks must span time 0 through durationMs",
-            path: ["tracks", trackIndex, "keyframes"],
-          });
-        } else if (
-          JSON.stringify(keyframeValue(first)) !==
-          JSON.stringify(keyframeValue(last))
-        ) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Looped track endpoints must match",
-            path: ["tracks", trackIndex, "keyframes"],
-          });
-        }
+      const loopIssue =
+        scene.loop && track.kind !== "audio"
+          ? loopedTrackIssue(track.keyframes, scene.durationMs)
+          : undefined;
+      if (loopIssue !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: loopIssue,
+          path: ["tracks", trackIndex, "keyframes"],
+        });
       }
 
       if (

@@ -7,6 +7,7 @@ import type {
   ModelBaker,
   PlayableRaceSource,
   PrebakeLedger,
+  PrebakeRecord,
 } from "./ports.js";
 
 /** Every body comes in both sexes the game knows. */
@@ -80,48 +81,74 @@ export const makePrebakeBodies =
         failed: [],
       });
 
-    let raceIds = record.races?.build === build ? record.races.ids : undefined;
-    let listFresh = raceIds !== undefined;
-    if (raceIds === undefined) {
-      const fetched = await deps.races.playableRaceIds();
-      if (fetched.ok) {
-        raceIds = fetched.value;
-        listFresh = true;
-        await deps.ledger.write({
-          ...record,
-          races: { build, ids: fetched.value },
-        });
-      } else if (record.races !== undefined) {
-        raceIds = record.races.ids;
-      } else {
-        return fetched;
-      }
-    }
-
-    let baked = 0;
-    let stopped = false;
-    const failed: PrebakeSummary["failed"][number][] = [];
-    bodies: for (const race of raceIds) {
-      for (const sex of SEXES) {
-        if (shouldStop()) {
-          stopped = true;
-          break bodies;
-        }
-        try {
-          if ((await deps.baker.prebakeBody(race, sex)).baked) baked++;
-        } catch (error) {
-          failed.push({
-            race,
-            sex,
-            reason: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    }
-    if (listFresh && !stopped && failed.length === 0)
+    const races = await raceListFor(build, record, deps);
+    if (!races.ok) return races;
+    const run = await bakeBodies(deps.baker, races.value.ids, shouldStop);
+    if (races.value.fresh && !run.stopped && run.failed.length === 0)
       await deps.ledger.write({
         ...(await deps.ledger.read()),
         completeBuild: build,
       });
-    return ok({ build, current: false, races: raceIds.length, baked, failed });
+    return ok({
+      build,
+      current: false,
+      races: races.value.ids.length,
+      baked: run.baked,
+      failed: run.failed,
+    });
   };
+
+interface RaceList {
+  readonly ids: readonly number[];
+  /** False when Battle.net was down and an older build's list stood in. */
+  readonly fresh: boolean;
+}
+
+async function raceListFor(
+  build: string,
+  record: PrebakeRecord,
+  deps: { readonly races: PlayableRaceSource; readonly ledger: PrebakeLedger },
+): Promise<Result<RaceList, AppError<"upstream.unavailable">>> {
+  if (record.races?.build === build)
+    return ok({ ids: record.races.ids, fresh: true });
+  const fetched = await deps.races.playableRaceIds();
+  if (fetched.ok) {
+    await deps.ledger.write({
+      ...record,
+      races: { build, ids: fetched.value },
+    });
+    return ok({ ids: fetched.value, fresh: true });
+  }
+  if (record.races === undefined) return fetched;
+  return ok({ ids: record.races.ids, fresh: false });
+}
+
+interface BodyRun {
+  readonly baked: number;
+  readonly failed: PrebakeSummary["failed"];
+  readonly stopped: boolean;
+}
+
+async function bakeBodies(
+  baker: ModelBaker,
+  raceIds: readonly number[],
+  shouldStop: () => boolean,
+): Promise<BodyRun> {
+  let baked = 0;
+  const failed: PrebakeSummary["failed"][number][] = [];
+  for (const race of raceIds) {
+    for (const sex of SEXES) {
+      if (shouldStop()) return { baked, failed, stopped: true };
+      try {
+        if ((await baker.prebakeBody(race, sex)).baked) baked++;
+      } catch (error) {
+        failed.push({
+          race,
+          sex,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+  return { baked, failed, stopped: false };
+}

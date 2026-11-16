@@ -27,6 +27,8 @@ interface Track {
 const velocityEase = 0.18;
 /** Seconds for pulled fog to drift back. */
 const dragRelax = 0.9;
+/** Seconds without a new position before a body counts as stopped. */
+const stoppedAfter = 0.25;
 const maxSpeed = 700;
 const maxDrag = 180;
 
@@ -51,50 +53,20 @@ export class FigureMotionTracker {
 
     for (const figure of figures) {
       seen.add(figure.id);
-      let track = this.tracks.get(figure.id);
-      if (!track) {
-        track = {
-          x: figure.x,
-          y: figure.feet,
-          vx: 0,
-          vy: 0,
-          dragX: 0,
-          dragY: 0,
-          changedAt: now,
-        };
-        this.tracks.set(figure.id, track);
-      }
-
-      let targetX = track.vx;
-      let targetY = track.vy;
-      const moved = figure.x !== track.x || figure.feet !== track.y;
-      const since = (now - track.changedAt) / 1000;
-      if (moved && since > 0) {
-        targetX = (figure.x - track.x) / since;
-        targetY = (figure.feet - track.y) / since;
-        track.x = figure.x;
-        track.y = figure.feet;
-        track.changedAt = now;
-      } else if (since > 0.25) {
-        // No new position for a while: the body has stopped.
-        targetX = 0;
-        targetY = 0;
-      }
-      const targetSpeed = Math.hypot(targetX, targetY);
-      if (targetSpeed > maxSpeed) {
-        targetX *= maxSpeed / targetSpeed;
-        targetY *= maxSpeed / targetSpeed;
-      }
+      const track = this.trackFor(figure, now);
+      const [targetX, targetY] = clampLength(
+        measureVelocity(track, figure, now),
+        maxSpeed,
+      );
       track.vx += (targetX - track.vx) * ease;
       track.vy += (targetY - track.vy) * ease;
-
-      track.dragX = (track.dragX + track.vx * dt) * relax;
-      track.dragY = (track.dragY + track.vy * dt) * relax;
-      const drag = Math.hypot(track.dragX, track.dragY);
-      if (drag > maxDrag) {
-        track.dragX *= maxDrag / drag;
-        track.dragY *= maxDrag / drag;
-      }
+      [track.dragX, track.dragY] = clampLength(
+        [
+          (track.dragX + track.vx * dt) * relax,
+          (track.dragY + track.vy * dt) * relax,
+        ],
+        maxDrag,
+      );
 
       result.push({
         figure,
@@ -110,4 +82,50 @@ export class FigureMotionTracker {
     }
     return result;
   }
+
+  private trackFor(figure: FogFigure, now: number): Track {
+    const known = this.tracks.get(figure.id);
+    if (known) return known;
+    const track = {
+      x: figure.x,
+      y: figure.feet,
+      vx: 0,
+      vy: 0,
+      dragX: 0,
+      dragY: 0,
+      changedAt: now,
+    };
+    this.tracks.set(figure.id, track);
+    return track;
+  }
+}
+
+/** The velocity to ease toward; records the position when it changed. */
+function measureVelocity(
+  track: Track,
+  figure: FogFigure,
+  now: number,
+): [number, number] {
+  const since = (now - track.changedAt) / 1000;
+  const moved = figure.x !== track.x || figure.feet !== track.y;
+  if (moved && since > 0) {
+    const velocity: [number, number] = [
+      (figure.x - track.x) / since,
+      (figure.feet - track.y) / since,
+    ];
+    track.x = figure.x;
+    track.y = figure.feet;
+    track.changedAt = now;
+    return velocity;
+  }
+  if (since > stoppedAfter) return [0, 0];
+  return [track.vx, track.vy];
+}
+
+function clampLength(
+  [x, y]: readonly [number, number],
+  max: number,
+): [number, number] {
+  const length = Math.hypot(x, y);
+  return length > max ? [(x * max) / length, (y * max) / length] : [x, y];
 }

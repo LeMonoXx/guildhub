@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { parseRosterSearch } from "../features/roster-filter";
 import { useLocale } from "../shared/i18n";
+import { searchNumber } from "../shared/lib";
 import { StatusBlock } from "../shared/ui";
 import { PortalShell } from "../widgets/portal-shell";
 import { parseRecipeFilters } from "../entities/recipe";
@@ -61,12 +62,7 @@ const labCinematicRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/lab/cinematic",
   validateSearch: (search: Record<string, unknown>) => ({
-    frame:
-      typeof search.frame === "number"
-        ? search.frame
-        : typeof search.frame === "string"
-          ? Number(search.frame)
-          : undefined,
+    frame: searchNumber(search.frame),
   }),
   component: lazyRouteComponent(
     () => import("../pages/lab"),

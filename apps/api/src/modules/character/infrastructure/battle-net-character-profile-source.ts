@@ -137,9 +137,8 @@ async function loadIcons(
   const missing = ids.filter((id) => !cache.has(id));
   await mapLimited(missing, REQUEST_CONCURRENCY, async (id) => {
     const media = await sendCharacterRequest(client, itemMediaEndpoint(id));
-    if (media.ok) cache.set(id, iconIdOf(media.value));
-    else if (media.error.code === "character.not_found")
-      cache.set(id, undefined);
+    if (!media.ok && media.error.code !== "character.not_found") return;
+    cache.set(id, media.ok ? iconIdOf(media.value) : undefined);
   });
 }
 

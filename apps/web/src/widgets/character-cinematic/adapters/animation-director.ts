@@ -88,6 +88,41 @@ interface ClipValue {
   };
 }
 
+interface PlayedOverlay {
+  readonly id: string;
+  readonly selection: string;
+  readonly fadeMs: number;
+}
+
+/** Swaps the upper-body layer when its clip changed and keeps it in time. */
+function applyOverlay(
+  target: CharacterHandle,
+  value: ClipValue,
+  prior: PlayedOverlay | undefined,
+  selection: string | undefined,
+  continuous: boolean,
+): void {
+  const changed =
+    prior?.id !== value.overlay?.id || prior?.selection !== selection;
+  if (prior && changed)
+    target.clearAnimationLayer(prior.id, Math.max(0, prior.fadeMs) / 1000);
+  const overlay = value.overlay;
+  if (!overlay) return;
+  if (changed)
+    target.selectAnimationLayer(
+      overlay.id,
+      overlay.animationGroup,
+      overlay.mask,
+      Math.max(0, overlay.fadeMs) / 1000,
+      overlay.weight,
+    );
+  if (changed || !continuous)
+    target.setAnimationLayerTime(
+      overlay.id,
+      Math.max(0, value.localTimeMs) / 1000,
+    );
+}
+
 export class ClipBinding implements CommandBinding<CharacterHandle> {
   private readonly playback = new WeakMap<
     CharacterHandle,
@@ -96,13 +131,7 @@ export class ClipBinding implements CommandBinding<CharacterHandle> {
       iteration: number;
       elapsedMs: number;
       localTimeMs: number;
-      overlay:
-        | {
-            id: string;
-            selection: string;
-            fadeMs: number;
-          }
-        | undefined;
+      overlay: PlayedOverlay | undefined;
     }
   >();
 
@@ -142,39 +171,13 @@ export class ClipBinding implements CommandBinding<CharacterHandle> {
       target.setTime(Math.max(0, value.localTimeMs) / 1000);
     }
 
-    if (
-      previous?.overlay &&
-      (previous.overlay.id !== value.overlay?.id ||
-        previous.overlay.selection !== overlaySelection)
-    ) {
-      target.clearAnimationLayer(
-        previous.overlay.id,
-        Math.max(0, previous.overlay.fadeMs) / 1000,
-      );
-    }
-    if (value.overlay) {
-      const overlayChanged =
-        previous?.overlay?.id !== value.overlay.id ||
-        previous.overlay.selection !== overlaySelection;
-      if (overlayChanged) {
-        target.selectAnimationLayer(
-          value.overlay.id,
-          value.overlay.animationGroup,
-          value.overlay.mask,
-          Math.max(0, value.overlay.fadeMs) / 1000,
-          value.overlay.weight,
-        );
-        target.setAnimationLayerTime(
-          value.overlay.id,
-          Math.max(0, value.localTimeMs) / 1000,
-        );
-      } else if (!continuous) {
-        target.setAnimationLayerTime(
-          value.overlay.id,
-          Math.max(0, value.localTimeMs) / 1000,
-        );
-      }
-    }
+    applyOverlay(
+      target,
+      value,
+      previous?.overlay,
+      overlaySelection,
+      continuous,
+    );
     this.playback.set(target, {
       animationGroup: value.animationGroup,
       iteration: context.frame.iteration,

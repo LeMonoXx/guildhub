@@ -31,12 +31,8 @@ export const useInView = <T extends Element>(
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            if (once) observer.disconnect();
-          } else if (!once) {
-            setVisible(false);
-          }
+          if (entry.isIntersecting && once) observer.disconnect();
+          if (entry.isIntersecting || !once) setVisible(entry.isIntersecting);
         }
       },
       { rootMargin },

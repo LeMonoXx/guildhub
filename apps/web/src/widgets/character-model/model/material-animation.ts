@@ -3,6 +3,8 @@ import type { MaterialAnimation, MaterialAnimationKind } from "./types";
 import type { TimelineParticipant } from "./lifecycle";
 import { sampleTrack } from "./track-sampler";
 
+const SPIN_CENTER = new THREE.Vector2(0.5, 0.5);
+
 type ColorMaterial = THREE.Material & {
   color: THREE.Color;
   opacity: number;
@@ -285,8 +287,8 @@ export class MaterialAnimationController implements TimelineParticipant {
       state.repeat.x * (frame.scaling[0] ?? 1),
       state.repeat.y * (frame.scaling[1] ?? 1),
     );
-    if (frame.rotation !== undefined) texture.center.set(0.5, 0.5);
-    else if (state.center) texture.center.copy(state.center);
+    const center = frame.rotation === undefined ? state.center : SPIN_CENTER;
+    if (center) texture.center.copy(center);
     texture.rotation = (state.rotation ?? 0) + (frame.rotation ?? 0);
     texture.updateMatrix();
   }

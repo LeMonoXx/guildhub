@@ -14,13 +14,11 @@ export interface TrackSampleOptions {
 const lerp = (a: number[], b: number[], factor: number): number[] =>
   a.map((value, index) => value + ((b[index] ?? value) - value) * factor);
 
+const interpolationNames: readonly string[] = ["none", "linear"];
+
 const interpolationName = (interpolation: TrackInterpolation): string =>
   typeof interpolation === "number"
-    ? interpolation === 0
-      ? "none"
-      : interpolation === 1
-        ? "linear"
-        : `mode ${String(interpolation)}`
+    ? (interpolationNames[interpolation] ?? `mode ${String(interpolation)}`)
     : interpolation;
 
 const isStep = (interpolation: TrackInterpolation): boolean =>

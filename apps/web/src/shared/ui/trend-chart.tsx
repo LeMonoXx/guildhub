@@ -18,6 +18,12 @@ const WIDTH = 320;
 const HEIGHT = 120;
 const PAD = 10;
 
+const trendGlyphs = { down: "▼", flat: "■", up: "▲" } as const;
+type Trend = keyof typeof trendGlyphs;
+const trendBySign: readonly Trend[] = ["down", "flat", "up"];
+const trendOf = (delta: number): Trend =>
+  trendBySign[Math.sign(delta) + 1] ?? "flat";
+
 /** A line that draws itself across the recorded days once it scrolls into view. */
 export function TrendChart({
   title,
@@ -52,12 +58,13 @@ export function TrendChart({
   const start = coords[0] ?? end;
   const area = `${line} L${end.x.toFixed(1)},${String(HEIGHT)} L${start.x.toFixed(1)},${String(HEIGHT)} Z`;
   const delta = last.value - first.value;
+  const trend = trendOf(delta);
   return (
     <figure
       ref={ref}
       className="trend-chart"
       data-visible={visible}
-      data-trend={delta > 0 ? "up" : delta < 0 ? "down" : "flat"}
+      data-trend={trend}
       style={{ ["--trend-color" as string]: color }}
     >
       <figcaption>
@@ -65,7 +72,7 @@ export function TrendChart({
         <strong className="trend-value">{format(last.value)}</strong>
         {points.length > 1 ? (
           <span className="trend-delta">
-            {delta > 0 ? "▲" : delta < 0 ? "▼" : "■"} {format(Math.abs(delta))}
+            {trendGlyphs[trend]} {format(Math.abs(delta))}
           </span>
         ) : null}
       </figcaption>

@@ -1,4 +1,5 @@
 import type { GuildRosterMember } from "@guildhub/contracts";
+import { searchNumber, stringValue } from "../../../shared/lib";
 
 export interface RosterFilters {
   readonly q?: string;
@@ -30,16 +31,10 @@ export const uniqueSorted = (values: readonly string[]): readonly string[] =>
 export const parseRosterSearch = (
   search: Record<string, unknown>,
 ): RosterFilters => {
-  const rankValue = search.rankId;
   return {
-    q: typeof search.q === "string" ? search.q : undefined,
-    classId: typeof search.classId === "string" ? search.classId : undefined,
-    raceId: typeof search.raceId === "string" ? search.raceId : undefined,
-    rankId:
-      typeof rankValue === "number"
-        ? rankValue
-        : typeof rankValue === "string" && rankValue !== ""
-          ? Number(rankValue)
-          : undefined,
+    q: stringValue(search.q),
+    classId: stringValue(search.classId),
+    raceId: stringValue(search.raceId),
+    rankId: searchNumber(search.rankId),
   };
 };

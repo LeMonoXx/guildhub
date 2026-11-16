@@ -87,13 +87,14 @@ export function Embers({ density = 5, color = "191 243 233" }: EmbersProps) {
     };
     const observer = new IntersectionObserver(([entry]) => {
       const visible = entry?.isIntersecting ?? false;
-      if (visible && !running) {
-        running = true;
-        frame = requestAnimationFrame(draw);
-      } else if (!visible) {
+      if (!visible) {
         running = false;
         cancelAnimationFrame(frame);
+        return;
       }
+      if (running) return;
+      running = true;
+      frame = requestAnimationFrame(draw);
     });
     resize();
     observer.observe(canvas);

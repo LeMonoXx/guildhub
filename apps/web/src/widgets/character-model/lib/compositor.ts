@@ -11,6 +11,13 @@ export interface CompositedTexture {
   pixels: Uint8Array;
 }
 
+/** The game's texture-layer blend modes that the canvas can reproduce. */
+const blendOperations: Partial<Record<number, GlobalCompositeOperation>> = {
+  4: "multiply",
+  6: "overlay",
+  7: "screen",
+};
+
 export const orderedLayerIds = (layers: TextureLayer[]): number[] =>
   [...layers].sort((a, b) => a.layer - b.layer).map((l) => l.fileDataId);
 
@@ -51,13 +58,7 @@ export async function compositeLook(
       const image = images.get(layer.fileDataId);
       if (!image) continue;
       context.globalCompositeOperation =
-        layer.blendMode === 4
-          ? "multiply"
-          : layer.blendMode === 6
-            ? "overlay"
-            : layer.blendMode === 7
-              ? "screen"
-              : "source-over";
+        blendOperations[layer.blendMode] ?? "source-over";
       const section = layer.section;
       context.drawImage(
         image,

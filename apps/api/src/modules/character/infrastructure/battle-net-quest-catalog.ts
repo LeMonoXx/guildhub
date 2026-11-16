@@ -22,10 +22,11 @@ export function makeBattleNetQuestCatalog(client: BlizzardApiClient) {
           wowForever.quest(id),
           locale,
         );
-        if (result.ok)
-          cache.set(cacheKey(locale, id), mapQuestDocument(result.value));
-        else if (result.error.code === "character.not_found")
-          cache.set(cacheKey(locale, id), null);
+        if (!result.ok && result.error.code !== "character.not_found") return;
+        cache.set(
+          cacheKey(locale, id),
+          result.ok ? mapQuestDocument(result.value) : null,
+        );
       });
       const facts = new Map<number, QuestInfo>();
       for (const id of ids) {

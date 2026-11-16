@@ -22,6 +22,13 @@ const glyphs: Record<HistoryEvent["kind"], string> = {
   mount: "♞",
 };
 
+const achievementsKey = (event: Of<"achievements">) => {
+  if (event.points > 0) return "history.event.achievements";
+  return event.count === 1
+    ? "history.event.achievementOne"
+    : "history.event.achievementsCount";
+};
+
 function Name({ event }: { readonly event: HistoryEvent }) {
   return (
     <CharacterLink
@@ -166,17 +173,10 @@ function Detail({ event }: { readonly event: HistoryEvent }) {
     case "achievements":
       return (
         <>
-          {t(
-            event.points > 0
-              ? "history.event.achievements"
-              : event.count === 1
-                ? "history.event.achievementOne"
-                : "history.event.achievementsCount",
-            {
-              count: formatNumber(event.count, locale),
-              points: formatNumber(event.points, locale),
-            },
-          )}
+          {t(achievementsKey(event), {
+            count: formatNumber(event.count, locale),
+            points: formatNumber(event.points, locale),
+          })}
         </>
       );
     case "rank":

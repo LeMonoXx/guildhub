@@ -47,7 +47,7 @@ static class Blp
                 }
                 return new Image(width, height, rgba, $"palette/a{alphaDepth}");
             case 2:
-                var fmt = alphaDepth > 1 ? (alphaEncoding == 7 ? 5 : 3) : 1;
+                var fmt = DxtFormat(alphaDepth, alphaEncoding);
                 DecodeDxt(raw, width, height, fmt, rgba);
                 return new Image(width, height, rgba, $"DXT{fmt}");
             case 3: // BGRA
@@ -103,34 +103,10 @@ static class Blp
                     for (var k = 0; k < 4; k++) block[i * 4 + k] = colours[idx * 4 + k];
                 }
 
-                if (fmt == 3)
+                switch (fmt)
                 {
-                    for (var i = 0; i < 8; i++)
-                    {
-                        var q = raw[pos + i];
-                        int lo = q & 0x0F, hi = q & 0xF0;
-                        block[8 * i + 3] = (byte)(lo | (lo << 4));
-                        block[8 * i + 7] = (byte)(hi | (hi >> 4));
-                    }
-                }
-                else if (fmt == 5)
-                {
-                    int a0 = raw[pos], a1 = raw[pos + 1];
-                    alphas[0] = (byte)a0; alphas[1] = (byte)a1;
-                    if (a0 <= a1)
-                    {
-                        for (var i = 1; i < 5; i++) alphas[i + 1] = (byte)(((5 - i) * a0 + i * a1) / 5);
-                        alphas[6] = 0; alphas[7] = 255;
-                    }
-                    else
-                    {
-                        for (var i = 1; i < 7; i++) alphas[i + 1] = (byte)(((7 - i) * a0 + i * a1) / 7);
-                    }
-                    for (var half = 0; half < 2; half++)
-                    {
-                        var v = raw[pos + 2 + half * 3] | (raw[pos + 3 + half * 3] << 8) | (raw[pos + 4 + half * 3] << 16);
-                        for (var j = 0; j < 8; j++) block[(half * 8 + j) * 4 + 3] = alphas[(v >> (3 * j)) & 7];
-                    }
+                    case 3: ExplicitAlpha(raw, pos, block); break;
+                    case 5: InterpolatedAlpha(raw, pos, block, alphas); break;
                 }
 
                 for (var py = 0; py < 4; py++)
@@ -145,6 +121,43 @@ static class Blp
                 pos += blockBytes;
             }
         }
+    }
+
+    static void ExplicitAlpha(ReadOnlySpan<byte> raw, int pos, Span<byte> block)
+    {
+        for (var i = 0; i < 8; i++)
+        {
+            var q = raw[pos + i];
+            int lo = q & 0x0F, hi = q & 0xF0;
+            block[8 * i + 3] = (byte)(lo | (lo << 4));
+            block[8 * i + 7] = (byte)(hi | (hi >> 4));
+        }
+    }
+
+    static void InterpolatedAlpha(ReadOnlySpan<byte> raw, int pos, Span<byte> block, Span<byte> alphas)
+    {
+        int a0 = raw[pos], a1 = raw[pos + 1];
+        alphas[0] = (byte)a0; alphas[1] = (byte)a1;
+        if (a0 <= a1)
+        {
+            for (var i = 1; i < 5; i++) alphas[i + 1] = (byte)(((5 - i) * a0 + i * a1) / 5);
+            alphas[6] = 0; alphas[7] = 255;
+        }
+        else
+        {
+            for (var i = 1; i < 7; i++) alphas[i + 1] = (byte)(((7 - i) * a0 + i * a1) / 7);
+        }
+        for (var half = 0; half < 2; half++)
+        {
+            var v = raw[pos + 2 + half * 3] | (raw[pos + 3 + half * 3] << 8) | (raw[pos + 4 + half * 3] << 16);
+            for (var j = 0; j < 8; j++) block[(half * 8 + j) * 4 + 3] = alphas[(v >> (3 * j)) & 7];
+        }
+    }
+
+    static int DxtFormat(int alphaDepth, int alphaEncoding)
+    {
+        if (alphaDepth <= 1) return 1;
+        return alphaEncoding == 7 ? 5 : 3;
     }
 
     static int Unpack565(ReadOnlySpan<byte> d, int at, Span<byte> c, int co)

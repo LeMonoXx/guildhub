@@ -534,42 +534,7 @@ static class ModelConverter
         foreach (var b in skin.Batches.Where(b => b.SkinSectionIndex == si))
         {
             var layers = new JsonArray();
-            for (var k = 0; k < Math.Max((int)b.TextureCount, 1); k++)
-            {
-                var combo = b.TextureComboIndex + k;
-                var coord = ResolveLookup(m2.TextureCoordCombos, b.TextureCoordComboIndex, k, "texture coordinate");
-                var weight = ResolveLookup(m2.TextureWeightCombos, b.TextureWeightComboIndex, k, "texture weight");
-                var transform = ResolveLookup(m2.TextureTransformCombos, b.TextureTransformComboIndex, k, "texture transform");
-                var layer = new JsonObject
-                {
-                    ["textureCoordIndex"] = coord.value,
-                    ["textureWeightIndex"] = weight.value,
-                    ["textureTransformIndex"] = transform.value,
-                };
-                var errors = new JsonArray();
-                if (coord.error != null) errors.Add(coord.error);
-                if (weight.error != null) errors.Add(weight.error);
-                if (transform.error != null) errors.Add(transform.error);
-                if (combo >= m2.TextureCombos.Length)
-                {
-                    errors.Add($"texture combo {combo} is out of range");
-                }
-                else
-                {
-                    var ti = m2.TextureCombos[combo];
-                    layer["textureIndex"] = ti == ushort.MaxValue ? null : ti;
-                    if (ti != ushort.MaxValue && ti >= m2.Textures.Length)
-                        errors.Add($"texture index {ti} is out of range");
-                    else if (ti != ushort.MaxValue)
-                    {
-                        var tx = m2.Textures[ti];
-                        layer["type"] = tx.Type;
-                        layer["fileDataId"] = tx.Type == 0 ? tx.FileDataId : null;
-                    }
-                }
-                if (errors.Count > 0) layer["errors"] = errors;
-                layers.Add(layer);
-            }
+            for (var k = 0; k < Math.Max((int)b.TextureCount, 1); k++) layers.Add(TextureLayer(m2, b, k));
             var mat = b.MaterialIndex < m2.Materials.Length ? m2.Materials[b.MaterialIndex] : null;
             var colorIndex = b.ColorIndex == ushort.MaxValue ? (int?)null : b.ColorIndex;
             list.Add(new JsonObject
@@ -588,6 +553,43 @@ static class ModelConverter
             });
         }
         return list;
+    }
+
+    static JsonObject TextureLayer(M2Model m2, M2Skin.Batch b, int k)
+    {
+        var coord = ResolveLookup(m2.TextureCoordCombos, b.TextureCoordComboIndex, k, "texture coordinate");
+        var weight = ResolveLookup(m2.TextureWeightCombos, b.TextureWeightComboIndex, k, "texture weight");
+        var transform = ResolveLookup(m2.TextureTransformCombos, b.TextureTransformComboIndex, k, "texture transform");
+        var layer = new JsonObject
+        {
+            ["textureCoordIndex"] = coord.value,
+            ["textureWeightIndex"] = weight.value,
+            ["textureTransformIndex"] = transform.value,
+        };
+        var errors = new JsonArray();
+        foreach (var error in new[] { coord.error, weight.error, transform.error })
+            if (error != null) errors.Add(error);
+        var textureError = ResolveTexture(m2, b.TextureComboIndex + k, layer);
+        if (textureError != null) errors.Add(textureError);
+        if (errors.Count > 0) layer["errors"] = errors;
+        return layer;
+    }
+
+    static string? ResolveTexture(M2Model m2, int combo, JsonObject layer)
+    {
+        if (combo >= m2.TextureCombos.Length) return $"texture combo {combo} is out of range";
+        var ti = m2.TextureCombos[combo];
+        if (ti == ushort.MaxValue)
+        {
+            layer["textureIndex"] = null;
+            return null;
+        }
+        layer["textureIndex"] = ti;
+        if (ti >= m2.Textures.Length) return $"texture index {ti} is out of range";
+        var tx = m2.Textures[ti];
+        layer["type"] = tx.Type;
+        layer["fileDataId"] = tx.Type == 0 ? tx.FileDataId : null;
+        return null;
     }
 
     static (int? value, string? error) ResolveLookup(ushort[] lookup, ushort start, int layer, string name)

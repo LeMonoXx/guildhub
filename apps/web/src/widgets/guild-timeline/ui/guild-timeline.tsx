@@ -24,22 +24,19 @@ type Entry =
   | { readonly kind: "login"; readonly events: readonly TimelineEvent[] };
 
 /** Logins carry little news, so a run of them reads as one row of names. */
-const toEntries = (events: readonly TimelineEvent[]): Entry[] => {
-  const entries: Entry[] = [];
-  for (const event of events) {
-    const last = entries.at(-1);
-    if (event.kind === "login" && last?.kind === "login") {
-      entries[entries.length - 1] = {
-        kind: "login",
-        events: [...last.events, event],
-      };
-    } else if (event.kind === "login") {
-      entries.push({ kind: "login", events: [event] });
-    } else {
-      entries.push({ kind: "achievement", event });
-    }
-  }
-  return entries;
+const toEntries = (events: readonly TimelineEvent[]): Entry[] =>
+  events.reduce<Entry[]>(appendEvent, []);
+
+const appendEvent = (entries: Entry[], event: TimelineEvent): Entry[] => {
+  if (event.kind !== "login")
+    return [...entries, { kind: "achievement", event }];
+  const last = entries.at(-1);
+  if (last?.kind !== "login")
+    return [...entries, { kind: "login", events: [event] }];
+  return [
+    ...entries.slice(0, -1),
+    { kind: "login", events: [...last.events, event] },
+  ];
 };
 
 const entryKey = (entry: Entry) =>

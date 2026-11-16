@@ -54,11 +54,13 @@ export function createApp(config: AppConfig): Hono<AppEnv> {
         };
         if (context.res.status >= 500) {
           logger.error(fields, "request completed");
-        } else if (route.startsWith("/health")) {
-          logger.debug(fields, "health request completed");
-        } else {
-          logger.info(fields, "request completed");
+          return;
         }
+        if (route.startsWith("/health")) {
+          logger.debug(fields, "health request completed");
+          return;
+        }
+        logger.info(fields, "request completed");
       },
       onError: (logger, error, context, durationMs) => {
         const route = routePath(context);

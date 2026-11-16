@@ -25,7 +25,9 @@ export async function ensureStatelyQueue(
   expireInSeconds?: number,
 ): Promise<void> {
   const expiry = expireInSeconds === undefined ? {} : { expireInSeconds };
-  if ((await boss.getQueue(name)) === null)
+  if ((await boss.getQueue(name)) === null) {
     await boss.createQueue(name, { policy: "stately", ...expiry });
-  else if (expireInSeconds !== undefined) await boss.updateQueue(name, expiry);
+    return;
+  }
+  if (expireInSeconds !== undefined) await boss.updateQueue(name, expiry);
 }

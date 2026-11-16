@@ -54,18 +54,19 @@ public static class DbdBuilds
             if (!line.StartsWith("BUILD ", StringComparison.Ordinal)) continue;
             foreach (var part in line[6..].Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
-                var dash = part.IndexOf('-');
-                if (dash < 0)
-                {
-                    if (Version.TryParse(part, out var v) && v == target) return true;
-                }
-                else if (Version.TryParse(part[..dash], out var lo) && Version.TryParse(part[(dash + 1)..], out var hi) && lo <= target && target <= hi)
-                {
-                    return true;
-                }
+                if (Covers(part, target)) return true;
             }
         }
         return false;
+    }
+
+    static bool Covers(string part, Version target)
+    {
+        var dash = part.IndexOf('-');
+        if (dash < 0) return Version.TryParse(part, out var v) && v == target;
+        return Version.TryParse(part[..dash], out var lo)
+            && Version.TryParse(part[(dash + 1)..], out var hi)
+            && lo <= target && target <= hi;
     }
 }
 

@@ -160,24 +160,46 @@ export class BakerProcess {
     }
     const pending = this.current;
     if (pending === undefined || message.id !== pending.id) return;
-    if (message.event === "stage") {
+    const handle =
+      typeof message.event === "string"
+        ? this.requestEvents[message.event]
+        : undefined;
+    handle?.(pending, message);
+  }
+
+  private readonly requestEvents: Record<
+    string,
+    ((pending: Pending, message: Record<string, unknown>) => void) | undefined
+  > = {
+    stage: (pending, message) => {
       pending.listener.onStage?.(message.stage as BakerStage);
-    } else if (message.event === "progress") {
+    },
+    progress: (pending, message) => {
       if (typeof message.fraction === "number")
         pending.listener.onProgress?.(message.fraction);
-    } else if (message.event === "done") {
-      this.current = undefined;
-      pending.resolve((message.result ?? {}) as Record<string, unknown>);
-      this.pump();
-    } else if (message.event === "failed") {
-      this.current = undefined;
-      pending.reject(
-        new Error(
-          typeof message.message === "string" ? message.message : "bake failed",
-        ),
-      );
-      this.pump();
-    }
+    },
+    done: (pending, message) => {
+      this.finish(() => {
+        pending.resolve((message.result ?? {}) as Record<string, unknown>);
+      });
+    },
+    failed: (pending, message) => {
+      this.finish(() => {
+        pending.reject(
+          new Error(
+            typeof message.message === "string"
+              ? message.message
+              : "bake failed",
+          ),
+        );
+      });
+    },
+  };
+
+  private finish(settle: () => void): void {
+    this.current = undefined;
+    settle();
+    this.pump();
   }
 
   private onExit(running: Running, error: Error): void {

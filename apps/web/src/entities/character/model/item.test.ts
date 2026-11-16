@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { fixtureCharacterProfile } from "../api/profile-fixtures";
 import {
+  durabilityColorVar,
   durabilityShare,
   itemQualityColorVar,
   itemsBySlot,
@@ -42,6 +43,12 @@ describe("item model", () => {
     });
     const head = bySlot.get("HEAD");
     expect(head && durabilityShare(head)).toBeCloseTo(0.8);
+  });
+
+  test("colours durability by how worn the item is", () => {
+    expect(durabilityColorVar(0.8)).toBe("var(--color-signal)");
+    expect(durabilityColorVar(0.5)).toBe("var(--color-gold)");
+    expect(durabilityColorVar(0.2)).toBe("var(--color-danger)");
   });
 
   test("maps vitals to unit frame colours", () => {

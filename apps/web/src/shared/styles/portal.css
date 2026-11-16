@@ -445,6 +445,11 @@
   pointer-events: auto;
 }
 
+/* A tall figure's card stays under the header instead of leaving the stage. */
+.hero-member-card[data-pinned="true"] {
+  transform: translate(-50%, 0);
+}
+
 .hero-member-card-name {
   font-family: var(--font-fantasy);
   font-size: 1.3rem;

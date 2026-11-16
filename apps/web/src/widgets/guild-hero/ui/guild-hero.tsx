@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type CSSProperties,
   type ReactNode,
   type RefObject,
@@ -49,6 +50,7 @@ export function GuildHero({
   const { capable, live } = useLiveStage(stageRef);
   const lineup = useLineupStage(members);
   const size = useElementSize(stageRef);
+  const framedShare = useFramedShare(stageRef, size, live);
   const aspect = size.width / size.height;
   const camera = useMemo(
     () => lineup.framing.frameFor(aspect),
@@ -105,6 +107,7 @@ export function GuildHero({
             assembled={lineup.assembled}
             size={size}
             camera={camera}
+            framedShare={framedShare}
             onToggle={lineup.toggle}
           />
         ) : null}
@@ -112,6 +115,26 @@ export function GuildHero({
       {capable ? null : <PosterCast places={lineup.places} />}
     </section>
   );
+}
+
+/** How much of the stage the camera frames; the padding below is only drawn into. */
+function useFramedShare(
+  stageRef: RefObject<HTMLDivElement | null>,
+  size: { readonly width: number; readonly height: number },
+  live: boolean,
+): number {
+  const [share, setShare] = useState(1);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const frame = stage.querySelector(".cinematic-stage");
+    if (!(frame instanceof HTMLElement)) return;
+    const bleed = Number.parseFloat(getComputedStyle(frame).paddingBottom) || 0;
+    const height = stage.clientHeight;
+    if (height <= 0) return;
+    setShare((height - bleed) / height);
+  }, [stageRef, size.width, size.height, live]);
+  return share;
 }
 
 /** A stable melt: each letter drips a different way, the same way every visit. */

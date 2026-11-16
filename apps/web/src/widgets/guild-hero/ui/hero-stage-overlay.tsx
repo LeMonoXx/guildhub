@@ -6,6 +6,7 @@ import { useLocale } from "../../../shared/i18n";
 import { FigureSilhouette } from "../../../shared/ui";
 import type { StagePlan } from "../model/stage-plan";
 import {
+  placeOnStage,
   StageProjection,
   type CameraPose,
   type StageBox,
@@ -24,6 +25,11 @@ interface HeroStageOverlayProps {
   /** The stage's size and the camera framed for it. */
   readonly size: Size;
   readonly camera: CameraPose;
+  /**
+   * Share of the stage the camera frames. The rest is padding the figures may
+   * step into, and it is not part of the framed view.
+   */
+  readonly framedShare: number;
   readonly onToggle: (slug: string | undefined) => void;
 }
 
@@ -61,18 +67,23 @@ export function HeroStageOverlay({
   assembled,
   size,
   camera,
+  framedShare,
   onToggle,
 }: HeroStageOverlayProps) {
   const { t } = useLocale();
   const [hovered, setHovered] = useState<string>();
   const aspect = size.width / size.height;
+  const share = Math.min(1, Math.max(0.05, framedShare));
   const projection = useMemo(
-    () => new StageProjection(aspect, camera),
-    [aspect, camera],
+    () => new StageProjection(aspect / share, camera),
+    [aspect, camera, share],
   );
   const spots: readonly Spot[] = places.map((place) => ({
     place,
-    box: projection.box(silhouetteAt(place, plan.targetOf(place.member.slug))),
+    box: placeOnStage(
+      projection.box(silhouetteAt(place, plan.targetOf(place.member.slug))),
+      share,
+    ),
   }));
   const focused = spots.find(
     (spot) => spot.place.member.slug === (hovered ?? selected),

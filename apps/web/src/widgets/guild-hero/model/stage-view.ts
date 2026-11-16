@@ -71,6 +71,20 @@ export interface StageBox {
   readonly height: number;
 }
 
+/**
+ * The camera frames the stage's content box. Padding below it is drawn into,
+ * so a fraction of that framed view lands this far down the full element.
+ */
+export function placeOnStage(box: StageBox, framedShare: number): StageBox {
+  const share = Math.min(1, Math.max(0.05, framedShare));
+  return {
+    left: box.left,
+    width: box.width,
+    top: box.top * share,
+    height: box.height * share,
+  };
+}
+
 type Vector = readonly [number, number, number];
 
 const subtract = (a: Vector, b: Vector): Vector => [

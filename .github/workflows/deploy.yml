@@ -109,4 +109,6 @@ jobs:
         if: vars.PUBLIC_URL != ''
         env:
           PUBLIC_URL: ${{ vars.PUBLIC_URL }}
-        run: curl --fail --silent --show-error --max-time 20 --output /dev/null "$PUBLIC_URL/"
+        run: |
+          curl --fail --silent --show-error --max-time 20 --output /dev/null \
+            --retry 6 --retry-delay 10 --retry-all-errors "$PUBLIC_URL/"

@@ -79,7 +79,7 @@ services:
       <<: *app-environment
       NODE_OPTIONS: --max-old-space-size=160
     volumes:
-      - assets:/assets:ro
+      - assets:/assets
     depends_on:
       postgres:
         condition: service_healthy

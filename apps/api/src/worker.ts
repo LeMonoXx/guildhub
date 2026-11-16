@@ -54,11 +54,19 @@ const bakerCache = env.BAKER_CACHE ?? path.join(assetRoot, ".cache");
 const BAKER_IDLE_MS = 2 * 60 * 1000;
 /** Every body comes in both sexes the game knows. */
 const SEXES = [0, 1] as const;
+let shuttingDown = false;
+
+/** The baker yields the CPU to the site; on a one-core host a bake would otherwise stall requests. */
+const lowPriority = process.platform === "linux" ? ["nice", "-n", "10"] : [];
+const bakerCommand = [
+  ...lowPriority,
+  ...(bakerCli.endsWith(".dll") ? ["dotnet", bakerCli] : [bakerCli]),
+];
 
 const baker = new BakerProcess({
-  command: bakerCli.endsWith(".dll") ? "dotnet" : bakerCli,
+  command: bakerCommand[0] ?? bakerCli,
   args: [
-    ...(bakerCli.endsWith(".dll") ? [bakerCli] : []),
+    ...bakerCommand.slice(1),
     "serve",
     "--output",
     assetRoot,
@@ -164,7 +172,6 @@ await boss.work(PREBAKE_QUEUE, async () => {
 
 logger.info({ module: "lifecycle" }, "model worker listening");
 
-let shuttingDown = false;
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
@@ -257,6 +264,7 @@ async function prebakeBodies(): Promise<void> {
   let failed = 0;
   for (const race of races.value) {
     for (const sex of SEXES) {
+      if (shuttingDown) return;
       try {
         const result = await baker.run(
           { command: "prebake", race, sex },

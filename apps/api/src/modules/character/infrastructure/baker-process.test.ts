@@ -84,6 +84,13 @@ describe("BakerProcess", () => {
     expect(after.pid).not.toBe(before.pid);
   });
 
+  it("refuses work once stopped, so a shutdown cannot start a new baker", async () => {
+    const { baker } = makeBaker();
+    await baker.run(prebake(1));
+    baker.stop();
+    await expect(baker.run(prebake(2))).rejects.toThrow("baker stopped");
+  });
+
   it("lets an idle process go and starts again on demand", async () => {
     const { baker } = makeBaker(50);
     const before = await baker.run(prebake(1));

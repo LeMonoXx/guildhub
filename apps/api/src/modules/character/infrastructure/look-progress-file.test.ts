@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clearLookProgress,
   readLookProgress,
@@ -40,10 +40,11 @@ describe("look progress file", () => {
     const progress = reportLookProgress(assets, "abc");
     progress.onStage("baking");
     progress.onProgress(0.25);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(await readLookProgress(assets, "abc")).toMatchObject({
-      stage: "baking",
-      fraction: 0.25,
+    await vi.waitFor(async () => {
+      expect(await readLookProgress(assets, "abc")).toMatchObject({
+        stage: "baking",
+        fraction: 0.25,
+      });
     });
     await progress.finish();
     expect(await readLookProgress(assets, "abc")).toBeUndefined();

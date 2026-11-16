@@ -61,6 +61,7 @@ export class BakerProcess {
   private running: Running | undefined;
   private idleTimer: NodeJS.Timeout | undefined;
   private nextId = 1;
+  private stopped = false;
 
   constructor(private readonly options: BakerProcessOptions) {}
 
@@ -68,6 +69,7 @@ export class BakerProcess {
     request: BakerRequest,
     options: { priority?: BakerPriority; listener?: BakerListener } = {},
   ): Promise<Record<string, unknown>> {
+    if (this.stopped) return Promise.reject(new Error("baker stopped"));
     return new Promise((resolve, reject) => {
       const pending: Pending = {
         id: String(this.nextId++),
@@ -84,8 +86,9 @@ export class BakerProcess {
     });
   }
 
-  /** Ends the process; queued requests fail. */
+  /** Ends the process for good; queued and later requests fail. */
   stop(): void {
+    this.stopped = true;
     clearTimeout(this.idleTimer);
     const error = new Error("baker stopped");
     for (const pending of this.foreground.splice(0)) pending.reject(error);

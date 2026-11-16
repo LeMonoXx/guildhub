@@ -36,13 +36,17 @@ ENV NODE_ENV=production \
     BAKER_CLI=/baker/GuildHub.ModelBaker.Cli.dll \
     ASSET_ROOT=/assets \
     BAKER_CACHE=/cache
+# The baker pings Blizzard's CDNs to rank them. Under cap_drop ALL a file
+# capability on ping makes exec fail, so ping uses unprivileged ICMP sockets.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates iputils-ping wget \
     && wget --quiet https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
     && dpkg --install packages-microsoft-prod.deb \
     && rm packages-microsoft-prod.deb \
     && apt-get update \
-    && apt-get install --yes --no-install-recommends aspnetcore-runtime-10.0 \
+    && apt-get install --yes --no-install-recommends aspnetcore-runtime-10.0 libcap2-bin \
+    && setcap -r /usr/bin/ping \
+    && apt-get purge --yes libcap2-bin \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=api --chown=node:node /out ./
 COPY --from=baker --chown=node:node /baker /baker

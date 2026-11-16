@@ -1,5 +1,5 @@
 import { execFile, type ExecFileException } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { access, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { contentLocales } from "@guildhub/contracts";
@@ -47,6 +47,8 @@ const logger = createLogger({
 const assetRoot = requiredEnv(env.ASSET_ROOT, "ASSET_ROOT");
 const bakerCli = requiredEnv(env.BAKER_CLI, "BAKER_CLI");
 const bakerCache = env.BAKER_CACHE ?? path.join(assetRoot, ".cache");
+
+await ensureFixedLook();
 
 const boss = await startJobQueue(env.DATABASE_URL);
 boss.on("error", (error) => {
@@ -165,6 +167,31 @@ process.once("SIGTERM", (signal) => {
 process.once("SIGINT", (signal) => {
   void shutdown(signal);
 });
+
+/** Pending and unpublished characters show the fixed look, and only the baker writes current.json. */
+async function ensureFixedLook(): Promise<void> {
+  const fixedLook = path.join(assetRoot, "looks", "fixed", "look.json");
+  const present = await access(fixedLook).then(
+    () => true,
+    () => false,
+  );
+  if (present) return;
+  logger.info({ module: "baker" }, "fixed look missing, baking it");
+  try {
+    await runBaker([
+      "bake-fixed",
+      "--output",
+      assetRoot,
+      "--cache",
+      bakerCache,
+      "--region",
+      env.BAKER_REGION,
+    ]);
+    logger.info({ module: "baker" }, "fixed look baked");
+  } catch (error) {
+    logger.error({ module: "baker", err: error }, "fixed look bake failed");
+  }
+}
 
 async function bakeLook(job: LookBakeDocument): Promise<void> {
   const directory = await mkdtemp(path.join(tmpdir(), "guildhub-look-"));

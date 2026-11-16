@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { checkSceneConstraints } from "./cinematic-scene.constraints.js";
 
 const idSchema = z
   .string()
@@ -303,44 +304,6 @@ export const cinematicTrackSchema = z.discriminatedUnion("kind", [
   cinematicAudioTrackSchema,
 ]);
 
-const reportDuplicate = (
-  values: readonly string[],
-  path: PropertyKey,
-  ctx: z.RefinementCtx,
-) => {
-  const seen = new Set<string>();
-  values.forEach((value, index) => {
-    if (seen.has(value)) {
-      ctx.addIssue({
-        code: "custom",
-        message: `Duplicate ${String(path)} value: ${value}`,
-        path: [path, index],
-      });
-    }
-    seen.add(value);
-  });
-};
-
-const keyframeValue = (keyframe: unknown) => {
-  const { value } = keyframe as { value: unknown };
-  return value;
-};
-
-const loopedTrackIssue = (
-  keyframes: readonly { readonly timeMs: number }[],
-  durationMs: number,
-): string | undefined => {
-  const first = keyframes[0];
-  const last = keyframes.at(-1);
-  if (first?.timeMs !== 0 || last?.timeMs !== durationMs)
-    return "Looped tracks must span time 0 through durationMs";
-  if (
-    JSON.stringify(keyframeValue(first)) !== JSON.stringify(keyframeValue(last))
-  )
-    return "Looped track endpoints must match";
-  return undefined;
-};
-
 export const cinematicSceneSchema = z
   .strictObject({
     id: idSchema,
@@ -352,143 +315,7 @@ export const cinematicSceneSchema = z
     phases: z.array(cinematicPhaseSchema).default([]),
     tracks: z.array(cinematicTrackSchema).min(1),
   })
-  .superRefine((scene, ctx) => {
-    reportDuplicate(
-      scene.declarations.map(({ id }) => id),
-      "declarations",
-      ctx,
-    );
-    reportDuplicate(
-      scene.markers.map(({ id }) => id),
-      "markers",
-      ctx,
-    );
-    reportDuplicate(
-      scene.phases.map(({ id }) => id),
-      "phases",
-      ctx,
-    );
-    reportDuplicate(
-      scene.tracks.map(({ id }) => id),
-      "tracks",
-      ctx,
-    );
-
-    const declarations = new Set(scene.declarations.map(({ id }) => id));
-    const trackTargets = new Set<string>();
-    scene.tracks.forEach((track, trackIndex) => {
-      const targetKey = `${track.kind}:${track.target}`;
-      if (trackTargets.has(targetKey)) {
-        ctx.addIssue({
-          code: "custom",
-          message: `Duplicate ${track.kind} track target: ${track.target}`,
-          path: ["tracks", trackIndex, "target"],
-        });
-      }
-      trackTargets.add(targetKey);
-
-      if (!declarations.has(track.target)) {
-        ctx.addIssue({
-          code: "custom",
-          message: `Unknown track target: ${track.target}`,
-          path: ["tracks", trackIndex, "target"],
-        });
-      }
-
-      let previousTime = -1;
-      track.keyframes.forEach(({ timeMs }, keyframeIndex) => {
-        if (timeMs > scene.durationMs) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Keyframe timeMs must be within scene duration",
-            path: ["tracks", trackIndex, "keyframes", keyframeIndex, "timeMs"],
-          });
-        }
-        if (timeMs <= previousTime) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Keyframe times must be strictly increasing",
-            path: ["tracks", trackIndex, "keyframes", keyframeIndex, "timeMs"],
-          });
-        }
-        previousTime = timeMs;
-      });
-
-      const loopIssue =
-        scene.loop && track.kind !== "audio"
-          ? loopedTrackIssue(track.keyframes, scene.durationMs)
-          : undefined;
-      if (loopIssue !== undefined) {
-        ctx.addIssue({
-          code: "custom",
-          message: loopIssue,
-          path: ["tracks", trackIndex, "keyframes"],
-        });
-      }
-
-      if (
-        scene.loop &&
-        track.kind === "audio" &&
-        track.keyframes.some(({ timeMs }) => timeMs === scene.durationMs)
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Looped audio cues must occur before durationMs",
-          path: ["tracks", trackIndex, "keyframes"],
-        });
-      }
-    });
-
-    let previousMarkerTime = -1;
-    scene.markers.forEach((marker, index) => {
-      if (
-        marker.timeMs > scene.durationMs ||
-        (scene.loop && marker.timeMs === scene.durationMs)
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Marker timeMs must be within the playable timeline",
-          path: ["markers", index, "timeMs"],
-        });
-      }
-      if (marker.timeMs <= previousMarkerTime) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Markers must be strictly ordered by timeMs",
-          path: ["markers", index, "timeMs"],
-        });
-      }
-      previousMarkerTime = marker.timeMs;
-    });
-
-    let previousPhaseStart = -1;
-    let previousPhaseEnd = -1;
-    scene.phases.forEach((phase, index) => {
-      if (phase.endMs > scene.durationMs) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Phase endMs must be within scene duration",
-          path: ["phases", index, "endMs"],
-        });
-      }
-      if (index > 0 && phase.startMs <= previousPhaseStart) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Phase startMs values must be strictly ordered and unique",
-          path: ["phases", index, "startMs"],
-        });
-      }
-      if (index > 0 && phase.startMs < previousPhaseEnd) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Phases must not overlap",
-          path: ["phases", index, "startMs"],
-        });
-      }
-      previousPhaseStart = phase.startMs;
-      previousPhaseEnd = phase.endMs;
-    });
-  })
+  .superRefine(checkSceneConstraints)
   .readonly();
 
 export type CinematicVec3 = z.infer<typeof cinematicVec3Schema>;

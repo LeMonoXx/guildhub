@@ -3,14 +3,20 @@
 // Copyright (c) 2026 Ryan Williams, MIT License.
 
 import * as THREE from "three";
+import { AnimationLayers, type AnimationMask } from "./animation-layers";
+import { loopTime, sequencePosition, type ClipAction } from "./clip-timing";
+import {
+  applyCrossfade,
+  cancelCrossfade,
+  startCrossfade,
+  type Crossfade,
+} from "./crossfade";
 import type { TimelineParticipant } from "./lifecycle";
+
+export type { AnimationMask } from "./animation-layers";
 
 const clipKey = (clip: THREE.AnimationClip, index: number) =>
   clip.name || `clip-${String(index)}`;
-
-const animationMaskRootKeyBones = {
-  "upper-body": 4,
-} as const;
 
 export interface AnimationGroup {
   id?: number;
@@ -24,49 +30,23 @@ export interface AnimationControllerOptions {
   timeScale?: number;
 }
 
-export type AnimationMask = "upper-body";
-
-interface ClipAction {
-  name: string;
-  clip: THREE.AnimationClip;
-  action: THREE.AnimationAction;
-}
-
 interface GroupActions {
   id?: number;
   name: string;
   clips: ClipAction[];
 }
 
-interface CrossfadeState {
-  from: ClipAction;
-  to: ClipAction;
-  fromTime: number;
-  elapsed: number;
-  duration: number;
-}
-
-interface LayerState {
-  selection: string;
-  clip: THREE.AnimationClip;
-  action: THREE.AnimationAction;
-  time: number;
-  weight: number;
-  targetWeight: number;
-  fadeFrom: number;
-  fadeElapsed: number;
-  fadeDuration: number;
-}
+const matchesGroup = (candidate: GroupActions, group: string | number) =>
+  typeof group === "number" ? candidate.id === group : candidate.name === group;
 
 export class AnimationController implements TimelineParticipant {
   private readonly mixer: THREE.AnimationMixer;
   private readonly groups: GroupActions[];
   private readonly concurrent: ClipAction[];
+  private readonly layers: AnimationLayers;
   private selectedGroupIndex: number;
   private active: ClipAction | undefined;
-  private fade: CrossfadeState | undefined;
-  private readonly layers = new Map<string, LayerState>();
-  private readonly layerClips = new Map<string, THREE.AnimationClip>();
+  private fade: Crossfade | undefined;
   private time = 0;
   private fixedPrimary: string | undefined;
   private disposed = false;
@@ -79,18 +59,20 @@ export class AnimationController implements TimelineParticipant {
     options: AnimationControllerOptions = {},
   ) {
     this.mixer = new THREE.AnimationMixer(root);
+    this.layers = new AnimationLayers(this.mixer, root);
     this.timeScale = Math.max(options.timeScale ?? 1, 0);
     const sourceGroups = options.groups?.length
       ? options.groups
       : [{ name: "default", clips: primaryClips }];
-    this.groups = sourceGroups.map((group) => {
-      const clips = group.clips.map((clip, index) => ({
+    this.groups = sourceGroups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      clips: group.clips.map((clip, index) => ({
         name: clipKey(clip, index),
         clip,
         action: this.mixer.clipAction(clip),
-      }));
-      return { id: group.id, name: group.name, clips };
-    });
+      })),
+    }));
     this.selectedGroupIndex = Math.max(
       this.groups.findIndex((group) => group.id === options.defaultGroupId),
       0,
@@ -120,7 +102,9 @@ export class AnimationController implements TimelineParticipant {
   get primaryClipName(): string | undefined {
     return (
       this.fixedPrimary ??
-      this.selectedGroup.clips[this.sequencePosition(this.time).index]?.name
+      this.selectedGroup.clips[
+        sequencePosition(this.selectedGroup.clips, this.time).index
+      ]?.name
     );
   }
 
@@ -129,10 +113,7 @@ export class AnimationController implements TimelineParticipant {
     const elapsed = Math.max(delta, 0) * this.timeScale;
     this.time += elapsed;
     if (this.fade) this.fade.elapsed += elapsed;
-    for (const layer of this.layers.values()) {
-      layer.time += elapsed;
-      this.advanceLayerFade(layer, elapsed);
-    }
+    this.layers.advance(elapsed);
     this.applyTime();
   }
 
@@ -148,7 +129,6 @@ export class AnimationController implements TimelineParticipant {
     this.cancelFade();
     this.fixedPrimary = undefined;
     this.time = 0;
-    for (const layer of this.layers.values()) layer.action.stop();
     this.layers.clear();
     this.stopPrimaryActions();
     this.active = undefined;
@@ -173,23 +153,9 @@ export class AnimationController implements TimelineParticipant {
     const seconds = Math.max(duration, 0);
     if (!this.active || this.active === next || seconds === 0)
       return this.play(name);
+    const from = this.active;
     this.cancelFade();
-    const fromTime = this.active.action.time;
-    this.stopPrimaryActions();
-    this.active.action.reset().play();
-    this.active.action.paused = true;
-    this.active.action.time = fromTime;
-    this.active.action.setEffectiveWeight(1);
-    next.action.reset().play();
-    next.action.paused = true;
-    next.action.setEffectiveWeight(0);
-    this.fade = {
-      from: this.active,
-      to: next,
-      fromTime,
-      elapsed: 0,
-      duration: seconds,
-    };
+    this.fadeBetween(from, from.action.time, next, seconds);
     this.fixedPrimary = name;
     this.applyTime();
     return true;
@@ -198,9 +164,7 @@ export class AnimationController implements TimelineParticipant {
   selectGroup(group: string | number, fadeDuration = 0): boolean {
     if (this.disposed) return false;
     const index = this.groups.findIndex((candidate) =>
-      typeof group === "number"
-        ? candidate.id === group
-        : candidate.name === group,
+      matchesGroup(candidate, group),
     );
     if (index < 0) return false;
     const previous = this.active;
@@ -212,21 +176,7 @@ export class AnimationController implements TimelineParticipant {
     const next = this.selectedGroup.clips[0];
     const seconds = Math.max(fadeDuration, 0);
     if (previous && next && previous !== next && seconds > 0) {
-      this.stopPrimaryActions();
-      previous.action.reset().play();
-      previous.action.paused = true;
-      previous.action.time = previousTime;
-      previous.action.setEffectiveWeight(1);
-      next.action.reset().play();
-      next.action.paused = true;
-      next.action.setEffectiveWeight(0);
-      this.fade = {
-        from: previous,
-        to: next,
-        fromTime: previousTime,
-        elapsed: 0,
-        duration: seconds,
-      };
+      this.fadeBetween(previous, previousTime, next, seconds);
     } else {
       this.stopPrimaryActions();
       this.active = undefined;
@@ -243,106 +193,81 @@ export class AnimationController implements TimelineParticipant {
     weight = 1,
   ): boolean {
     if (this.disposed) return false;
-    const sourceGroup = this.groups.find((candidate) =>
-      typeof group === "number"
-        ? candidate.id === group
-        : candidate.name === group,
-    );
-    const source = sourceGroup?.clips[0];
+    const source = this.groups.find((candidate) =>
+      matchesGroup(candidate, group),
+    )?.clips[0];
     if (!source) return false;
-    const selection = `${String(group)}:${mask}`;
-    const existing = this.layers.get(id);
-    if (existing?.selection === selection) {
-      this.fadeLayer(existing, weight, fadeDuration);
-      return true;
-    }
-    existing?.action.stop();
-    const clip = this.layerClip(source.clip, selection, mask);
-    if (!clip.tracks.length) return false;
-    const action = this.mixer.clipAction(clip);
-    action.reset().play();
-    action.paused = true;
-    action.setEffectiveWeight(0);
-    const layer: LayerState = {
-      selection,
-      clip,
-      action,
-      time: 0,
-      weight: 0,
-      targetWeight: 0,
-      fadeFrom: 0,
-      fadeElapsed: 0,
-      fadeDuration: 0,
-    };
-    this.layers.set(id, layer);
-    this.fadeLayer(layer, weight, fadeDuration);
-    this.applyTime();
-    return true;
+    const selected = this.layers.select(
+      id,
+      source.clip,
+      `${String(group)}:${mask}`,
+      mask,
+      fadeDuration,
+      weight,
+    );
+    if (selected) this.applyTime();
+    return selected;
   }
 
   setLayerTime(id: string, time: number): void {
     if (this.disposed) return;
-    const layer = this.layers.get(id);
-    if (!layer) return;
-    layer.time = Math.max(time, 0) * this.timeScale;
-    this.applyTime();
+    if (this.layers.setTime(id, Math.max(time, 0) * this.timeScale))
+      this.applyTime();
   }
 
   clearLayer(id: string, fadeDuration = 0): void {
     if (this.disposed) return;
-    const layer = this.layers.get(id);
-    if (!layer) return;
-    this.fadeLayer(layer, 0, fadeDuration);
-    this.applyTime();
+    if (this.layers.fadeOut(id, fadeDuration)) this.applyTime();
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.mixer.stopAllAction();
+    for (const clip of [...this.primaryActions(), ...this.concurrent])
+      this.mixer.uncacheAction(clip.clip, this.root);
+    this.layers.dispose();
+    this.mixer.uncacheRoot(this.root);
+    this.active = undefined;
+    this.fade = undefined;
   }
 
   private get selectedGroup(): GroupActions {
     return (
-      this.groups[this.selectedGroupIndex] ?? {
-        name: "default",
-        clips: [],
-      }
+      this.groups[this.selectedGroupIndex] ?? { name: "default", clips: [] }
     );
   }
 
-  private sequencePosition(time: number): { index: number; local: number } {
-    const primary = this.selectedGroup.clips;
-    if (!primary.length) return { index: -1, local: 0 };
-    const durations = primary.map(({ clip }) => Math.max(clip.duration, 0.001));
-    const total = durations.reduce((sum, duration) => sum + duration, 0);
-    let local = ((time % total) + total) % total;
-    for (let index = 0; index < durations.length; index += 1) {
-      const duration = durations[index] ?? 0.001;
-      if (local < duration || index === durations.length - 1)
-        return { index, local };
-      local -= duration;
-    }
-    return { index: 0, local: 0 };
+  private fadeBetween(
+    from: ClipAction,
+    fromTime: number,
+    to: ClipAction,
+    seconds: number,
+  ): void {
+    this.stopPrimaryActions();
+    this.fade = startCrossfade(from, to, fromTime, seconds);
   }
 
-  private applyTime(): void {
-    if (this.disposed) return;
-    if (this.fade) {
-      this.applyFade(this.fade);
-      this.applyConcurrent();
-      this.applyLayers();
-      this.mixer.update(0);
-      return;
-    }
+  private primaryPosition(): { index: number; local: number } {
     const primary = this.selectedGroup.clips;
     const fixedIndex = this.fixedPrimary
       ? primary.findIndex(({ name }) => name === this.fixedPrimary)
       : -1;
-    const position =
-      fixedIndex >= 0
-        ? {
-            index: fixedIndex,
-            local:
-              this.time %
-              Math.max(primary[fixedIndex]?.clip.duration ?? 0, 0.001),
-          }
-        : this.sequencePosition(this.time);
-    const next = primary[position.index];
+    const fixed = primary[fixedIndex];
+    return fixed
+      ? { index: fixedIndex, local: loopTime(this.time, fixed.clip) }
+      : sequencePosition(primary, this.time);
+  }
+
+  private applyPrimary(): void {
+    if (this.fade) {
+      if (!applyCrossfade(this.fade)) return;
+      this.active = this.fade.to;
+      this.fade = undefined;
+      return;
+    }
+    const position = this.primaryPosition();
+    const next = this.selectedGroup.clips[position.index];
     if (next !== this.active) {
       this.stopPrimaryActions();
       next?.action.reset().play();
@@ -353,97 +278,15 @@ export class AnimationController implements TimelineParticipant {
       this.active = next;
     }
     if (next) next.action.time = position.local;
-    this.applyConcurrent();
-    this.applyLayers();
-    this.mixer.update(0);
   }
 
-  private applyFade(fade: CrossfadeState): void {
-    const factor = Math.min(fade.elapsed / fade.duration, 1);
-    fade.from.action.time =
-      (fade.fromTime + fade.elapsed) % Math.max(fade.from.clip.duration, 0.001);
-    fade.to.action.time = fade.elapsed % Math.max(fade.to.clip.duration, 0.001);
-    fade.from.action.setEffectiveWeight(1 - factor);
-    fade.to.action.setEffectiveWeight(factor);
-    if (factor < 1) return;
-    fade.from.action.stop();
-    fade.to.action.setEffectiveWeight(1);
-    this.active = fade.to;
-    this.fade = undefined;
-  }
-
-  private applyConcurrent(): void {
+  private applyTime(): void {
+    if (this.disposed) return;
+    this.applyPrimary();
     for (const concurrent of this.concurrent)
-      concurrent.action.time =
-        this.time % Math.max(concurrent.clip.duration, 0.001);
-  }
-
-  private applyLayers(): void {
-    for (const [id, layer] of this.layers) {
-      layer.action.time = layer.time % Math.max(layer.clip.duration, 0.001);
-      layer.action.setEffectiveWeight(layer.weight);
-      if (layer.weight > 0 || layer.targetWeight > 0) continue;
-      layer.action.stop();
-      this.layers.delete(id);
-    }
-  }
-
-  private fadeLayer(
-    layer: LayerState,
-    targetWeight: number,
-    duration: number,
-  ): void {
-    layer.fadeFrom = layer.weight;
-    layer.targetWeight = THREE.MathUtils.clamp(targetWeight, 0, 1);
-    layer.fadeElapsed = 0;
-    layer.fadeDuration = Math.max(duration, 0);
-    if (layer.fadeDuration === 0) layer.weight = layer.targetWeight;
-  }
-
-  private advanceLayerFade(layer: LayerState, elapsed: number): void {
-    if (layer.weight === layer.targetWeight) return;
-    layer.fadeElapsed += elapsed;
-    const factor =
-      layer.fadeDuration === 0
-        ? 1
-        : Math.min(layer.fadeElapsed / layer.fadeDuration, 1);
-    layer.weight = THREE.MathUtils.lerp(
-      layer.fadeFrom,
-      layer.targetWeight,
-      factor,
-    );
-  }
-
-  private layerClip(
-    source: THREE.AnimationClip,
-    selection: string,
-    mask: AnimationMask,
-  ): THREE.AnimationClip {
-    const key = `${source.uuid}:${selection}`;
-    const cached = this.layerClips.get(key);
-    if (cached) return cached;
-    const nodes = this.maskNodes(mask);
-    const tracks = source.tracks
-      .filter((track) => nodes.has(track.name.split(".")[0] ?? ""))
-      .map((track) => track.clone());
-    const clip = new THREE.AnimationClip(
-      `${source.name}:${selection}`,
-      source.duration,
-      tracks,
-    );
-    THREE.AnimationUtils.makeClipAdditive(clip, 0, clip);
-    this.layerClips.set(key, clip);
-    return clip;
-  }
-
-  private maskNodes(mask: AnimationMask): ReadonlySet<string> {
-    const nodes = new Set<string>();
-    const rootKeyBoneId = animationMaskRootKeyBones[mask];
-    this.root.traverse((candidate) => {
-      if (candidate.userData["keyBoneId"] !== rootKeyBoneId) return;
-      candidate.traverse((descendant) => nodes.add(descendant.name));
-    });
-    return nodes;
+      concurrent.action.time = loopTime(this.time, concurrent.clip);
+    this.layers.apply();
+    this.mixer.update(0);
   }
 
   private primaryActions(): ClipAction[] {
@@ -459,23 +302,7 @@ export class AnimationController implements TimelineParticipant {
 
   private cancelFade(): void {
     if (!this.fade) return;
-    this.fade.from.action.stop();
-    this.fade.to.action.stop();
-    this.fade = undefined;
-  }
-
-  dispose(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-    this.mixer.stopAllAction();
-    for (const clip of [...this.primaryActions(), ...this.concurrent])
-      this.mixer.uncacheAction(clip.clip, this.root);
-    for (const clip of this.layerClips.values())
-      this.mixer.uncacheAction(clip, this.root);
-    this.mixer.uncacheRoot(this.root);
-    this.layers.clear();
-    this.layerClips.clear();
-    this.active = undefined;
+    cancelCrossfade(this.fade);
     this.fade = undefined;
   }
 }

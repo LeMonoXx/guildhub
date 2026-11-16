@@ -3,6 +3,7 @@
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { createViewerRenderer, followSize } from "../lib/viewer-renderer";
 import type { CharacterModelHandle } from "../model/character-handle";
 import { StageSlot } from "../model/stage-slot";
 
@@ -18,9 +19,7 @@ export function createCharacterStage(container: HTMLElement): CharacterStage {
   const canvas = document.createElement("canvas");
   canvas.setAttribute("aria-hidden", "true");
   container.append(canvas);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const renderer = createViewerRenderer(canvas);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x081722);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 2.3));
@@ -32,15 +31,7 @@ export function createCharacterStage(container: HTMLElement): CharacterStage {
   const slot = new StageSlot<CharacterModelHandle>();
   let disposed = false;
 
-  const resize = () => {
-    const { clientWidth: width, clientHeight: height } = container;
-    renderer.setSize(width, height, false);
-    camera.aspect = width / Math.max(height, 1);
-    camera.updateProjectionMatrix();
-  };
-  const observer = new ResizeObserver(resize);
-  observer.observe(container);
-  resize();
+  const stopFollowing = followSize(container, renderer, camera);
 
   const tick = (delta: number) => {
     if (disposed) return;
@@ -91,7 +82,7 @@ export function createCharacterStage(container: HTMLElement): CharacterStage {
     dispose() {
       if (disposed) return;
       disposed = true;
-      observer.disconnect();
+      stopFollowing();
       controls.dispose();
       slot.dispose();
       renderer.dispose();

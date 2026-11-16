@@ -1,5 +1,10 @@
 import type { FixedLookManifest } from "./types";
 import { AssetStore } from "../lib/asset-store";
+import {
+  assertFixedLookManifest,
+  fetchFixedLook,
+  lookAssets,
+} from "../lib/look-assets";
 import { buildCharacter } from "./assemble-character";
 import type { CharacterModelHandle } from "./character-handle";
 import { dress } from "./dress";
@@ -16,38 +21,15 @@ export interface PreparedCharacter {
   readonly manifest: FixedLookManifest;
 }
 
-const resolveAsset = (base: string, path: string): string => {
-  if (/^(?:[a-z]+:)?\/\//i.test(path) || path.startsWith("/")) return path;
-  return `${base.replace(/\/?$/, "/")}${path.replace(/^\/+/, "")}`;
-};
-
-const loadManifest = async (
-  source: string | FixedLookManifest,
-  fetcher: typeof fetch,
-): Promise<FixedLookManifest> => {
-  if (typeof source !== "string") return source;
-  const response = await fetcher(source);
-  if (!response.ok)
-    throw new Error(`fixed look: HTTP ${String(response.status)}`);
-  return (await response.json()) as FixedLookManifest;
-};
-
 export async function prepareCharacter(
   options: PrepareCharacterOptions,
 ): Promise<PreparedCharacter> {
   const fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
-  const manifest = await loadManifest(options.manifest, fetcher);
-  if (
-    manifest.schemaVersion !== 1 ||
-    !manifest.body.path ||
-    !manifest.bodyMetadata ||
-    !Array.isArray(manifest.items)
-  )
-    throw new Error("unsupported fixed-look manifest");
-
-  const modelDirectory = manifest.body.path.replace(/[^/]+$/, "");
-  const textureDirectory = modelDirectory.replace(/models\/$/, "textures/");
-  const asset = (path: string) => resolveAsset(options.assetBase, path);
+  const manifest =
+    typeof options.manifest === "string"
+      ? await fetchFixedLook(options.manifest, fetcher)
+      : assertFixedLookManifest(options.manifest);
+  const { asset, model, texture } = lookAssets(manifest, options.assetBase);
   const defaultAnimation =
     manifest.animations.find((animation) => animation.id === 0) ??
     manifest.animations[0];
@@ -64,9 +46,8 @@ export async function prepareCharacter(
         url: asset(animation.path),
       })),
       defaultAnimationId: defaultAnimation?.id,
-      model: (id, extension) =>
-        asset(`${modelDirectory}${String(id)}.${extension}`),
-      texture: (id) => asset(`${textureDirectory}${String(id)}.png`),
+      model,
+      texture,
     },
     options.sharedAssets,
   );

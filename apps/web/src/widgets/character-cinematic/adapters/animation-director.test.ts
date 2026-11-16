@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { describe, expect, test, vi } from "vitest";
 import type { CinematicFrame, FrameCommand } from "../../../shared/cinematic";
 import type { CharacterHandle } from "../../character-model";
+import { AnimationDirector } from "./animation-director";
 import {
-  AnimationDirector,
   AudioBindingState,
   type BindingContext,
   BindingRegistry,
@@ -12,7 +12,7 @@ import {
   createDefaultBindings,
   type CameraBindingTarget,
   type UiBindingState,
-} from "./animation-director";
+} from "./bindings";
 
 const frame = (
   commands: readonly FrameCommand[],

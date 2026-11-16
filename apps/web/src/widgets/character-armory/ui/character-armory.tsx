@@ -1,5 +1,5 @@
 import type { EquippedItem } from "@guildhub/contracts";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ItemIcon,
   ItemTooltip,
@@ -17,6 +17,8 @@ import { Meter, Reveal } from "../../../shared/ui";
 
 interface CharacterArmoryProps {
   readonly items: readonly EquippedItem[];
+  /** The selected item's own model, in the middle of the doll. */
+  readonly renderModel?: (item: EquippedItem) => ReactNode;
 }
 
 const firstSelection = (
@@ -92,7 +94,13 @@ function SlotButton({
   );
 }
 
-function ItemDetail({ item }: { readonly item: EquippedItem }) {
+function ItemDetail({
+  item,
+  model,
+}: {
+  readonly item: EquippedItem;
+  readonly model: ReactNode;
+}) {
   const { t, locale } = useLocale();
   const durability = durabilityShare(item);
   return (
@@ -104,7 +112,6 @@ function ItemDetail({ item }: { readonly item: EquippedItem }) {
       }}
     >
       <div className="item-detail-hero">
-        <ItemIcon iconUrl={item.iconUrl} quality={item.quality} size="lg" />
         <div>
           <p className="eyebrow">{t(`slot.${item.slot}`)}</p>
           <h3 style={{ color: itemQualityColorVar(item.quality) }}>
@@ -117,68 +124,30 @@ function ItemDetail({ item }: { readonly item: EquippedItem }) {
           </p>
         </div>
       </div>
-      <div className="item-detail-body">
-        <ItemTooltip item={item} />
-        <dl className="item-detail-facts">
-          {item.itemLevel === undefined ? null : (
-            <div>
-              <dt>{t("armory.itemLevel")}</dt>
-              <dd>{item.itemLevel}</dd>
-            </div>
-          )}
-          {item.weapon && item.weapon.dpsValue > 0 ? (
-            <div>
-              <dt>{t("armory.dps")}</dt>
-              <dd>{formatNumber(item.weapon.dpsValue, locale, 1)}</dd>
-            </div>
-          ) : null}
-          {item.weapon && item.weapon.speedSeconds > 0 ? (
-            <div>
-              <dt>{t("armory.speed")}</dt>
-              <dd>{formatNumber(item.weapon.speedSeconds, locale, 2)}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>{t("armory.stats")}</dt>
-            <dd>{item.stats.length}</dd>
-          </div>
-          {item.sellPriceCopper ? (
-            <div>
-              <dt>{t("armory.vendor")}</dt>
-              <dd>
-                <Money copper={item.sellPriceCopper} />
-              </dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>{t("armory.itemId")}</dt>
-            <dd>#{item.itemId}</dd>
-          </div>
-        </dl>
-        {durability === undefined || !item.durability ? null : (
-          <Meter
-            value={item.durability.current}
-            max={item.durability.max}
-            color={
-              durability > 0.5
-                ? "var(--color-signal)"
-                : durability > 0.2
-                  ? "var(--color-gold)"
-                  : "var(--color-danger)"
-            }
-            label={t("armory.durability")}
-            detail={`${String(item.durability.current)} / ${String(item.durability.max)}`}
-          />
-        )}
-        <a
-          className="item-detail-link"
-          href={wowheadUrl("item", item.itemId, locale)}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t("armory.wowhead")}
-        </a>
-      </div>
+      {model}
+      {durability === undefined || !item.durability ? null : (
+        <Meter
+          value={item.durability.current}
+          max={item.durability.max}
+          color={
+            durability > 0.5
+              ? "var(--color-signal)"
+              : durability > 0.2
+                ? "var(--color-gold)"
+                : "var(--color-danger)"
+          }
+          label={t("armory.durability")}
+          detail={`${String(item.durability.current)} / ${String(item.durability.max)}`}
+        />
+      )}
+      <a
+        className="item-detail-link"
+        href={wowheadUrl("item", item.itemId, locale)}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {t("armory.wowhead")}
+      </a>
     </article>
   );
 }
@@ -252,7 +221,7 @@ function GearSummary({ items }: { readonly items: readonly EquippedItem[] }) {
   );
 }
 
-export function CharacterArmory({ items }: CharacterArmoryProps) {
+export function CharacterArmory({ items, renderModel }: CharacterArmoryProps) {
   const bySlot = itemsBySlot(items);
   const [selected, setSelected] = useState<string | undefined>(
     () => firstSelection(items)?.slot,
@@ -281,7 +250,12 @@ export function CharacterArmory({ items }: CharacterArmoryProps) {
           ))}
         </ol>
         <div className="paper-doll-stage">
-          {selectedItem ? <ItemDetail item={selectedItem} /> : null}
+          {selectedItem ? (
+            <ItemDetail
+              item={selectedItem}
+              model={renderModel ? renderModel(selectedItem) : null}
+            />
+          ) : null}
         </div>
         <ol className="paper-doll-column" data-side="right">
           {paperDollSlots.right.map((slot, index) => (

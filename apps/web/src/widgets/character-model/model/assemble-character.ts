@@ -466,3 +466,74 @@ export async function buildCharacter(
     throw error;
   }
 }
+
+export interface HeldItem {
+  readonly object: THREE.Group;
+  update(delta: number): void;
+  dispose(): void;
+}
+
+/** One item's meshes, with the same materials as on the character, and no body. */
+export async function buildHeldItem(
+  models: readonly { fileDataId: number; textureFileDataId?: number }[],
+  urls: Pick<AssetUrls, "model" | "texture">,
+): Promise<HeldItem> {
+  const assets = new AssetStore();
+  const owner = new ResourceOwner();
+  const runtime = new CharacterRuntime();
+  const group = new THREE.Group();
+  const context: InternalAssemblyContext = {
+    assets,
+    owner,
+    notices: [],
+    textures: new Map(),
+    runtime,
+    urls: {
+      bodyModel: "",
+      bodyMetadata: "",
+      model: urls.model,
+      texture: urls.texture,
+    },
+    fallback: owner.own(
+      new THREE.MeshStandardMaterial({
+        color: 0xc4b49a,
+        roughness: 0.55,
+        metalness: 0.25,
+      }),
+    ),
+  };
+  try {
+    for (const [index, model] of models.entries()) {
+      const loaded = await assets.model(
+        urls.model(model.fileDataId, "glb"),
+        urls.model(model.fileDataId, "json"),
+      );
+      await mountModel(
+        loaded,
+        model.textureFileDataId === undefined
+          ? {}
+          : { 2: model.textureFileDataId },
+        context,
+        `held_${String(index)}`,
+        { timeScale: 0.35 },
+      );
+      group.add(loaded.scene);
+    }
+  } catch (error) {
+    runtime.dispose();
+    owner.dispose();
+    assets.dispose();
+    throw error;
+  }
+  return {
+    object: group,
+    update: (delta) => {
+      runtime.update(delta);
+    },
+    dispose: () => {
+      runtime.dispose();
+      owner.dispose();
+      assets.dispose();
+    },
+  };
+}

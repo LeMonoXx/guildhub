@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { wowClassColorVar } from "../../../entities/character";
 import type { SectionLink } from "../../../shared/ui";
 import { CharacterArmory } from "../../../widgets/character-armory";
+import { LazyItemTurntable } from "../../../widgets/character-cinematic";
 import { CharacterAttributes } from "../../../widgets/character-attributes";
 import { CharacterCollections } from "../../../widgets/character-collections";
 import { CharacterDeeds } from "../../../widgets/character-deeds";
@@ -33,7 +34,20 @@ export const profileSections = (
       link: { id: "armory", label: t("character.section.armory") },
       eyebrow: t("character.eyebrow.armory"),
       lead: t("character.lead.armory"),
-      body: <CharacterArmory items={profile.equipment} />,
+      body: (
+        <CharacterArmory
+          items={profile.equipment}
+          renderModel={(item) => (
+            <LazyItemTurntable
+              manifest={detail.lookManifest}
+              itemId={item.itemId}
+              assetBase="/assets/"
+              iconUrl={item.iconUrl}
+              quality={item.quality}
+            />
+          )}
+        />
+      ),
     },
     profile.statistics !== undefined && {
       link: { id: "attributes", label: t("character.section.attributes") },

@@ -42,8 +42,8 @@ export async function sendBattleNet(
 const MAX_RETRY_WAIT_MS = 5000;
 
 /**
- * For static game data fetched in bulk: throttled or failed answers are
- * tried again after the wait Battle.net asks for, a few times at most.
+ * Throttled or failed answers are tried again after the wait Battle.net asks
+ * for, a few times at most.
  */
 export async function sendBattleNetPatiently(
   client: BlizzardApiClient,

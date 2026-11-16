@@ -7,6 +7,7 @@ import {
   forCharacter,
   mapLimited,
   sendBattleNet,
+  sendBattleNetPatiently,
   type BattleNetResource,
 } from "./battle-net-request.js";
 import {
@@ -22,6 +23,7 @@ import {
 } from "./wow-forever-character.js";
 
 const REQUEST_CONCURRENCY = 6;
+const PROFILE_ATTEMPTS = 3;
 
 export function makeBattleNetCharacterProfileSource(
   client: BlizzardApiClient,
@@ -68,7 +70,10 @@ export function makeBattleNetCharacterProfileSource(
           [
             key,
             forCharacter(
-              await sendBattleNet(client, resource, locale),
+              await sendBattleNetPatiently(client, resource, {
+                locale,
+                attempts: PROFILE_ATTEMPTS,
+              }),
               character.characterId,
             ),
           ] as const,
@@ -77,6 +82,12 @@ export function makeBattleNetCharacterProfileSource(
       const summary = byKey.get("summary");
       if (summary === undefined) return err(appError("character.not_found"));
       if (!summary.ok) return summary;
+      // A document that did not answer would read as "nothing there" and
+      // overwrite the last good profile; failing keeps that one instead.
+      for (const result of byKey.values()) {
+        if (!result.ok && result.error.code !== "character.not_found")
+          return result;
+      }
       const raw: Record<string, unknown> = {};
       for (const [key, result] of byKey) {
         if (result.ok) raw[key] = result.value;

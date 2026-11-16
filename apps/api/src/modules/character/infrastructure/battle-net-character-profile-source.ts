@@ -18,6 +18,10 @@ import { BattleNetAchievementCatalog } from "./battle-net-achievement-catalog.js
 import { BattleNetTalentTreeCatalog } from "./battle-net-talent-tree-catalog.js";
 import { mapTalentTrees } from "./map-talent-trees.js";
 import {
+  makeBattleNetQuestCatalog,
+  questIdsInProgress,
+} from "./battle-net-quest-catalog.js";
+import {
   characterProfileEndpoints,
   itemMediaEndpoint,
 } from "./wow-forever-character.js";
@@ -34,6 +38,7 @@ export function makeBattleNetCharacterProfileSource(
 ): CharacterProfileSource {
   // Item media is static game data, so icon ids stay valid for the process.
   const iconIds = new Map<number, number | undefined>();
+  const quests = makeBattleNetQuestCatalog(client);
   const catalogs = new Map<
     ContentLocale,
     {
@@ -103,6 +108,7 @@ export function makeBattleNetCharacterProfileSource(
         iconUrl: publicPaths.icon,
         itemIcons: knownIcons(iconIds),
         achievementInfo,
+        questInfo: await quests.lookup(questIdsInProgress(raw.quests), locale),
         avatarUrl: hasAvatar(raw.media)
           ? publicPaths.avatar(character.slug)
           : undefined,

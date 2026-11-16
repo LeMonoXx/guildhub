@@ -1,6 +1,6 @@
 import type { Locale } from "../i18n";
 
-export type WowheadKind = "item" | "spell";
+export type WowheadKind = "item" | "spell" | "quest";
 
 const languageSegment: Readonly<Record<Locale, string>> = { en: "", de: "/de" };
 

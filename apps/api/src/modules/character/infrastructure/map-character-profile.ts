@@ -4,6 +4,8 @@ import type {
   ItemQuality,
   ItemStat,
   Profession,
+  QuestLogEntry,
+  QuestRef,
   StatisticGroup,
 } from "@guildhub/contracts";
 import type { CharacterProfileData } from "../domain/profile.js";
@@ -49,6 +51,7 @@ export function mapCharacterProfile(input: {
   iconUrl: (iconId: number) => string;
   itemIcons: ReadonlyMap<number, number>;
   achievementInfo?: ReadonlyMap<number, AchievementInfo>;
+  questInfo?: ReadonlyMap<number, QuestInfo>;
   avatarUrl?: string;
 }): CharacterProfileData {
   const { raw } = input;
@@ -195,9 +198,11 @@ export function mapCharacterProfile(input: {
       ];
     }),
     quests: {
-      inProgress: names(list(rec(raw.quests).in_progress)),
+      inProgress: questRefs(list(rec(raw.quests).in_progress)).map((quest) =>
+        withQuestInfo(quest, input.questInfo?.get(quest.id)),
+      ),
       completedCount: list(rec(raw.completedQuests).quests).length,
-      recentCompleted: names(list(rec(raw.completedQuests).quests)).slice(
+      recentCompleted: questRefs(list(rec(raw.completedQuests).quests)).slice(
         0,
         RECENT_QUEST_LIMIT,
       ),
@@ -523,6 +528,50 @@ function isoFromMillis(value: unknown): string | undefined {
   const millis = num(value);
   if (millis === undefined || millis <= 0) return undefined;
   return new Date(millis).toISOString();
+}
+
+export interface QuestInfo {
+  readonly description?: string;
+  readonly area?: string;
+  readonly category?: string;
+  readonly cadence?: QuestLogEntry["cadence"];
+  readonly minLevel?: number;
+  readonly experience?: number;
+  readonly moneyCopper?: number;
+  readonly itemRewards?: readonly string[];
+}
+
+function questRefs(values: readonly unknown[]): QuestRef[] {
+  const seen = new Set<number>();
+  return values.flatMap((value) => {
+    const record = rec(value);
+    const id = int(record.id);
+    const label = str(record.name);
+    if (id === undefined || id <= 0 || label === undefined || seen.has(id))
+      return [];
+    seen.add(id);
+    return [{ id, name: label }];
+  });
+}
+
+function withQuestInfo(
+  quest: QuestRef,
+  info: QuestInfo | undefined,
+): QuestLogEntry {
+  if (info === undefined) return quest;
+  return {
+    ...quest,
+    ...optional("description", info.description),
+    ...optional("area", info.area),
+    ...optional("category", info.category),
+    ...optional("cadence", info.cadence),
+    ...optional("minLevel", info.minLevel),
+    ...optional("experience", info.experience),
+    ...optional("moneyCopper", info.moneyCopper),
+    ...(info.itemRewards === undefined || info.itemRewards.length === 0
+      ? {}
+      : { itemRewards: info.itemRewards }),
+  };
 }
 
 function names(values: readonly unknown[]): string[] {

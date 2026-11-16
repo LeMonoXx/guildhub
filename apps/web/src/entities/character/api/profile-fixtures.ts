@@ -200,9 +200,19 @@ export const fixtureCharacterProfile = (
     },
     hunterPets: [],
     quests: {
-      inProgress: ["A Quiet Errand"],
+      inProgress: [
+        {
+          id: 12,
+          name: "A Quiet Errand",
+          description: "Deliver the note and come back.",
+          area: "Orgrimmar",
+          minLevel: 1,
+          experience: 250,
+          moneyCopper: 50,
+        },
+      ],
       completedCount: 42,
-      recentCompleted: [],
+      recentCompleted: [{ id: 3, name: "A Finished Errand" }],
     },
     avatarUrl: `/api/characters/${character.slug}/avatar`,
     fetchedAt,

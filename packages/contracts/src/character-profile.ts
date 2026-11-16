@@ -209,6 +209,27 @@ export const achievementEventSchema = achievementRefSchema.extend({
   at: z.iso.datetime(),
 });
 
+/**
+ * A character's quest lists are id and name only. Battle.net does not say when
+ * a quest was accepted, completed, or abandoned, and an abandoned quest leaves
+ * both lists.
+ */
+export const questRefSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().min(1),
+});
+
+export const questLogEntrySchema = questRefSchema.extend({
+  description: z.string().min(1).optional(),
+  area: z.string().min(1).optional(),
+  category: z.string().min(1).optional(),
+  cadence: z.enum(["daily", "weekly", "repeatable"]).optional(),
+  minLevel: z.number().int().nonnegative().optional(),
+  experience: z.number().int().nonnegative().optional(),
+  moneyCopper: z.number().int().nonnegative().optional(),
+  itemRewards: z.array(z.string().min(1)).optional(),
+});
+
 export const statisticGroupSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().min(1),
@@ -292,9 +313,9 @@ export const characterProfileSchema = z.object({
     }),
   ),
   quests: z.object({
-    inProgress: z.array(z.string().min(1)),
+    inProgress: z.array(questLogEntrySchema),
     completedCount: z.number().int().nonnegative(),
-    recentCompleted: z.array(z.string().min(1)),
+    recentCompleted: z.array(questRefSchema),
   }),
   avatarUrl: z.string().min(1).optional(),
 });
@@ -318,6 +339,8 @@ export type Reputation = z.infer<typeof reputationSchema>;
 export type AchievementEvent = z.infer<typeof achievementEventSchema>;
 export type AchievementRef = z.infer<typeof achievementRefSchema>;
 export type AchievementDetails = z.infer<typeof achievementDetailsSchema>;
+export type QuestRef = z.infer<typeof questRefSchema>;
+export type QuestLogEntry = z.infer<typeof questLogEntrySchema>;
 export type StatisticGroup = z.infer<typeof statisticGroupSchema>;
 export type CharacterProfile = z.infer<typeof characterProfileSchema>;
 export type CharacterProfileResponse = z.infer<

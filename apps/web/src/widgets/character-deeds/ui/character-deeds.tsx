@@ -1,10 +1,17 @@
 import type {
   CharacterProfileResponse,
+  QuestLogEntry,
+  QuestRef,
   StatisticGroup,
 } from "@guildhub/contracts";
-import { AchievementHover, AchievementIcon } from "../../../entities/character";
+import {
+  AchievementHover,
+  AchievementIcon,
+  Money,
+} from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import { formatDate, formatNumber } from "../../../shared/lib";
+import { formatDate, formatNumber, wowheadUrl } from "../../../shared/lib";
+import { useState } from "react";
 import { CountUp, Reveal } from "../../../shared/ui";
 
 interface CharacterDeedsProps {
@@ -211,19 +218,24 @@ function Journey({ profile }: CharacterDeedsProps) {
         </div>
       </dl>
       {quests.inProgress.length > 0 ? (
-        <details className="deeds-quests" open>
-          <summary>{t("deeds.questLog")}</summary>
-          <ol className="quest-log">
-            {quests.inProgress.map((quest) => (
-              <li key={quest}>
-                <span className="quest-mark" aria-hidden="true">
-                  !
-                </span>
-                {quest}
+        <div className="quest-log">
+          <h4>{t("deeds.questLog")}</h4>
+          {quests.inProgress.map((quest, index) => (
+            <QuestCard key={quest.id} quest={quest} open={index === 0} />
+          ))}
+        </div>
+      ) : null}
+      {quests.recentCompleted.length > 0 ? (
+        <div className="quest-completed">
+          <h4>{t("deeds.questsFinished")}</h4>
+          <ul>
+            {quests.recentCompleted.map((quest) => (
+              <li key={quest.id}>
+                <QuestLink quest={quest}>{quest.name}</QuestLink>
               </li>
             ))}
-          </ol>
-        </details>
+          </ul>
+        </div>
       ) : null}
       {titles.length > 0 ? (
         <ul className="deeds-titles">
@@ -233,6 +245,83 @@ function Journey({ profile }: CharacterDeedsProps) {
         </ul>
       ) : null}
     </Reveal>
+  );
+}
+
+function QuestCard({
+  quest,
+  open,
+}: {
+  readonly quest: QuestLogEntry;
+  readonly open: boolean;
+}) {
+  const { t, locale } = useLocale();
+  const [expanded, setExpanded] = useState(open);
+  const cadence =
+    quest.cadence === undefined
+      ? undefined
+      : t(`deeds.questCadence.${quest.cadence}`);
+  return (
+    <details
+      className="quest-card"
+      open={expanded}
+      onToggle={(event) => {
+        setExpanded(event.currentTarget.open);
+      }}
+    >
+      <summary>
+        <span className="quest-mark" aria-hidden="true">
+          !
+        </span>
+        <span>
+          <strong>{quest.name}</strong>
+          {quest.area === undefined ? null : <small>{quest.area}</small>}
+        </span>
+      </summary>
+      {quest.description === undefined ? null : <p>{quest.description}</p>}
+      <ul className="quest-facts">
+        {quest.minLevel === undefined ? null : (
+          <li>{t("deeds.questLevel", { level: quest.minLevel })}</li>
+        )}
+        {cadence === undefined ? null : <li>{cadence}</li>}
+        {quest.experience === undefined ? null : (
+          <li>
+            {t("deeds.questExperience", {
+              value: formatNumber(quest.experience, locale),
+            })}
+          </li>
+        )}
+        {quest.moneyCopper === undefined ? null : (
+          <li>
+            <Money copper={quest.moneyCopper} />
+          </li>
+        )}
+        {quest.itemRewards?.map((item, index) => (
+          <li key={`${item}-${String(index)}`}>{item}</li>
+        ))}
+      </ul>
+      <QuestLink quest={quest}>{t("deeds.questWowhead")}</QuestLink>
+    </details>
+  );
+}
+
+function QuestLink({
+  quest,
+  children,
+}: {
+  readonly quest: QuestRef;
+  readonly children: string;
+}) {
+  const { locale } = useLocale();
+  return (
+    <a
+      className="quest-link"
+      href={wowheadUrl("quest", quest.id, locale)}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {children}
+    </a>
   );
 }
 

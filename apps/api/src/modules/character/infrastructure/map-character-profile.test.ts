@@ -293,4 +293,45 @@ describe("mapCharacterProfile", () => {
     expect(profile.quests.completedCount).toBe(2);
     expect(profile.pvp).toEqual({ honorableKills: 3, rank: 0 });
   });
+
+  it("keeps quest ids and folds in the static quest text", () => {
+    const profile = mapCharacterProfile({
+      fallbackLevel: 1,
+      iconUrl: () => "",
+      itemIcons: new Map(),
+      questInfo: new Map([
+        [7, { description: "Speak with him.", area: "Orgrimmar" }],
+      ]),
+      raw: {
+        quests: {
+          in_progress: [
+            { id: 7, name: "A Quiet Errand" },
+            { name: "Nameless" },
+          ],
+        },
+        completedQuests: {
+          quests: [
+            { id: 3, name: "First" },
+            { id: 3, name: "First again" },
+            { id: 4, name: "Second" },
+          ],
+        },
+      },
+    });
+    expect(profile.quests).toEqual({
+      inProgress: [
+        {
+          id: 7,
+          name: "A Quiet Errand",
+          description: "Speak with him.",
+          area: "Orgrimmar",
+        },
+      ],
+      completedCount: 3,
+      recentCompleted: [
+        { id: 3, name: "First" },
+        { id: 4, name: "Second" },
+      ],
+    });
+  });
 });

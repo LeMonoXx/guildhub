@@ -19,8 +19,8 @@ export interface HistoryJobs {
 }
 
 /**
- * The cron keeps the daily rhythm; the startup send records a day the worker
- * was down for. Recording a day again replaces it.
+ * The cron refreshes today's record. A startup send covers a worker that was
+ * down. Recording a day again replaces it. The chronicle compares days.
  */
 export async function registerHistoryJobs(
   boss: PgBoss,

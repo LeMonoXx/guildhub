@@ -29,6 +29,10 @@ import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
 import { startJobQueue } from "./platform/jobs/queue.js";
 import { systemClock } from "./platform/kernel/clock.js";
+import {
+  onShutdownSignal,
+  runShutdownSteps,
+} from "./platform/lifecycle/shutdown.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 
 const env = readEnv(process.env);
@@ -141,36 +145,27 @@ await registerRecipeJobs(boss, {
 logger.info({ module: "lifecycle" }, "model worker listening");
 
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
-  if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ module: "lifecycle", signal }, "worker shutdown started");
   bakerProcess.stop();
-  try {
-    await boss.stop({ graceful: true, timeout: 10_000 });
-  } catch (error) {
-    logger.error({ module: "lifecycle", err: error }, "job queue stop failed");
-  }
-  try {
-    await database.close();
-  } catch (error) {
-    logger.error({ module: "lifecycle", err: error }, "database close failed");
-  }
-  try {
-    await telemetry.shutdown();
-  } catch (error) {
-    logger.error(
-      { module: "lifecycle", err: error },
-      "telemetry shutdown failed",
-    );
-  }
+  await runShutdownSteps(logger, [
+    {
+      name: "job queue stop",
+      run: () => boss.stop({ graceful: true, timeout: 10_000 }),
+      required: false,
+    },
+    { name: "database close", run: () => database.close(), required: false },
+    {
+      name: "telemetry shutdown",
+      run: () => telemetry.shutdown(),
+      required: false,
+    },
+  ]);
   logger.flush();
   process.exit(0);
 }
 
-process.once("SIGTERM", (signal) => {
-  void shutdown(signal);
-});
-process.once("SIGINT", (signal) => {
+onShutdownSignal((signal) => {
   void shutdown(signal);
 });
 

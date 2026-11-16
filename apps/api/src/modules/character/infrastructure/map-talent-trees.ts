@@ -10,7 +10,7 @@ import { activeSpecializations } from "./map-character-skills.js";
 import type {
   TalentNodeLayout,
   TalentTreeLayout,
-} from "./battle-net-talent-tree-catalog.js";
+} from "./talent-tree-layout.js";
 
 interface Learned {
   readonly ranks: ReadonlyMap<number, number>;

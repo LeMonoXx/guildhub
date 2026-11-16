@@ -1,42 +1,30 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import type { ContentLocale } from "@guildhub/contracts";
-import { appError } from "../../../platform/kernel/app-error.js";
-import { err, ok } from "../../../platform/kernel/result.js";
+import { ok } from "../../../platform/kernel/result.js";
 import type { CharacterProfileSource } from "../application/ports.js";
-import {
-  iconIdOf,
-  int,
-  list,
-  positiveInt,
-  rec,
-  str,
-} from "../../../platform/blizzard/document.js";
-import type { BattleNetResource } from "../../../platform/blizzard/request.js";
-import { mapLimited } from "../../../platform/kernel/map-limited.js";
-import {
-  forCharacter,
-  sendCharacterRequest,
-  sendCharacterRequestPatiently,
-} from "./battle-net-request.js";
-import {
-  mapCharacterProfile,
-  type RawCharacterProfile,
-} from "./map-character-profile.js";
 import { BattleNetAchievementCatalog } from "./battle-net-achievement-catalog.js";
-import { BattleNetTalentTreeCatalog } from "./battle-net-talent-tree-catalog.js";
-import { mapTalentTrees } from "./map-talent-trees.js";
+import { makeItemIcons } from "./battle-net-item-icons.js";
+import { fetchProfileDocuments } from "./battle-net-profile-documents.js";
 import {
   makeBattleNetQuestCatalog,
   questIdsInProgress,
 } from "./battle-net-quest-catalog.js";
+import { BattleNetTalentTreeCatalog } from "./battle-net-talent-tree-catalog.js";
+import { mapCharacterProfile } from "./map-character-profile.js";
+import { mapTalentTrees } from "./map-talent-trees.js";
 import {
-  characterProfileEndpoints,
-  itemMediaEndpoint,
-} from "./wow-forever-character.js";
+  achievementIds,
+  classIdOf,
+  hasAvatar,
+  mediaIds,
+} from "./profile-document-ids.js";
 
-const REQUEST_CONCURRENCY = 6;
-const PROFILE_ATTEMPTS = 3;
+interface LocaleCatalogs {
+  readonly achievements: BattleNetAchievementCatalog;
+  readonly talents: BattleNetTalentTreeCatalog;
+}
 
+/** Reads a character's profile documents and enriches them from static game data. */
 export function makeBattleNetCharacterProfileSource(
   client: BlizzardApiClient,
   publicPaths: {
@@ -44,17 +32,10 @@ export function makeBattleNetCharacterProfileSource(
     avatar: (slug: string) => string;
   },
 ): CharacterProfileSource {
-  // Item media is static game data, so icon ids stay valid for the process.
-  const iconIds = new Map<number, number | undefined>();
+  const itemIcons = makeItemIcons(client);
   const quests = makeBattleNetQuestCatalog(client);
-  const catalogs = new Map<
-    ContentLocale,
-    {
-      achievements: BattleNetAchievementCatalog;
-      talents: BattleNetTalentTreeCatalog;
-    }
-  >();
-  const catalogsFor = (locale: ContentLocale) => {
+  const catalogs = new Map<ContentLocale, LocaleCatalogs>();
+  const catalogsFor = (locale: ContentLocale): LocaleCatalogs => {
     const known = catalogs.get(locale);
     if (known) return known;
     const created = {
@@ -66,136 +47,37 @@ export function makeBattleNetCharacterProfileSource(
   };
   return {
     fetchProfile: async (character, locale) => {
-      const { achievements: achievementCatalog, talents: talentCatalog } =
-        catalogsFor(locale);
-      const endpoints = characterProfileEndpoints(
-        character.name,
-        character.surname,
-      );
-      const entries = Object.entries(endpoints) as [
-        keyof typeof endpoints,
-        BattleNetResource,
-      ][];
-      const results = await mapLimited(
-        entries,
-        REQUEST_CONCURRENCY,
-        async ([key, resource]) =>
-          [
-            key,
-            forCharacter(
-              await sendCharacterRequestPatiently(client, resource, {
-                locale,
-                attempts: PROFILE_ATTEMPTS,
-              }),
-              character.characterId,
-            ),
-          ] as const,
-      );
-      const byKey = new Map(results);
-      const summary = byKey.get("summary");
-      if (summary === undefined) return err(appError("character.not_found"));
-      if (!summary.ok) return summary;
-      // A document that did not answer would read as "nothing there" and
-      // overwrite the last good profile; failing keeps that one instead.
-      for (const result of byKey.values()) {
-        if (!result.ok && result.error.code !== "character.not_found")
-          return result;
-      }
-      const raw: Record<string, unknown> = {};
-      for (const [key, result] of byKey) {
-        if (result.ok) raw[key] = result.value;
-      }
-      const [, achievementInfo, talentLayouts] = await Promise.all([
-        loadIcons(client, iconIds, mediaIds(raw.equipment)),
-        achievementCatalog.lookup(achievementIds(raw.achievements)),
-        talentCatalog.forClass(classIdOf(raw.summary)),
-      ]);
+      const documents = await fetchProfileDocuments(client, character, locale);
+      if (!documents.ok) return documents;
+      const raw = documents.value;
+      const { achievements, talents } = catalogsFor(locale);
+      const [icons, achievementInfo, talentLayouts, questInfo] =
+        await Promise.all([
+          itemIcons(mediaIds(raw.equipment)),
+          achievements.lookup(achievementIds(raw.achievements)),
+          talents.forClass(classIdOf(raw.summary)),
+          quests.lookup(questIdsInProgress(raw.quests), locale),
+        ]);
       const profile = mapCharacterProfile({
-        raw: raw satisfies RawCharacterProfile,
+        raw,
         fallbackLevel: 1,
         iconUrl: publicPaths.icon,
-        itemIcons: knownIcons(iconIds),
+        itemIcons: icons,
         achievementInfo,
-        questInfo: await quests.lookup(questIdsInProgress(raw.quests), locale),
+        questInfo,
         avatarUrl: hasAvatar(raw.media)
           ? publicPaths.avatar(character.slug)
           : undefined,
       });
-      return ok(
-        talentLayouts.length === 0
-          ? profile
-          : {
-              ...profile,
-              talentTrees: mapTalentTrees(
-                talentLayouts,
-                raw.specializations,
-                publicPaths.icon,
-              ),
-            },
-      );
+      if (talentLayouts.length === 0) return ok(profile);
+      return ok({
+        ...profile,
+        talentTrees: mapTalentTrees(
+          talentLayouts,
+          raw.specializations,
+          publicPaths.icon,
+        ),
+      });
     },
   };
-}
-
-async function loadIcons(
-  client: BlizzardApiClient,
-  cache: Map<number, number | undefined>,
-  ids: readonly number[],
-): Promise<void> {
-  const missing = ids.filter((id) => !cache.has(id));
-  await mapLimited(missing, REQUEST_CONCURRENCY, async (id) => {
-    const media = await sendCharacterRequest(client, itemMediaEndpoint(id));
-    if (!media.ok && media.error.code !== "character.not_found") return;
-    cache.set(id, media.ok ? iconIdOf(media.value) : undefined);
-  });
-}
-
-function knownIcons(
-  cache: ReadonlyMap<number, number | undefined>,
-): Map<number, number> {
-  const known = new Map<number, number>();
-  for (const [mediaId, iconId] of cache) {
-    if (iconId !== undefined) known.set(mediaId, iconId);
-  }
-  return known;
-}
-
-/** Ids of recent and listed achievements, the ones the site shows. */
-function achievementIds(achievements: unknown): number[] {
-  const record = rec(achievements);
-  return uniqueIds(
-    [...list(record.recent_events), ...list(record.achievements)].map(
-      (entry) => rec(rec(entry).achievement).id,
-    ),
-  );
-}
-
-function classIdOf(summary: unknown): number {
-  return int(rec(rec(summary).character_class).id) ?? 0;
-}
-
-function mediaIds(equipment: unknown): number[] {
-  return uniqueIds(
-    list(rec(equipment).equipped_items).map((item) => {
-      const record = rec(item);
-      return rec(record.media).id ?? rec(record.item).id;
-    }),
-  );
-}
-
-function uniqueIds(values: readonly unknown[]): number[] {
-  return [
-    ...new Set(
-      values.flatMap((value) => {
-        const id = positiveInt(value);
-        return id === undefined ? [] : [id];
-      }),
-    ),
-  ];
-}
-
-function hasAvatar(media: unknown): boolean {
-  return list(rec(media).assets)
-    .map(rec)
-    .some((asset) => asset.key === "avatar" && str(asset.value) !== undefined);
 }

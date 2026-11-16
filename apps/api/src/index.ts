@@ -42,6 +42,10 @@ import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
 import { startJobQueue } from "./platform/jobs/queue.js";
 import { systemClock } from "./platform/kernel/clock.js";
+import {
+  onShutdownSignal,
+  runShutdownSteps,
+} from "./platform/lifecycle/shutdown.js";
 import { startTelemetry } from "./platform/observability/telemetry.js";
 
 const env = readEnv(process.env);
@@ -181,56 +185,40 @@ const server = serve(
   },
 );
 
-let shuttingDown = false;
-
-function shutdown(signal: NodeJS.Signals): void {
-  if (shuttingDown) return;
-  shuttingDown = true;
+onShutdownSignal((signal) => {
   logger.info({ module: "lifecycle", signal }, "shutdown started");
-
-  server.close((error) => {
-    void finishShutdown(error);
-  });
-  if ("closeIdleConnections" in server) server.closeIdleConnections();
   setTimeout(() => {
     logger.error({ module: "lifecycle" }, "graceful shutdown timed out");
     process.exit(1);
   }, 10_000).unref();
-}
-
-async function finishShutdown(error?: Error): Promise<void> {
-  if (error !== undefined) {
-    logger.error({ module: "lifecycle", err: error }, "server close failed");
-  }
-  try {
-    await jobBoss?.stop({ graceful: true, timeout: 5000 });
-  } catch (queueError) {
-    logger.error(
-      { module: "lifecycle", err: queueError },
-      "job queue stop failed",
-    );
-    error ??= new Error("job queue stop failed");
-  }
-  try {
-    await database.close();
-  } catch (closeError) {
-    logger.error(
-      { module: "lifecycle", err: closeError },
-      "database close failed",
-    );
-    error ??= new Error("database close failed");
-  }
-  try {
-    await telemetry.shutdown();
-  } catch (telemetryError) {
-    logger.error(
-      { module: "lifecycle", err: telemetryError },
-      "telemetry shutdown failed",
-    );
-  }
-  logger.flush();
-  process.exit(error === undefined ? 0 : 1);
-}
-
-process.once("SIGTERM", shutdown);
-process.once("SIGINT", shutdown);
+  void runShutdownSteps(logger, [
+    {
+      name: "server close",
+      run: () =>
+        new Promise<void>((resolve, reject) => {
+          server.close((error) => {
+            if (error) reject(error);
+            else resolve();
+          });
+          if ("closeIdleConnections" in server) server.closeIdleConnections();
+        }),
+      required: true,
+    },
+    {
+      name: "job queue stop",
+      run: async () => {
+        await jobBoss?.stop({ graceful: true, timeout: 5000 });
+      },
+      required: true,
+    },
+    { name: "database close", run: () => database.close(), required: true },
+    {
+      name: "telemetry shutdown",
+      run: () => telemetry.shutdown(),
+      required: false,
+    },
+  ]).then((clean) => {
+    logger.flush();
+    process.exit(clean ? 0 : 1);
+  });
+});

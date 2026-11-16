@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  treeEntriesOf,
-  treeLayoutOf,
-} from "./battle-net-talent-tree-catalog.js";
+import { treeEntriesOf, treeLayoutOf } from "./talent-tree-layout.js";
 import { mapTalentTrees, treeColumns } from "./map-talent-trees.js";
 
 const rank = (talentId: number, spellId: number, description: string) => ({

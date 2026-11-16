@@ -15,9 +15,17 @@ export interface RecipeCatalogStore {
   save(catalog: RecipeCatalog, locale: ContentLocale): Promise<void>;
 }
 
+export interface FetchedCatalog {
+  readonly recipes: Recipe[];
+  /** How many recipes the game lists; some may not have answered. */
+  readonly listed: number;
+}
+
 /** Every craftable recipe of the game, built from static game data. */
 export interface RecipeCatalogSource {
-  fetchCatalog(locale: ContentLocale): Promise<Result<Recipe[], AppError>>;
+  fetchCatalog(
+    locale: ContentLocale,
+  ): Promise<Result<FetchedCatalog, AppError>>;
 }
 
 /** The guild's members and what they can craft. */

@@ -1,5 +1,5 @@
 import type { GuildHistoryResponse } from "@guildhub/contracts";
-import { HistoryFeed } from "../../../entities/character";
+import { HistoryChanges, HistoryChecked } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatDate, formatNumber } from "../../../shared/lib";
 import { dailyTrend, TrendChart } from "../../../shared/ui";
@@ -31,6 +31,7 @@ export function GuildHistory({ history }: GuildHistoryProps) {
           changes: history.events.length,
         })}
       </p>
+      <HistoryChecked checkedAt={history.checkedAt} />
       <div className="history-charts">
         <TrendChart
           title={t("history.chart.members")}
@@ -58,11 +59,10 @@ export function GuildHistory({ history }: GuildHistoryProps) {
           color="var(--quality-rare)"
         />
       </div>
-      {history.events.length > 0 ? (
-        <HistoryFeed events={history.events} />
-      ) : (
-        <p className="history-empty">{t("history.firstDay")}</p>
-      )}
+      <HistoryChanges
+        events={history.events}
+        recordedDays={history.series.length}
+      />
     </div>
   );
 }

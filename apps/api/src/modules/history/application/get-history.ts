@@ -44,7 +44,14 @@ async function window(
     deps.store.since(guild, daysBefore(today, HISTORY_WINDOW_DAYS), locale),
     deps.store.firstDay(guild),
   ]);
-  return { days, since };
+  const checkedAt = days.at(-1)?.recordedAt.toISOString();
+  return {
+    days,
+    recorded: {
+      ...(since === undefined ? {} : { since }),
+      ...(checkedAt === undefined ? {} : { checkedAt }),
+    },
+  };
 }
 
 export const makeGetGuildHistory =
@@ -53,9 +60,9 @@ export const makeGetGuildHistory =
     guild: GuildRef,
     locale: ContentLocale,
   ): Promise<GuildHistoryResponse> => {
-    const { days, since } = await window(deps, guild, locale);
+    const { days, recorded } = await window(deps, guild, locale);
     return {
-      ...(since === undefined ? {} : { since }),
+      ...recorded,
       series: guildSeries(days),
       events: eventsWithAvatars(days).slice(0, GUILD_EVENT_LIMIT),
     };
@@ -68,12 +75,12 @@ export const makeGetCharacterHistory =
     slug: string;
     locale: ContentLocale;
   }): Promise<CharacterHistoryResponse> => {
-    const { days, since } = await window(deps, query.guild, query.locale);
+    const { days, recorded } = await window(deps, query.guild, query.locale);
     const member = days
       .flatMap((day) => day.members)
       .findLast((candidate) => candidate.slug === query.slug);
     const history = {
-      ...(since === undefined ? {} : { since }),
+      ...recorded,
       series: [],
       events: [],
     };

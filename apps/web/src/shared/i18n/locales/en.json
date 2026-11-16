@@ -75,6 +75,8 @@
   "character.lead.history": "Levels, gear and achievements, recorded every hour.",
   "history.notStarted": "Recording starts with the next run, at the top of every hour.",
   "history.firstDay": "Today is recorded. Changes appear here from the next day on.",
+  "history.quiet": "Nothing has changed since yesterday. New levels, achievements, items and professions appear here with the next hourly check, as soon as Battle.net reports them.",
+  "history.checked": "Last checked {when} · checked at the top of every hour",
   "history.since": "Recorded since {date} · {days} days · {changes} changes",
   "history.chart.members": "Members",
   "history.chart.level": "Avg. level",

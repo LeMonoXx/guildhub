@@ -1,5 +1,9 @@
 import type { CharacterHistoryResponse } from "@guildhub/contracts";
-import { HistoryFeed, wowClassColorVar } from "../../../entities/character";
+import {
+  HistoryChanges,
+  HistoryChecked,
+  wowClassColorVar,
+} from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
 import { dailyTrend, TrendChart } from "../../../shared/ui";
@@ -21,6 +25,7 @@ export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
   const itemLevels = series((point) => point.itemLevel);
   return (
     <div className="history">
+      <HistoryChecked checkedAt={history.checkedAt} />
       <div className="history-charts">
         <TrendChart
           title={t("history.chart.characterLevel")}
@@ -43,11 +48,11 @@ export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
           color="var(--quality-rare)"
         />
       </div>
-      {history.events.length > 0 ? (
-        <HistoryFeed events={history.events} pageSize={40} />
-      ) : (
-        <p className="history-empty">{t("history.firstDay")}</p>
-      )}
+      <HistoryChanges
+        events={history.events}
+        recordedDays={history.series.length}
+        pageSize={40}
+      />
     </div>
   );
 }

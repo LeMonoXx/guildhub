@@ -75,6 +75,8 @@
   "character.lead.history": "Stufen, Ausrüstung und Erfolge, so wie sie stündlich aufgezeichnet werden.",
   "history.notStarted": "Die Aufzeichnung beginnt mit dem nächsten Lauf, zu jeder vollen Stunde.",
   "history.firstDay": "Der heutige Stand ist aufgezeichnet. Ab dem nächsten Tag erscheinen hier die Veränderungen.",
+  "history.quiet": "Seit gestern hat sich nichts verändert. Neue Stufen, Erfolge, Gegenstände und Berufe erscheinen hier mit der nächsten stündlichen Prüfung, sobald Battle.net sie meldet.",
+  "history.checked": "Zuletzt geprüft {when} · geprüft wird zu jeder vollen Stunde",
   "history.since": "Aufgezeichnet seit {date} · {days} Tage · {changes} Veränderungen",
   "history.chart.members": "Mitglieder",
   "history.chart.level": "Ø Stufe",

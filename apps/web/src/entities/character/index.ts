@@ -38,6 +38,8 @@ export { AchievementIcon } from "./ui/achievement-icon";
 export { CharacterLink } from "./ui/character-link";
 export { ClassColoredName } from "./ui/class-colored-name";
 export { ClassMark } from "./ui/class-mark";
+export { HistoryChanges } from "./ui/history-changes";
+export { HistoryChecked } from "./ui/history-checked";
 export { HistoryFeed } from "./ui/history-feed";
 export { ItemIcon } from "./ui/item-icon";
 export { ItemTooltip } from "./ui/item-tooltip";

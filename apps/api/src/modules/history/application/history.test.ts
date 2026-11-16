@@ -162,6 +162,25 @@ describe("history", () => {
     expect(character.events).toHaveLength(1);
   });
 
+  it("shows a change from the hourly run that saw it, not the next day", async () => {
+    const now = { value: new Date("2026-11-13T22:00:00.000Z") };
+    const level = { value: 24 };
+    const { record, guildHistory } = setup(now, level);
+    await record(guild);
+    now.value = new Date("2026-11-14T00:00:00.000Z");
+    await record(guild);
+    expect((await guildHistory(guild, "en")).events).toEqual([]);
+
+    now.value = new Date("2026-11-14T09:00:00.000Z");
+    level.value = 25;
+    await record(guild);
+    const history = await guildHistory(guild, "en");
+    expect(history.checkedAt).toBe("2026-11-14T09:00:00.000Z");
+    expect(history.events).toEqual([
+      expect.objectContaining({ kind: "level", to: 25, day: "2026-11-14" }),
+    ]);
+  });
+
   it("serves each language's own recording", async () => {
     const now = { value: new Date("2026-11-13T04:00:00.000Z") };
     const { record, characterHistory } = setup(now, { value: 24 });

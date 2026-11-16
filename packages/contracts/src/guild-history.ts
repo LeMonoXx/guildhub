@@ -78,6 +78,8 @@ export const guildHistoryPointSchema = z.object({
 export const guildHistoryResponseSchema = z.object({
   /** The first day the guild was recorded; history starts there. */
   since: historyDaySchema.optional(),
+  /** When the latest hourly recording ran. */
+  checkedAt: z.iso.datetime().optional(),
   series: z.array(guildHistoryPointSchema),
   events: z.array(historyEventSchema),
 });
@@ -91,6 +93,7 @@ export const characterHistoryPointSchema = z.object({
 
 export const characterHistoryResponseSchema = z.object({
   since: historyDaySchema.optional(),
+  checkedAt: z.iso.datetime().optional(),
   series: z.array(characterHistoryPointSchema),
   events: z.array(historyEventSchema),
 });

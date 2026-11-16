@@ -46,7 +46,6 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install --yes --no-install-recommends aspnetcore-runtime-10.0 libcap2-bin \
     && setcap -r /usr/bin/ping \
-    && apt-get purge --yes libcap2-bin \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=api --chown=node:node /out ./
 COPY --from=baker --chown=node:node /baker /baker

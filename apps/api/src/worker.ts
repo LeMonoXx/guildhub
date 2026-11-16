@@ -47,6 +47,8 @@ const logger = createLogger({
 const assetRoot = requiredEnv(env.ASSET_ROOT, "ASSET_ROOT");
 const bakerCli = requiredEnv(env.BAKER_CLI, "BAKER_CLI");
 const bakerCache = env.BAKER_CACHE ?? path.join(assetRoot, ".cache");
+/** One baker at a time: a single bake can need most of a small host's memory. */
+let bakerTurn: Promise<void> = Promise.resolve();
 
 await ensureFixedLook();
 
@@ -243,6 +245,12 @@ function requiredEnv(value: string | undefined, name: string): string {
 }
 
 function runBaker(args: readonly string[]): Promise<void> {
+  const run = bakerTurn.then(() => execBaker(args));
+  bakerTurn = run.catch(() => undefined);
+  return run;
+}
+
+function execBaker(args: readonly string[]): Promise<void> {
   const command = bakerCli.endsWith(".dll") ? "dotnet" : bakerCli;
   const commandArgs = bakerCli.endsWith(".dll")
     ? [bakerCli, ...args]

@@ -44,11 +44,13 @@ What runs on the server, all in one Compose project named `guildhub-<instance>`:
 | ---------- | ------------------------------------------------------------- | ------------ |
 | `web`      | Caddy: the site, `/assets`, proxies `/api` and `/auth` to api | 96 MB        |
 | `api`      | Node API                                                      | 256 MB       |
-| `worker`   | Jobs: guild history, recipe catalog, model baker              | 768 MB       |
+| `worker`   | Jobs: guild history, recipe catalog, model baker              | 1536 MB      |
 | `postgres` | Database, volume `postgres`                                   | 256 MB       |
 | `migrate`  | One-shot schema migration, only during a deploy               | 256 MB       |
 
 Only `web` is reachable, through the host's Traefik. No GuildHub container publishes a port. Every container has `oom_score_adj: 500`, so if the host runs out of memory the kernel stops GuildHub before the host's other services.
+
+The worker runs one bake at a time. The first bake of a Blizzard build reads about five million CDN index entries and peaks near 1 GB for a few minutes; later bakes reuse the `baker-cache` volume and need far less. `DOTNET_GCHeapHardLimit` in the compose file lets .NET use swap for that peak, because .NET otherwise sizes its heap from physical RAM only. On first start, when `looks/fixed/look.json` is missing, the worker bakes the fixed look before it takes jobs; characters show it until their own look is baked.
 
 ## 2. What the server needs
 
@@ -56,7 +58,7 @@ Only `web` is reachable, through the host's Traefik. No GuildHub container publi
 - Traefik on the host with the Docker provider, `exposedByDefault: false`, an HTTPS entrypoint, and an ACME certificate resolver. The defaults in the compose file are entrypoint `websecure` and resolver `letsencrypt`. Read the real names from Traefik's static configuration and set them in `.env` if they differ.
 - A DNS record for `<site-host>` that points at the server.
 - About 4 GB free disk for images, the database, baked models, and the baker cache.
-- At least 1 GB RAM. With exactly 1 GB, add swap (section 3.7).
+- At least 1 GB RAM. With about 1 GB, add 2 GB swap (section 3.7); the first bake of each Blizzard build then takes a few minutes.
 - SSH reachable from GitHub's runners on the port you configure.
 
 If Traefik runs with `network_mode: host`, it reaches the web container on the project's own network and no shared network is needed. If Traefik runs on a bridge network instead, add that network to the `web` service as an external network and the label `traefik.docker.network=<that network>`.
@@ -247,16 +249,19 @@ docker compose start api worker
 
 ## 11. When something fails
 
-| Symptom                                            | Look at                                                                                    |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `Permission denied (publickey)` in the workflow    | `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and the `authorized_keys` line                            |
-| `Host key verification failed`                     | `DEPLOY_KNOWN_HOSTS` is stale or wrong; redo the keyscan and the fingerprint check         |
-| `expected a full 40-character commit SHA`          | A rollback was started with a short SHA                                                    |
-| `another deploy is running`                        | A previous run still holds the lock; wait, or check `ps aux \| grep guildhub-deploy`       |
-| `unauthorized` or `denied` on pull                 | Images are private and the server is not logged in (3.5)                                   |
-| `set ... in .env` from Compose                     | A variable in `.env` is missing                                                            |
-| Migration fails                                    | `docker compose logs postgres`; the running version keeps running                          |
-| Health check fails                                 | The logs the script prints; then `docker compose logs api`                                 |
-| Site shows Traefik's 404                           | `PUBLIC_HOST`, entrypoint, and resolver names; `docker compose ps web` must show `healthy` |
-| Certificate error in the browser for a few seconds | Normal on the first request; Traefik is still fetching it                                  |
-| Containers restart with exit code 137              | Out of memory; `docker stats`, and the swap in 3.7                                         |
+| Symptom                                            | Look at                                                                                                   |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `Permission denied (publickey)` in the workflow    | `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and the `authorized_keys` line                                           |
+| `Host key verification failed`                     | `DEPLOY_KNOWN_HOSTS` is stale or wrong; redo the keyscan and the fingerprint check                        |
+| `expected a full 40-character commit SHA`          | A rollback was started with a short SHA                                                                   |
+| `another deploy is running`                        | A previous run still holds the lock; wait, or check `ps aux \| grep guildhub-deploy`                      |
+| `unauthorized` or `denied` on pull                 | Images are private and the server is not logged in (3.5)                                                  |
+| `set ... in .env` from Compose                     | A variable in `.env` is missing                                                                           |
+| Migration fails                                    | `docker compose logs postgres`; the running version keeps running                                         |
+| Health check fails                                 | The logs the script prints; then `docker compose logs api`                                                |
+| Site shows Traefik's 404                           | `PUBLIC_HOST`, entrypoint, and resolver names; `docker compose ps web` must show `healthy`                |
+| Certificate error in the browser for a few seconds | Normal on the first request; Traefik is still fetching it                                                 |
+| Containers restart with exit code 137              | Out of memory; `docker stats`, and the swap in 3.7                                                        |
+| Worker log: `OutOfMemoryException` in a bake       | `DOTNET_GCHeapHardLimit` and the worker's `mem_limit`; both must exceed about 1 GB                        |
+| Worker log: `Exhausted all CDNs`                   | The baker could not reach or ping Blizzard's CDN; `ping` in the worker image must have no file capability |
+| Characters stay on the fixed look                  | `docker compose logs worker` for `Bake failed`; `looks/<hash>/look.json` appears when done                |

@@ -96,13 +96,16 @@ services:
       <<: *app-environment
       NODE_OPTIONS: --max-old-space-size=160
       BAKER_CACHE: /cache
+      # .NET sizes its heap from physical RAM, not swap. The first bake of a
+      # build indexes about five million CDN entries and needs close to 1 GB.
+      DOTNET_GCHeapHardLimit: "0x50000000"
     volumes:
       - assets:/assets
       - baker-cache:/cache
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 768m
+    mem_limit: 1536m
     restart: unless-stopped
 
   web:

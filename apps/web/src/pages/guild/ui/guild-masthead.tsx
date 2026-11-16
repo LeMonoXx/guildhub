@@ -7,9 +7,11 @@ import { Reveal, Wordmark } from "../../../shared/ui";
 function GuildTitle({
   guild,
   heading,
+  showLine = true,
 }: {
   readonly guild: GuildProfileResponse;
   readonly heading?: boolean;
+  readonly showLine?: boolean;
 }) {
   const { t } = useLocale();
   return (
@@ -18,14 +20,14 @@ function GuildTitle({
         {t("home.eyebrow", { faction: t(`faction.${guild.faction}`) })}
       </p>
       <Wordmark text={guild.name} as={heading ? "h1" : "p"} />
-      <p className="guild-tagline">{t("home.tagline")}</p>
+      {showLine ? <p className="guild-tagline">{t("home.tagline")}</p> : null}
     </>
   );
 }
 
-/** The guild's name as the opening title over the stage. */
+/** The guild's name as the opening title over the stage. The line follows on its own. */
 export function TitleCard({ guild }: { readonly guild: GuildProfileResponse }) {
-  return <GuildTitle guild={guild} />;
+  return <GuildTitle guild={guild} showLine={false} />;
 }
 
 export function Masthead({ guild }: { readonly guild: GuildProfileResponse }) {

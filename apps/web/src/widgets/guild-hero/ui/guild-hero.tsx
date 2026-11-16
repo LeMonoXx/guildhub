@@ -6,6 +6,7 @@ import {
   useRef,
   type CSSProperties,
   type ReactNode,
+  type RefObject,
 } from "react";
 
 import type { FrameDecorator } from "../../../shared/cinematic";
@@ -32,11 +33,19 @@ interface GuildHeroProps {
   ) => ReactNode;
   /** A title card over the stage that clears away once the troop arrives. */
   readonly intro?: ReactNode;
+  /** Spoken once the title has left: it rises out of the fog and melts away. */
+  readonly line?: string;
 }
 
-export function GuildHero({ members, renderLiveStage, intro }: GuildHeroProps) {
+export function GuildHero({
+  members,
+  renderLiveStage,
+  intro,
+  line,
+}: GuildHeroProps) {
   const { t } = useLocale();
   const stageRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLParagraphElement>(null);
   const { capable, live } = useLiveStage(stageRef);
   const lineup = useLineupStage(members);
   const size = useElementSize(stageRef);
@@ -69,10 +78,22 @@ export function GuildHero({ members, renderLiveStage, intro }: GuildHeroProps) {
     >
       <div ref={stageRef} className="guild-hero-stage">
         {live && intro ? (
-          <div className="guild-hero-intro" aria-hidden="true">
+          <div
+            className="guild-hero-intro"
+            aria-hidden="true"
+            onAnimationEnd={(event) => {
+              if (
+                event.animationName !== "intro-rise" ||
+                event.target !== event.currentTarget
+              )
+                return;
+              lineRef.current?.classList.add("is-playing");
+            }}
+          >
             {intro}
           </div>
         ) : null}
+        {live && line ? <FogLine text={line} lineRef={lineRef} /> : null}
         {live ? renderLiveStage(lineup.scene, decorators) : null}
         {live ? <FogVeil className="guild-hero-veil" /> : null}
         {live ? (
@@ -90,6 +111,48 @@ export function GuildHero({ members, renderLiveStage, intro }: GuildHeroProps) {
       </div>
       {capable ? null : <PosterCast places={lineup.places} />}
     </section>
+  );
+}
+
+/** A stable melt: each letter drips a different way, the same way every visit. */
+function drift(index: number): { x: string; y: string; rot: string } {
+  const angle = (index * 137.5 * Math.PI) / 180;
+  const side = index % 2 === 0 ? 1 : -1;
+  return {
+    x: `${String(Math.round(side * (16 + (index % 5) * 12 + Math.cos(angle) * 8)))}px`,
+    y: `${String(Math.round(18 + (index % 4) * 14 + Math.sin(angle) * 8))}px`,
+    rot: `${String(((index % 7) - 3) * 7)}deg`,
+  };
+}
+
+function FogLine({
+  text,
+  lineRef,
+}: {
+  readonly text: string;
+  readonly lineRef: RefObject<HTMLParagraphElement | null>;
+}) {
+  return (
+    <p ref={lineRef} className="fog-line" aria-hidden="true">
+      {[...text].map((char, index) => {
+        const shift = drift(index);
+        return (
+          <span
+            key={`${char}-${String(index)}`}
+            style={
+              {
+                ["--i"]: String(index),
+                ["--dx"]: shift.x,
+                ["--dy"]: shift.y,
+                ["--rot"]: shift.rot,
+              } as CSSProperties
+            }
+          >
+            {char === " " ? "\u00a0" : char}
+          </span>
+        );
+      })}
+    </p>
   );
 }
 

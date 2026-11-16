@@ -153,6 +153,72 @@
   animation: float-up 1.2s var(--ease-out) both 0.6s;
 }
 
+/* The line waits until the title has risen away, then climbs out of the fog and melts. */
+.fog-line {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  max-width: 46rem;
+  margin: auto;
+  padding: 0 var(--page-pad, 1rem) 18%;
+  color: rgb(244 239 230 / 0.92);
+  font-size: clamp(0.92rem, 1.8vw, 1.35rem);
+  font-weight: 650;
+  letter-spacing: 0.22em;
+  line-height: 1.6;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow:
+    0 2px 16px rgb(0 0 0 / 0.9),
+    0 0 24px rgb(var(--fog-rgb) / 0.45);
+  pointer-events: none;
+}
+
+.fog-line span {
+  display: inline-block;
+  opacity: 0;
+  white-space: pre;
+}
+
+.fog-line.is-playing span {
+  animation:
+    fog-emerge 1.45s var(--ease-out) both,
+    fog-melt 2s cubic-bezier(0.45, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--i) * 42ms), calc(3.1s + var(--i) * 36ms);
+}
+
+@keyframes fog-emerge {
+  from {
+    opacity: 0;
+    filter: blur(18px);
+    transform: translateY(34vh) scale(1.16);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@keyframes fog-melt {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.55);
+  }
+}
+
 .guild-hero-intro::before,
 .guild-hero-intro::after {
   width: min(28rem, 60%);
@@ -632,7 +698,8 @@
   }
 
   .guild-hero-intro,
-  .guild-hero-stage:has(.cinematic[data-state="ready"]) .guild-hero-intro {
+  .guild-hero-stage:has(.cinematic[data-state="ready"]) .guild-hero-intro,
+  .fog-line {
     display: none;
   }
 

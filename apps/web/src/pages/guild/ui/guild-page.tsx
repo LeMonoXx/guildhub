@@ -56,6 +56,7 @@ export function GuildPage() {
         <GuildHero
           members={featured.data.members}
           intro={<TitleCard guild={guild} />}
+          line={t("home.tagline")}
           renderLiveStage={(scene, decorators) => (
             <LiveCharacterStage
               scene={scene}

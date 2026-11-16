@@ -20,6 +20,42 @@ export interface AssetStoreOptions {
   textureLoader?: THREE.TextureLoader;
 }
 
+/** Settled requests count whole; a download in flight counts by its bytes. */
+export interface AssetProgress {
+  readonly requested: number;
+  readonly settled: number;
+  readonly fraction: number;
+}
+
+type ProgressListener = (progress: AssetProgress) => void;
+
+async function readBody(
+  response: Response,
+  onFraction: (fraction: number) => void,
+): Promise<ArrayBuffer> {
+  const total = Number(response.headers.get("content-length"));
+  if (!response.body || !Number.isFinite(total) || total <= 0)
+    return response.arrayBuffer();
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.byteLength;
+    // A compressed response announces fewer bytes than it delivers.
+    onFraction(Math.min(received / total, 1));
+  }
+  const body = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body.buffer;
+}
+
 const materialsOf = (material: THREE.Material | THREE.Material[]) =>
   Array.isArray(material) ? material : [material];
 
@@ -45,12 +81,45 @@ export class AssetStore implements Disposable {
   private readonly fetcher: typeof fetch;
   private readonly gltfLoader: GLTFLoader;
   private readonly textureLoader: THREE.TextureLoader;
+  private readonly inFlight = new Map<string, number>();
+  private readonly listeners = new Set<ProgressListener>();
+  private requested = 0;
+  private settled = 0;
   private disposed = false;
 
   constructor(options: AssetStoreOptions = {}) {
     this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.gltfLoader = options.gltfLoader ?? new GLTFLoader();
     this.textureLoader = options.textureLoader ?? new THREE.TextureLoader();
+  }
+
+  progress(): AssetProgress {
+    let partial = 0;
+    for (const fraction of this.inFlight.values()) partial += fraction;
+    return {
+      requested: this.requested,
+      settled: this.settled,
+      fraction:
+        this.requested === 0 ? 0 : (this.settled + partial) / this.requested,
+    };
+  }
+
+  onProgress(listener: ProgressListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private emit(): void {
+    const progress = this.progress();
+    for (const listener of this.listeners) listener(progress);
+  }
+
+  private track(key: string, fraction: number): void {
+    if (!this.inFlight.has(key)) return;
+    this.inFlight.set(key, fraction);
+    this.emit();
   }
 
   loadOnce<T>(url: string, load: () => Promise<T>): Promise<T> {
@@ -60,10 +129,25 @@ export class AssetStore implements Disposable {
       );
     const existing = this.requests.get(url);
     if (existing) return existing as Promise<T>;
-    const pending = load().catch((error: unknown) => {
-      this.requests.delete(url);
-      throw error;
-    });
+    this.requested += 1;
+    this.inFlight.set(url, 0);
+    this.emit();
+    const settle = () => {
+      this.inFlight.delete(url);
+      this.settled += 1;
+      this.emit();
+    };
+    const pending = load().then(
+      (value) => {
+        settle();
+        return value;
+      },
+      (error: unknown) => {
+        this.requests.delete(url);
+        settle();
+        throw error;
+      },
+    );
     this.requests.set(url, pending);
     return pending;
   }
@@ -78,12 +162,15 @@ export class AssetStore implements Disposable {
   }
 
   private async gltf(url: string): Promise<GLTF> {
-    return this.loadOnce(`gltf:${url}`, async () => {
+    const key = `gltf:${url}`;
+    return this.loadOnce(key, async () => {
       const response = await this.fetcher(url);
       if (!response.ok)
         throw new Error(`${url}: HTTP ${String(response.status)}`);
       const gltf = await this.gltfLoader.parseAsync(
-        await response.arrayBuffer(),
+        await readBody(response, (fraction) => {
+          this.track(key, fraction * 0.9);
+        }),
         "",
       );
       gltf.scene.traverse((object) => {
@@ -114,8 +201,12 @@ export class AssetStore implements Disposable {
   }
 
   texture(url: string): Promise<THREE.Texture> {
-    return this.loadOnce(`texture:${url}`, async () => {
-      const texture = await this.textureLoader.loadAsync(url);
+    const key = `texture:${url}`;
+    return this.loadOnce(key, async () => {
+      const texture = await this.textureLoader.loadAsync(url, (event) => {
+        if (event.lengthComputable && event.total > 0)
+          this.track(key, event.loaded / event.total);
+      });
       texture.flipY = false;
       texture.colorSpace = THREE.SRGBColorSpace;
       return this.owner.own(texture);
@@ -127,5 +218,7 @@ export class AssetStore implements Disposable {
     this.disposed = true;
     this.owner.dispose();
     this.requests.clear();
+    this.inFlight.clear();
+    this.listeners.clear();
   }
 }

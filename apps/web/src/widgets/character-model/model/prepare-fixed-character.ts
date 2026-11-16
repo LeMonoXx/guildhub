@@ -2,9 +2,10 @@
 // Copyright (c) 2026 Ryan Williams, MIT License.
 
 import { loadFixedLook } from "../../../manifest";
+import type { AssetStore } from "../lib/asset-store";
 import { prepareCharacter } from "./prepare-character";
 
-export async function prepareFixedCharacter() {
+export async function prepareFixedCharacter(sharedAssets?: AssetStore) {
   const manifest = await loadFixedLook();
-  return prepareCharacter({ manifest, assetBase: "/assets/" });
+  return prepareCharacter({ manifest, assetBase: "/assets/", sharedAssets });
 }

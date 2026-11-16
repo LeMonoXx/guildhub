@@ -36,6 +36,8 @@ export interface MountCinematicStageOptions {
   readonly uiTarget: UiBindingTarget;
   readonly transparent?: boolean;
   readonly report?: (message: string) => void;
+  /** Share of the actors' files loaded, 0 to 1; never decreases. */
+  readonly onProgress?: (fraction: number) => void;
 }
 
 export interface MountedCinematicStage {
@@ -64,19 +66,40 @@ export async function mountCinematicStage(
   });
   const effects: { dispose(): void }[] = [];
   const actors = new Map<string, CharacterHandle>();
+  const declarations = actorDeclarations(options.scene);
+  const actorCount = Math.max(declarations.length, 1);
+  let reported = 0;
+  let actorIndex = 0;
+  let actorStart = sharedAssets.progress();
+  const report = (fraction: number) => {
+    if (fraction <= reported) return;
+    reported = fraction;
+    options.onProgress?.(fraction);
+  };
+  const stopProgress = sharedAssets.onProgress((progress) => {
+    const requested = progress.requested - actorStart.requested;
+    if (requested <= 0) return;
+    const done =
+      progress.fraction * progress.requested -
+      actorStart.fraction * actorStart.requested;
+    report((actorIndex + Math.min(done / requested, 1)) / actorCount);
+  });
   try {
-    const declarations = actorDeclarations(options.scene);
     for (const declaration of declarations) {
+      actorStart = sharedAssets.progress();
       const prepared = await prepareCharacter({
         manifest: options.manifest ?? declaration.manifest,
         assetBase: options.assetBase,
         sharedAssets,
       });
+      actorIndex += 1;
+      report(actorIndex / actorCount);
       actors.set(declaration.id, prepared.character);
       rig.addActor(declaration.id, prepared.character);
       for (const notice of prepared.character.notices)
         options.report?.(`[character] ${notice}`);
     }
+    stopProgress();
     const targets = new BindingTargetRegistry();
     const installers = new Map<string, (track: CinematicTrack) => void>([
       [

@@ -245,6 +245,10 @@
   display: none;
 }
 
+.character-backdrop:has(.cinematic[data-state="ready"]) .character-poster {
+  display: none;
+}
+
 /* Battle.net renders leave the figure in the middle 55% of a 4:3 frame. */
 .character-backdrop .character-poster {
   object-fit: cover;
@@ -252,6 +256,40 @@
   transform: scale(1.9);
   transform-origin: center 22%;
   opacity: 0.85;
+}
+
+/*
+ * Measured renders: the crown sits just below the frame's top edge and the
+ * frame shows the upper part of the figure, like the 3D bust.
+ */
+.character-backdrop-frame {
+  container-type: size;
+}
+
+.character-backdrop .character-poster[data-framed="true"] {
+  --poster-span: 0.8;
+  --poster-headroom: 0.06;
+  --poster-height: min(
+    100cqh / (var(--poster-span) * var(--figure-height)),
+    240cqh
+  );
+  inset: auto;
+  top: calc(
+    -1 * (var(--figure-top) - var(--poster-headroom) * var(--figure-height)) *
+      var(--poster-height)
+  );
+  left: 56cqw;
+  width: auto;
+  max-width: none;
+  height: var(--poster-height);
+  object-fit: fill;
+  transform: translateX(calc(-100% * var(--figure-center)));
+}
+
+.character-backdrop .model-loading,
+.character-backdrop .cinematic-status {
+  place-items: end center;
+  padding: 0 0 clamp(4rem, 16cqh, 10rem) 22%;
 }
 
 @media (min-width: 75rem) {

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { LoadProgress } from "../../../shared/ui";
+import { AssetStore } from "../lib/asset-store";
 import { prepareFixedCharacter } from "../model/prepare-fixed-character";
 import { createCharacterStage } from "./stage";
 
@@ -8,12 +10,17 @@ export function CharacterModelViewer() {
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Loading fixed look…");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const container = host.current;
     if (!container) return;
     let disposed = false;
     const stage = createCharacterStage(container);
+    const assets = new AssetStore();
+    const stopProgress = assets.onProgress(({ fraction }) => {
+      setProgress((shown) => Math.max(shown, fraction));
+    });
     let previousTime: number | undefined;
     let frame = 0;
     const render = (time: number) => {
@@ -27,7 +34,7 @@ export function CharacterModelViewer() {
     };
     frame = requestAnimationFrame(render);
 
-    void prepareFixedCharacter()
+    void prepareFixedCharacter(assets)
       .then(({ character, manifest }) => {
         if (disposed) {
           character.dispose();
@@ -51,7 +58,9 @@ export function CharacterModelViewer() {
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
+      stopProgress();
       stage.dispose();
+      assets.dispose();
     };
   }, []);
 
@@ -68,7 +77,12 @@ export function CharacterModelViewer() {
         aria-label="Dressed fixed-look character. Drag to rotate and scroll to zoom."
         data-state={status}
       >
-        {status !== "ready" && <div className="status">{message}</div>}
+        {status === "loading" && (
+          <div className="status">
+            <LoadProgress label={message} fraction={progress} />
+          </div>
+        )}
+        {status === "error" && <div className="status">{message}</div>}
       </div>
       <p className={status === "error" ? "notice error" : "notice"}>
         {message}

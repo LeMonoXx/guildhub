@@ -5,7 +5,14 @@ import type {
 } from "@guildhub/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { lazy, Suspense, useMemo, useRef, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   CharacterNotFoundError,
   characterQueries,
@@ -19,12 +26,15 @@ import {
   asRecord,
   formatDocumentTitle,
   liveStageMediaQuery,
+  measureFigureBounds,
   stringValue,
   useMediaQuery,
+  type FigureBounds,
 } from "../../../shared/lib";
 import {
   DocumentTitle,
   FallbackImage,
+  LoadProgress,
   PanelSection,
   SectionNav,
   StatusBlock,
@@ -47,14 +57,36 @@ const CharacterCinematic = lazy(() =>
   })),
 );
 
+function CharacterPoster({ src }: { readonly src: string | undefined }) {
+  const [figure, setFigure] = useState<FigureBounds | undefined>();
+  const style = figure && {
+    ["--figure-top" as string]: String(figure.top),
+    ["--figure-height" as string]: String(figure.bottom - figure.top),
+    ["--figure-center" as string]: String((figure.left + figure.right) / 2),
+  };
+  return (
+    <FallbackImage
+      className="character-poster"
+      src={src}
+      fallback={null}
+      data-framed={figure !== undefined}
+      style={style}
+      onLoad={(event) => {
+        setFigure(measureFigureBounds(event.currentTarget));
+      }}
+    />
+  );
+}
+
 function CharacterBackdrop({
   detail,
 }: {
   readonly detail: CharacterDetailResponse;
 }) {
   const { t } = useLocale();
-  const live =
-    useMediaQuery(liveStageMediaQuery) && detail.model.status === "ready";
+  const liveCapable = useMediaQuery(liveStageMediaQuery);
+  const live = liveCapable && detail.model.status === "ready";
+  const baking = liveCapable && detail.model.status === "pending";
   const figureHeight = raceHeight(detail.raceId);
   const scene = useMemo(
     () =>
@@ -74,26 +106,32 @@ function CharacterBackdrop({
     >
       <div className="character-backdrop-frame">
         <div className="character-backdrop-glow" aria-hidden="true" />
-        <FallbackImage
-          className="character-poster"
-          src={detail.renderUrl}
-          hidden={live}
-          fallback={null}
-        />
+        <CharacterPoster key={detail.renderUrl} src={detail.renderUrl} />
         {live ? (
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <div className="model-loading">
+                <LoadProgress label={t("model.loading")} fraction={0} />
+              </div>
+            }
+          >
             <CharacterCinematic
               scene={scene}
               fitToActorHeight={figureHeight}
               manifest={detail.lookManifest}
-              posterUrl={detail.renderUrl}
               assetBase="/assets/"
               variant="embedded"
               ariaLabel={t("character.stageLabel")}
-              loadingLabel={t("character.loading")}
+              loadingLabel={t("model.loading")}
+              preparingLabel={t("model.preparing")}
               readyLabel={t("status.ready")}
             />
           </Suspense>
+        ) : null}
+        {baking ? (
+          <div className="model-loading">
+            <LoadProgress label={t("model.baking")} />
+          </div>
         ) : null}
       </div>
     </div>

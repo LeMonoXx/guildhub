@@ -12,6 +12,7 @@ import { formatDocumentTitle, formatNumber } from "../../../shared/lib";
 import {
   DocumentTitle,
   Embers,
+  LoadProgress,
   PanelSection,
   Reveal,
   SectionNav,
@@ -192,14 +193,21 @@ export function GuildPage() {
           members={featured.data.members}
           intro={<TitleCard guild={guild} />}
           renderLiveStage={(scene, decorators) => (
-            <Suspense fallback={null}>
+            <Suspense
+              fallback={
+                <div className="model-loading">
+                  <LoadProgress label={t("model.loading")} fraction={0} />
+                </div>
+              }
+            >
               <CharacterCinematic
                 scene={scene}
                 decorators={decorators}
                 assetBase="/assets/"
                 variant="embedded"
                 ariaLabel={t("home.stageLabel")}
-                loadingLabel={t("status.loading")}
+                loadingLabel={t("model.loading")}
+                preparingLabel={t("model.preparing")}
                 readyLabel={t("status.ready")}
               />
             </Suspense>

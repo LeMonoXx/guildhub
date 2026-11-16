@@ -1,4 +1,5 @@
 export { formatDocumentTitle } from "./document-title";
+export { measureFigureBounds, type FigureBounds } from "./figure-bounds";
 export {
   daysBetween,
   formatDate,

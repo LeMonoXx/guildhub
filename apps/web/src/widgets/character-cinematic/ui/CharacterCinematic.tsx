@@ -6,12 +6,16 @@ import {
   type CinematicTimeline,
   type FrameDecorator,
 } from "../../../cinematic";
+import { LoadProgress } from "../../../shared/ui";
 import type { PrepareCharacterOptions } from "../../character-model";
 import {
   initialUiState,
   mountCinematicStage,
 } from "../adapters/mount-cinematic-stage";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+
+/** Files fill the bar to here; compiling the shaders fills the rest. */
+const filesShare = 0.9;
 
 type Status = "loading" | "ready" | "error";
 
@@ -25,6 +29,8 @@ export interface CharacterCinematicProps {
   readonly ariaLabel?: string;
   readonly variant?: "page" | "embedded";
   readonly loadingLabel?: string;
+  /** Shown once the files are in and the GPU prepares the scene. */
+  readonly preparingLabel?: string;
   readonly readyLabel?: string;
   /** Live adjustments applied to every frame, in order. */
   readonly decorators?: readonly FrameDecorator[];
@@ -81,6 +87,7 @@ export function CharacterCinematic({
   ariaLabel = "Animated character introduction",
   variant = "page",
   loadingLabel = "Loading character…",
+  preparingLabel = "Preparing…",
   readyLabel = "Character ready",
   decorators = noDecorators,
   fitToActorHeight,
@@ -89,6 +96,7 @@ export function CharacterCinematic({
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState(loadingLabel);
+  const [progress, setProgress] = useState(0);
   const decoratorsRef = useRef(decorators);
   decoratorsRef.current = decorators;
 
@@ -106,6 +114,16 @@ export function CharacterCinematic({
     const reducedMotion = matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    let progressFrame = 0;
+    let pendingProgress = 0;
+    const showProgress = (fraction: number) => {
+      pendingProgress = fraction;
+      if (progressFrame !== 0) return;
+      progressFrame = requestAnimationFrame(() => {
+        progressFrame = 0;
+        if (!isDisposed()) setProgress(pendingProgress);
+      });
+    };
 
     void loadScene(scene)
       .then(async (sceneData) => {
@@ -124,6 +142,9 @@ export function CharacterCinematic({
           report: (text) => {
             console.warn(text);
           },
+          onProgress: (fraction) => {
+            showProgress(fraction * filesShare);
+          },
         });
         if (isDisposed()) {
           mounted.dispose();
@@ -133,6 +154,8 @@ export function CharacterCinematic({
           mounted.dispose();
         };
         const timeline = compileTimeline(sceneData);
+        showProgress(filesShare);
+        setMessage(preparingLabel);
         await mounted.rig.prewarm();
         if (isDisposed()) return;
         setStatus("ready");
@@ -173,6 +196,7 @@ export function CharacterCinematic({
     return () => {
       lifecycle.disposed = true;
       cancelAnimationFrame(frameRequest);
+      cancelAnimationFrame(progressFrame);
       disposeMounted();
     };
   }, [
@@ -180,6 +204,7 @@ export function CharacterCinematic({
     fitToActorHeight,
     loadingLabel,
     manifest,
+    preparingLabel,
     posterTimeMs,
     previewTimeMs,
     readyLabel,
@@ -218,7 +243,12 @@ export function CharacterCinematic({
             hidden={status === "ready"}
           />
         ) : null}
-        {status !== "ready" && (variant === "page" || status === "error") ? (
+        {status === "loading" ? (
+          <div className="cinematic-status">
+            <LoadProgress label={message} fraction={progress} />
+          </div>
+        ) : null}
+        {status === "error" ? (
           <div className="cinematic-status" role="status">
             {message}
           </div>

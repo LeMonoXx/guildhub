@@ -3,6 +3,7 @@ export { DocumentTitle } from "./document-title";
 export { Embers } from "./embers";
 export { FallbackImage } from "./fallback-image";
 export { FogVeil } from "./fog-veil";
+export { LoadProgress } from "./load-progress";
 export { Meter } from "./meter";
 export { NebulaFog } from "./nebula-fog";
 export { PanelSection } from "./panel-section";

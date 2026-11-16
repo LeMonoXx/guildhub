@@ -15,6 +15,7 @@
 
 .status {
   position: absolute;
+  z-index: 1;
   inset: 0;
   display: grid;
   place-items: center;
@@ -119,6 +120,7 @@
 
 .cinematic-status {
   position: absolute;
+  z-index: 1;
   inset: 0;
   display: grid;
   place-items: center;
@@ -132,6 +134,16 @@
 
 .cinematic[data-variant="embedded"] .cinematic-status {
   background: transparent;
+  pointer-events: none;
+}
+
+.model-loading {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
 }
 
 .cinematic > .notice {

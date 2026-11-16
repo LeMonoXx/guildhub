@@ -81,6 +81,16 @@
   pointer-events: none;
 }
 
+.guild-hero-stage .model-loading,
+.guild-hero-stage .cinematic-status {
+  place-items: end center;
+  padding-bottom: clamp(2rem, 8%, 5rem);
+}
+
+.guild-hero-stage .cinematic-status {
+  inset: 0 0 var(--stage-bleed, 0px);
+}
+
 /* Walk-ons fade in from the window's edges instead of popping in. */
 .guild-hero-stage .cinematic-stage canvas {
   position: absolute;

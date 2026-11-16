@@ -570,7 +570,7 @@ function withQuestInfo(
     ...optional("moneyCopper", info.moneyCopper),
     ...(info.itemRewards === undefined || info.itemRewards.length === 0
       ? {}
-      : { itemRewards: info.itemRewards }),
+      : { itemRewards: [...info.itemRewards] }),
   };
 }
 

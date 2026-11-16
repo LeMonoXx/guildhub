@@ -198,6 +198,16 @@
   z-index: 1;
 }
 
+/* The section menu sits under the site header, on the text side, and stays there. */
+.character-body > .section-nav {
+  top: calc(var(--header-height) + var(--header-gap) * 2);
+  z-index: 20;
+  justify-self: start;
+  width: max-content;
+  max-width: min(100%, 48rem);
+  margin: 0.25rem 0 0;
+}
+
 .character-body > .character-backdrop {
   position: absolute;
   top: 0;
@@ -1467,78 +1477,133 @@
   list-style: none;
 }
 
-.stat-tabs {
-  display: flex;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.4rem;
-  overflow-x: auto;
-  scrollbar-width: thin;
+.stat-spotlight {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1.1rem;
+  padding: 0;
+  list-style: none;
 }
 
-.stat-tabs button {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--color-hairline);
-  border-radius: 4px;
+.stat-spotlight li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem 0.95rem;
+  border: 1px solid rgb(var(--accent-rgb) / 0.28);
+  border-radius: 10px;
+  background:
+    radial-gradient(
+      ellipse 80% 80% at 0% 100%,
+      rgb(var(--accent-deep-rgb) / 0.28),
+      transparent 70%
+    ),
+    rgb(0 0 0 / 0.35);
+}
+
+.stat-spotlight span,
+.stat-group h4 {
   color: var(--color-muted);
-  background: rgb(0 0 0 / 0.3);
-  font-size: 0.8rem;
-  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.stat-tabs button span {
+.stat-spotlight strong {
   color: var(--color-gold);
-  font-size: 0.7rem;
-}
-
-.stat-tabs button[aria-selected="true"] {
-  color: var(--color-ink);
-  border-color: var(--color-gold);
-  background: rgb(var(--accent-deep-rgb) / 0.14);
-}
-
-.stat-panel {
-  animation: float-up 0.45s var(--ease-out) both;
-}
-
-.stat-panel table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-
-.stat-panel th,
-.stat-panel td {
-  padding: 0.55rem 0.4rem;
-  border-bottom: 1px solid var(--color-hairline);
-  text-align: left;
-}
-
-.stat-panel th {
+  font-family: var(--font-fantasy);
+  font-size: clamp(2.4rem, 3.4vw, 3.6rem);
   font-weight: 500;
+  line-height: 0.95;
+  text-shadow:
+    0 0 28px rgb(var(--accent-deep-rgb) / 0.7),
+    0 2px 0 rgb(0 0 0 / 0.65);
 }
 
-.stat-panel th small {
+.stat-spotlight em {
+  color: var(--color-ink);
+  font-style: normal;
+  font-size: 0.82rem;
+}
+
+.stat-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.85rem;
+}
+
+.stat-group {
+  padding: 0.85rem 0.9rem 0.4rem;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.28);
+}
+
+.stat-group h4 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 0.55rem;
+}
+
+.stat-group h4 span {
+  color: var(--color-gold);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+.stat-group ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stat-group li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.1rem 0.8rem;
+  margin-bottom: 0.35rem;
+  padding: 0.4rem 0.55rem;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+.stat-group li::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--share) * 100%);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--accent-rgb) / 0.5),
+    rgb(var(--accent-deep-rgb) / 0.08)
+  );
+  content: "";
+}
+
+.stat-name,
+.stat-qty,
+.stat-group time {
+  position: relative;
+}
+
+.stat-name small {
   display: block;
   color: var(--color-muted);
+  font-size: 0.72rem;
 }
 
-.stat-panel td:nth-child(2) {
+.stat-qty {
   color: var(--color-gold);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  text-align: right;
 }
 
-.stat-panel td:last-child {
+.stat-group time {
+  grid-column: 1 / -1;
   color: var(--color-muted);
-  font-size: 0.78rem;
-  text-align: right;
-  white-space: nowrap;
+  font-size: 0.72rem;
 }
 
 /* Collections */
@@ -1641,6 +1706,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .stat-spotlight {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .item-detail-body .wow-tooltip {
     grid-row: auto;
     max-width: none;
@@ -1648,6 +1717,10 @@
 }
 
 @media (max-width: 36rem) {
+  .stat-spotlight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .paper-doll {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -1691,8 +1764,7 @@
   .character-hero-title .eyebrow,
   .character-hero-badges .wow-badge,
   .paper-doll-slot,
-  .item-detail,
-  .stat-panel {
+  .item-detail {
     animation: none;
   }
 }

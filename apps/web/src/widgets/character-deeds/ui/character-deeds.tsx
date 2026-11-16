@@ -1,5 +1,7 @@
-import type { CharacterProfileResponse } from "@guildhub/contracts";
-import { useId, useState } from "react";
+import type {
+  CharacterProfileResponse,
+  StatisticGroup,
+} from "@guildhub/contracts";
 import { AchievementHover, AchievementIcon } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatDate, formatNumber } from "../../../shared/lib";
@@ -90,67 +92,89 @@ function Achievements({ profile }: CharacterDeedsProps) {
   );
 }
 
+/** Non-zero entries, largest first, so every category is on the page at once. */
+function toldGroups(groups: readonly StatisticGroup[]): StatisticGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      entries: [...group.entries]
+        .filter((entry) => entry.quantity !== 0)
+        .sort(
+          (left, right) => Math.abs(right.quantity) - Math.abs(left.quantity),
+        ),
+    }))
+    .filter((group) => group.entries.length > 0);
+}
+
 function Statistics({ profile }: CharacterDeedsProps) {
   const { t, locale } = useLocale();
-  const groups = profile.statisticGroups.filter(
-    (group) => group.entries.length > 0,
-  );
-  const [active, setActive] = useState(groups[0]?.id);
-  const baseId = useId();
-  const current = groups.find((group) => group.id === active) ?? groups[0];
-  if (!current) return null;
+  const groups = toldGroups(profile.statisticGroups);
+  const spotlight = [...groups]
+    .sort(
+      (left, right) =>
+        Math.abs(right.entries[0]?.quantity ?? 0) -
+        Math.abs(left.entries[0]?.quantity ?? 0),
+    )
+    .slice(0, 4);
+  if (groups.length === 0) return null;
   return (
     <Reveal className="deeds-card deeds-statistics" as="article">
       <h3>{t("deeds.statistics")}</h3>
-      <div
-        className="stat-tabs"
-        role="tablist"
-        aria-label={t("deeds.statistics")}
-      >
-        {groups.map((group) => (
-          <button
-            key={group.id}
-            type="button"
-            role="tab"
-            id={`${baseId}-tab-${String(group.id)}`}
-            aria-selected={group.id === current.id}
-            aria-controls={`${baseId}-panel`}
-            onClick={() => {
-              setActive(group.id);
-            }}
-          >
-            {group.name}
-            <span>{group.entries.length}</span>
-          </button>
-        ))}
-      </div>
-      <div
-        className="stat-panel"
-        role="tabpanel"
-        id={`${baseId}-panel`}
-        aria-labelledby={`${baseId}-tab-${String(current.id)}`}
-        key={current.id}
-      >
-        <table>
-          <tbody>
-            {current.entries.map((entry, index) => (
-              <tr key={`${entry.name}-${String(index)}`}>
-                <th scope="row">
-                  {entry.name}
-                  {entry.detail ? <small>{entry.detail}</small> : null}
-                </th>
-                <td>{formatNumber(entry.quantity, locale)}</td>
-                <td>
-                  {entry.at ? (
-                    <time dateTime={entry.at}>
-                      {formatDate(entry.at, locale)}
-                    </time>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <ul className="stat-spotlight">
+        {spotlight.map((group) => {
+          const lead = group.entries[0];
+          if (lead === undefined) return null;
+          return (
+            <li key={group.id}>
+              <span>{group.name}</span>
+              <strong>
+                <CountUp value={lead.quantity} locale={locale} />
+              </strong>
+              <em>{lead.name}</em>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="stat-board">
+        {groups.map((group) => {
+          const peak = Math.max(
+            1,
+            ...group.entries.map((entry) => Math.abs(entry.quantity)),
+          );
+          return (
+            <section key={group.id} className="stat-group">
+              <h4>
+                {group.name}
+                <span>{group.entries.length}</span>
+              </h4>
+              <ol>
+                {group.entries.map((entry, index) => (
+                  <li
+                    key={`${entry.name}-${String(index)}`}
+                    style={{
+                      ["--share" as string]: String(
+                        Math.abs(entry.quantity) / peak,
+                      ),
+                    }}
+                  >
+                    <span className="stat-name">
+                      {entry.name}
+                      {entry.detail ? <small>{entry.detail}</small> : null}
+                    </span>
+                    <span className="stat-qty">
+                      {formatNumber(entry.quantity, locale)}
+                    </span>
+                    {entry.at ? (
+                      <time dateTime={entry.at}>
+                        {formatDate(entry.at, locale)}
+                      </time>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          );
+        })}
       </div>
     </Reveal>
   );

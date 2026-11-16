@@ -64,28 +64,28 @@ export function CharacterPage() {
       />
       <div className="character-body">
         <CharacterBackdrop detail={detail} />
+        {sections.length > 0 ? (
+          <SectionNav
+            label={t("character.sectionNav")}
+            sections={sections.map((section) => section.link)}
+          />
+        ) : null}
         <CharacterHero character={detail} profile={available} />
         {detail.published ? null : (
           <p className="page-notice">{t("character.unpublished")}</p>
         )}
         {sections.length > 0 ? (
-          <>
-            <SectionNav
-              label={t("character.sectionNav")}
-              sections={sections.map((section) => section.link)}
-            />
-            {sections.map((section) => (
-              <PanelSection
-                key={section.link.id}
-                id={section.link.id}
-                eyebrow={section.eyebrow}
-                title={section.link.label}
-                lead={section.lead}
-              >
-                {section.body}
-              </PanelSection>
-            ))}
-          </>
+          sections.map((section) => (
+            <PanelSection
+              key={section.link.id}
+              id={section.link.id}
+              eyebrow={section.eyebrow}
+              title={section.link.label}
+              lead={section.lead}
+            >
+              {section.body}
+            </PanelSection>
+          ))
         ) : profile.isPending ? (
           <StatusBlock>{t("character.profileLoading")}</StatusBlock>
         ) : (

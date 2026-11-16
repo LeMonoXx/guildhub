@@ -2,7 +2,7 @@ import {
   mapCommands,
   type CinematicFrame,
   type FrameDecorator,
-} from "../../../cinematic";
+} from "../../../shared/cinematic";
 import {
   lineupCamera,
   lineupScale,

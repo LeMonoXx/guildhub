@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import type { FrameDecorator } from "../../../cinematic";
+import type { FrameDecorator } from "../../../shared/cinematic";
 import {
   ClassColoredName,
   wowClassColorVar,

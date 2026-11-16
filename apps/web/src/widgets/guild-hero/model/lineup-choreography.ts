@@ -3,7 +3,7 @@ import {
   type CinematicFrame,
   type FrameCommand,
   type FrameDecorator,
-} from "../../../cinematic";
+} from "../../../shared/cinematic";
 
 import { ActorMotion } from "./actor-motion";
 import { stagePlanFor, type StagePlan } from "./stage-plan";

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { assetUrl, loadFixedLook } from "./manifest";
+import { assetUrl, loadFixedLook } from "./fixed-look";
 
 describe("fixed-look manifest", () => {
   test("keeps asset paths below the same-origin assets root", () => {

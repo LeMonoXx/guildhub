@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "vitest";
-import type { CinematicFrame } from "../../../cinematic";
-import { createFixtureGuildSource } from "../../../entities/guild";
+import type { CinematicFrame } from "../../../shared/cinematic";
+import { createFixtureGuildSource } from "../../../entities/guild/testing";
 import {
   clearFogFigures,
   readFogFigures,

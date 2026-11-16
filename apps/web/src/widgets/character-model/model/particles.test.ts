@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { ParticleEmitterMeta } from "../../../types";
+import type { ParticleEmitterMeta } from "./types";
 import {
   MAX_PARTICLES,
   advance,

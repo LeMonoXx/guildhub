@@ -8,7 +8,7 @@ import type {
   ItemEffect,
   ResolvedItem,
   TextureLayer,
-} from "../../../types";
+} from "./types";
 
 const SLOT_LAYER: Record<number, number> = {
   4: 10,

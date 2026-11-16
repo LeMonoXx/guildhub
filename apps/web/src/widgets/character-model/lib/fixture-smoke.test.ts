@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { describe, expect, test } from "vitest";
-import type { FixedLookManifest } from "../../../types";
+import type { FixedLookManifest } from "../model/types";
 
 const fixture = (...parts: string[]) =>
   resolve(

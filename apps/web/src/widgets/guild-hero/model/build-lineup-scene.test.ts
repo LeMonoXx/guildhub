@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { teleportFlashProgress } from "@guildhub/contracts";
 import { describe, expect, test } from "vitest";
-import { createFixtureGuildSource } from "../../../entities/guild";
+import { createFixtureGuildSource } from "../../../entities/guild/testing";
 import { arrangeTroop } from "./arrange-troop";
 import {
   buildLineupScene,

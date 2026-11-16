@@ -1,5 +1,5 @@
 import { useSearch } from "@tanstack/react-router";
-import { CharacterCinematic } from "../../../widgets/character-cinematic";
+import { LiveCharacterStage } from "../../../widgets/character-cinematic";
 import { useLocale } from "../../../shared/i18n";
 import { asRecord, numberValue } from "../../../shared/lib";
 import { DocumentTitle } from "../../../shared/ui";
@@ -12,7 +12,7 @@ export function CinematicLabPage() {
   return (
     <div className="lab-page">
       <DocumentTitle value={t("lab.cinematicLabel")} />
-      <CharacterCinematic
+      <LiveCharacterStage
         scene="/cinematics/rogue-proof.scene.json"
         manifest="/assets/looks/fixed/look.json"
         assetBase="/assets/"

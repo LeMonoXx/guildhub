@@ -1,9 +1,8 @@
 export { characterQueries, characterSource } from "./api/client";
-export { createFixtureCharacterSource } from "./api/fixture-source";
 export { characterKeys } from "./api/keys";
 export { CharacterNotFoundError, type CharacterDataSource } from "./api/source";
 export { bakeStatus, type BakeStatus } from "./model/bake-status";
-export { modelPollInterval, modelsPollInterval } from "./model/model-poll";
+export { useModelPolling } from "./model/use-model-polling";
 export { wowClassColorVar } from "./model/class-color";
 export {
   durabilityShare,

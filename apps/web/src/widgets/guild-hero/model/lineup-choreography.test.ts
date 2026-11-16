@@ -1,7 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import { CinematicTimeline, type CinematicFrame } from "../../../cinematic";
-import { createFixtureGuildSource } from "../../../entities/guild";
+import {
+  CinematicTimeline,
+  type CinematicFrame,
+} from "../../../shared/cinematic";
+import { createFixtureGuildSource } from "../../../entities/guild/testing";
 import { arrangeTroop } from "./arrange-troop";
 import { buildLineupScene } from "./build-lineup-scene";
 import { LineupChoreography } from "./lineup-choreography";

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, test } from "vitest";
-import type { ParticleEmitterMeta } from "../../../types";
+import type { ParticleEmitterMeta } from "./types";
 import { createParticleMesh } from "./particle-mesh";
 import { simulateTo } from "./particles";
 

@@ -1,7 +1,7 @@
 import type { FeaturedMember } from "@guildhub/contracts";
 import { describe, expect, test } from "vitest";
 
-import { createFixtureGuildSource } from "../../../entities/guild";
+import { createFixtureGuildSource } from "../../../entities/guild/testing";
 import { arrangeTroop } from "./arrange-troop";
 import { standingFootprint, walkingFootprint } from "./gear-reach";
 import { HomePlan, StepForwardPlan } from "./stage-plan";

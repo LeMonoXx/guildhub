@@ -1,10 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, test, vi } from "vitest";
-import type {
-  CharacterLook,
-  ModelMeta,
-  ParticleEmitterMeta,
-} from "../../../types";
+import type { CharacterLook, ModelMeta, ParticleEmitterMeta } from "./types";
 import { AssetStore, type LoadedModel } from "../lib/asset-store";
 import { AnimationController } from "./animation-controller";
 import { buildCharacter } from "./assemble-character";

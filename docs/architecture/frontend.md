@@ -35,7 +35,8 @@ flowchart TD
 Rules:
 
 - **Slices on the same layer do not import each other.** `features/login` never imports `features/roster-filter`. Shared needs move one layer down.
-- **Each slice exposes one public `index.ts`.** Imports from outside the slice go through it (`@/entities/character`, never `@/entities/character/model/map.ts`).
+- **Each slice exposes one public `index.ts`.** Imports from outside the slice go through it (`@/entities/character`, never `@/entities/character/model/map.ts`). Entities that offer fixture data sources export them from a second entry, `testing.ts`, which only tests import.
+- **Pages compose; they do not stage.** Lazy loading of the WebGL stage, poster framing, and model polling live in widgets and entities (`LiveCharacterStage`, `CharacterBackdrop`, `useModelPolling`), so pages never reach Three.js or `lazy()`.
 - **Segments inside a slice:** `ui/` (components), `model/` (state, hooks or services, types), `api/` (query and mutation definitions), `lib/` (pure helpers). A slice has only the segments it needs.
 - `shared` knows nothing about guilds or characters. If a component mentions a character, it belongs in `entities` or above.
 - `dependency-cruiser` enforces these rules in `pnpm verify` once `apps/web` exists.
@@ -50,21 +51,25 @@ apps/web/
       guild/             /            hero + guild copy
       members/           /members     searchable roster
       character/         /characters/:slug
+      professions/       /professions recipe catalog
       lab/               /lab/*       cinematic and viewer proofs
-      me/                /me          own characters (needs login)
       not-found/
     widgets/
+      character-model/   Three.js character assembly; its look and asset types live in model/types.ts
+      character-cinematic/  stage adapters and the lazy LiveCharacterStage
     features/
+      roster-filter/
+      locale-switcher/
     entities/
       guild/
       character/
-      item/
-      user/
+      recipe/
     shared/
       api/               generated or typed client, ApiError, problem parsing
       ui/                design-system components
       i18n/              locales/de.json, locales/en.json
-      config/            instance config loading (from GET /api/instance)
+      cinematic/         deterministic timeline core, no React and no Three.js
+      styles/            tokens, fonts, and global styles
       lib/
   e2e/                   Playwright tests
   public/

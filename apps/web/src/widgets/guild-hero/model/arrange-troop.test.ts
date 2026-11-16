@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { FeaturedMember } from "@guildhub/contracts";
-import { createFixtureGuildSource } from "../../../entities/guild";
+import { createFixtureGuildSource } from "../../../entities/guild/testing";
 import {
   isLargeRace,
   isSmallRace,

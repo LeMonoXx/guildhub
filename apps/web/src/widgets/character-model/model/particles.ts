@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Ryan Williams, MIT License.
 // Particle semantics follow wowdev.wiki and WebWowViewerCpp.
 
-import type { ParticleCurve, ParticleEmitterMeta } from "../../../types";
+import type { ParticleCurve, ParticleEmitterMeta } from "./types";
 import {
   defaultEmitterStrategies,
   type EmitterSpawnStrategy,

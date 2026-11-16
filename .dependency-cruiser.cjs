@@ -196,6 +196,33 @@ module.exports = {
       },
     },
     {
+      name: "web-fsd-same-layer-slices",
+      comment:
+        "Page, feature, and entity slices do not import each other; they meet in a higher layer.",
+      severity: "error",
+      from: { path: "^apps/web/src/(pages|features|entities)/([^/]+)/" },
+      to: {
+        path: "^apps/web/src/$1/",
+        pathNot: "^apps/web/src/$1/$2/",
+      },
+    },
+    {
+      name: "web-fixture-sources-in-tests",
+      comment:
+        "Fixture data sources are for tests; production code reads the HTTP sources.",
+      severity: "error",
+      from: {
+        path: "^apps/web/src/",
+        pathNot: [
+          "[.]test[.]tsx?$",
+          "^apps/web/src/entities/[^/]+/testing[.]ts$",
+        ],
+      },
+      to: {
+        path: "^apps/web/src/entities/[^/]+/(?:testing[.]ts|api/fixture-source[.]ts)$",
+      },
+    },
+    {
       name: "web-pages-skip-fixtures",
       comment: "Pages load data through entity queries, never fixture files.",
       severity: "error",
@@ -208,7 +235,7 @@ module.exports = {
         "The deterministic cinematic core must remain independent of React and Three.js.",
       severity: "error",
       from: {
-        path: "^apps/web/src/cinematic/",
+        path: "^apps/web/src/shared/cinematic/",
       },
       to: {
         path: "(^|/)(?:react|react-dom|three)(?:/|$)",

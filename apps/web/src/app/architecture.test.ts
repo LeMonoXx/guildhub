@@ -29,12 +29,21 @@ describe("portal architecture", () => {
   });
 
   test("character page stands the member look, not the rogue proof", () => {
-    const page = production.find(
-      (file) => file.name === "pages/character/ui/character-page.tsx",
+    const backdrop = production.find(
+      (file) =>
+        file.name === "widgets/character-cinematic/ui/character-backdrop.tsx",
     );
-    expect(page?.source).toContain("buildCharacterIdleScene");
-    expect(page?.source).not.toContain("rogue-proof");
-    expect(page?.source).not.toContain("cinematicScene");
+    expect(backdrop?.source).toContain("buildCharacterIdleScene");
+    expect(backdrop?.source).not.toContain("rogue-proof");
+    expect(backdrop?.source).not.toContain("cinematicScene");
+  });
+
+  test("pages reach the cinematic stage only through its lazy wrapper", () => {
+    for (const { name, source } of production) {
+      if (!name.startsWith("pages/")) continue;
+      expect(source, name).not.toMatch(/\bCharacterCinematic\b/);
+      expect(source, name).not.toMatch(/\blazy\(/);
+    }
   });
 
   test("member routes stay free of the cinematic widget", () => {

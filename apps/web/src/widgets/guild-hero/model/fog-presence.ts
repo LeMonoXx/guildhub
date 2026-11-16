@@ -1,4 +1,4 @@
-import type { CinematicFrame, FrameDecorator } from "../../../cinematic";
+import type { CinematicFrame, FrameDecorator } from "../../../shared/cinematic";
 import {
   reportFogFigures,
   type FogFigure,

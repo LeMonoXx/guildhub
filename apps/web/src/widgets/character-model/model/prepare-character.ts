@@ -1,4 +1,4 @@
-import type { FixedLookManifest } from "../../../types";
+import type { FixedLookManifest } from "./types";
 import { AssetStore } from "../lib/asset-store";
 import { buildCharacter } from "./assemble-character";
 import type { CharacterModelHandle } from "./character-handle";

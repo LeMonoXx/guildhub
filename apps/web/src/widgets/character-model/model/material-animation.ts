@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { MaterialAnimation, MaterialAnimationKind } from "../../../types";
+import type { MaterialAnimation, MaterialAnimationKind } from "./types";
 import type { TimelineParticipant } from "./lifecycle";
 import { sampleTrack } from "./track-sampler";
 

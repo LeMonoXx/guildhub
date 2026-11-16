@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import type { CinematicTimeline } from "../../../cinematic";
+import type { CinematicTimeline } from "../../../shared/cinematic";
 import { evaluateMotionFrame } from "./CharacterCinematic";
 
 describe("reduced motion", () => {

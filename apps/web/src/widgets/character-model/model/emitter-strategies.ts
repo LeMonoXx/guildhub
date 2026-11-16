@@ -1,4 +1,4 @@
-import type { ParticleEmitterMeta } from "../../../types";
+import type { ParticleEmitterMeta } from "./types";
 
 export interface EmitterSpawn {
   position: number[];

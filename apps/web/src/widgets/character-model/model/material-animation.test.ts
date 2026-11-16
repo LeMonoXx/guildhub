@@ -1,10 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, test, vi } from "vitest";
-import type {
-  CharacterLook,
-  MaterialAnimation,
-  ModelMeta,
-} from "../../../types";
+import type { CharacterLook, MaterialAnimation, ModelMeta } from "./types";
 import { AssetStore, type LoadedModel } from "../lib/asset-store";
 import { buildCharacter } from "./assemble-character";
 import type { Dressed } from "./dress";

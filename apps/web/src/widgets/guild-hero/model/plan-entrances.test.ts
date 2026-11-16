@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { FeaturedMember } from "@guildhub/contracts";
-import { createFixtureGuildSource } from "../../../entities/guild";
+import { createFixtureGuildSource } from "../../../entities/guild/testing";
 import { raceRadius } from "../../../entities/character";
 import { arrangeTroop, maxCoverage, silhouetteOf } from "./arrange-troop";
 import { planLineupEntrances } from "./build-lineup-scene";

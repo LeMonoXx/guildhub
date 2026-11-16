@@ -69,7 +69,7 @@ const labCinematicRoute = createRoute({
           : undefined,
   }),
   component: lazyRouteComponent(
-    () => import("../pages/lab/ui/cinematic-lab-page"),
+    () => import("../pages/lab"),
     "CinematicLabPage",
   ),
 });
@@ -77,10 +77,7 @@ const labCinematicRoute = createRoute({
 const labViewerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/lab/viewer",
-  component: lazyRouteComponent(
-    () => import("../pages/lab/ui/viewer-lab-page"),
-    "ViewerLabPage",
-  ),
+  component: lazyRouteComponent(() => import("../pages/lab"), "ViewerLabPage"),
 });
 
 const routeTree = rootRoute.addChildren([

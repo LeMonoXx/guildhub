@@ -3,7 +3,7 @@ import type {
   AudioCue,
   CinematicFrame,
   FrameCommand,
-} from "../../../cinematic";
+} from "../../../shared/cinematic";
 import type { CharacterHandle } from "../../character-model";
 import type { SmokeEffect, SmokeValues } from "./smoke-effect";
 import type { TeleportEffect, TeleportValues } from "./teleport-effect";

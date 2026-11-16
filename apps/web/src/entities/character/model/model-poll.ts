@@ -1,6 +1,6 @@
 import type { CharacterModel } from "@guildhub/contracts";
 
-type PolledModel = Pick<CharacterModel, "status" | "bake"> | undefined;
+export type PolledModel = Pick<CharacterModel, "status" | "bake"> | undefined;
 
 /** A long queue on a small host can take this long; past it, a reload picks it up. */
 const GIVE_UP_MS = 20 * 60_000;

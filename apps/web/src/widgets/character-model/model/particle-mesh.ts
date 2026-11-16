@@ -3,7 +3,7 @@
 // Particle semantics follow wowdev.wiki and WebWowViewerCpp.
 
 import * as THREE from "three";
-import type { ParticleEmitterMeta } from "../../../types";
+import type { ParticleEmitterMeta } from "./types";
 import {
   MAX_PARTICLES,
   advance,

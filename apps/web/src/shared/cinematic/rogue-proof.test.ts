@@ -10,7 +10,7 @@ import { compileTimeline, type CinematicFrame } from "./timeline.js";
 
 const scenePath = join(
   import.meta.dirname,
-  "../../test-fixtures/cinematics/rogue-proof.scene.json",
+  "../../../test-fixtures/cinematics/rogue-proof.scene.json",
 );
 
 const loadScene = (): CinematicScene =>

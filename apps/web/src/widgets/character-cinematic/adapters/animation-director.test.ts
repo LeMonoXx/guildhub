@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, test, vi } from "vitest";
-import type { CinematicFrame, FrameCommand } from "../../../cinematic";
+import type { CinematicFrame, FrameCommand } from "../../../shared/cinematic";
 import type { CharacterHandle } from "../../character-model";
 import {
   AnimationDirector,

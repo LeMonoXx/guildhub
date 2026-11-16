@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import type { FrameDecorator } from "../../../cinematic";
+import type { FrameDecorator } from "../../../shared/cinematic";
 import { arrangeTroop } from "./arrange-troop";
 import { buildLineupScene } from "./build-lineup-scene";
 import { LineupChoreography } from "./lineup-choreography";

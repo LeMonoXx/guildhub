@@ -1,6 +1,5 @@
-export { buildCharacterIdleScene } from "./model/build-idle-scene";
+export { CharacterBackdrop } from "./ui/character-backdrop";
 export {
-  CharacterCinematic,
-  evaluateMotionFrame,
-  type CharacterCinematicProps,
-} from "./ui/CharacterCinematic";
+  LiveCharacterStage,
+  type LiveCharacterStageProps,
+} from "./ui/live-character-stage";

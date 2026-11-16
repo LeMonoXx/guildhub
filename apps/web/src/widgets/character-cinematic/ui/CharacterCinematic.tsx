@@ -5,7 +5,7 @@ import {
   type CinematicFrame,
   type CinematicTimeline,
   type FrameDecorator,
-} from "../../../cinematic";
+} from "../../../shared/cinematic";
 import { LoadProgress } from "../../../shared/ui";
 import type { PrepareCharacterOptions } from "../../character-model";
 import {

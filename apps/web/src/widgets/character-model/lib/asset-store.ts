@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
-import type { ModelMeta } from "../../../types";
+import type { ModelMeta } from "../model/types";
 import type { Disposable } from "../model/lifecycle";
 import { ResourceOwner } from "../model/resource-owner";
 

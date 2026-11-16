@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { ResolvedItem } from "../../../types";
+import type { ResolvedItem } from "./types";
 import { dress } from "./dress";
 
 describe("dress", () => {

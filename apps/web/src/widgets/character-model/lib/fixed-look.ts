@@ -1,4 +1,4 @@
-import type { FixedLookManifest } from "./types";
+import type { FixedLookManifest } from "../model/types";
 
 export const assetUrl = (relativePath: string): string =>
   `/assets/${relativePath.replace(/^\/+/, "")}`;

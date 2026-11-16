@@ -4,7 +4,7 @@
 // wow.export, Copyright (c) Kruithne and Marlamin, MIT License.
 
 import * as THREE from "three";
-import type { CharacterLook, ModelMeta } from "../../../types";
+import type { CharacterLook, ModelMeta } from "./types";
 import { compositeLook } from "../lib/compositor";
 import type { Dressed } from "./dress";
 import { AssetStore, type LoadedModel } from "../lib/asset-store";

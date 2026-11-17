@@ -25,7 +25,7 @@ describe("loadInstanceConfig", () => {
       slug: "example-guild",
       name: "Example Guild",
       region: "eu",
-      guild: { slug: "example-guild" },
+      guild: { slug: "example-guild", featured: [] },
     });
   });
 

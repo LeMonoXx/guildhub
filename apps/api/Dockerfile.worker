@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS baker
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS baker
 WORKDIR /src
 COPY apps/model-baker/GuildHub.ModelBaker.slnx apps/model-baker/
 COPY apps/model-baker/src/GuildHub.ModelBaker/GuildHub.ModelBaker.csproj apps/model-baker/src/GuildHub.ModelBaker/

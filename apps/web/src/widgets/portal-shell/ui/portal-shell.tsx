@@ -20,6 +20,9 @@ export function PortalShell() {
           <Link to="/members" className="portal-nav-link">
             {t("nav.members")}
           </Link>
+          <Link to="/party" className="portal-nav-link">
+            {t("nav.party")}
+          </Link>
           <Link to="/professions" className="portal-nav-link">
             {t("nav.professions")}
           </Link>

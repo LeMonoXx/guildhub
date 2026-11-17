@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using GuildHub.ModelBaker.Cli.Options;
 using GuildHub.ModelBaker.Hosted;
+using GuildHub.ModelBaker.Maps;
 
 namespace GuildHub.ModelBaker.Cli.Serve;
 
@@ -62,6 +63,7 @@ public sealed class ServeCommand
         "fixed" => await FixedAsync(id, cancellationToken),
         "file" => await FileAsync(id, request, cancellationToken),
         "prebake" => await PrebakeAsync(id, request, cancellationToken),
+        "worldmap" => await WorldMapAsync(id, cancellationToken),
         _ => throw new InvalidOperationException($"Unknown command: {command}"),
       };
       _protocol.Done(id, result);
@@ -159,6 +161,17 @@ public sealed class ServeCommand
     };
   }
 
-  Task<FixedLookBaker> BakerAsync(string id, CancellationToken cancellationToken) =>
-      _sessions.BakerAsync(stage => _protocol.Stage(id, stage), cancellationToken);
+  async Task<JsonNode> WorldMapAsync(string id, CancellationToken cancellationToken)
+  {
+    var session = await _sessions.SessionAsync(stage => _protocol.Stage(id, stage), cancellationToken);
+    var atlas = session.Maps.Bake(_options.OutputDirectory, _log.WriteLine, fraction => _protocol.Progress(id, fraction));
+    return new JsonObject
+    {
+      ["build"] = atlas.Build,
+      ["atlas"] = WorldMapBaker.AtlasPath,
+    };
+  }
+
+  async Task<FixedLookBaker> BakerAsync(string id, CancellationToken cancellationToken) =>
+      (await _sessions.SessionAsync(stage => _protocol.Stage(id, stage), cancellationToken)).Baker;
 }

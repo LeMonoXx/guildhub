@@ -24,6 +24,7 @@ export {
 export {
   makeBakeLook,
   makeEnsureFixedLook,
+  makeEnsureWorldMap,
   makePrebakeBodies,
 } from "./application/bake-models.js";
 export type { ConvertFileJob, ModelBuildQueue } from "./application/ports.js";

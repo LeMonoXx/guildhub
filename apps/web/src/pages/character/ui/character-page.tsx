@@ -38,6 +38,7 @@ export function CharacterPage() {
     ...characterQueries.profile(characterSlug),
     enabled: character.isSuccess,
   });
+  const party = useQuery(guildQueries.party());
   const history = useQuery({
     ...characterQueries.history(characterSlug),
     enabled: character.isSuccess,
@@ -54,7 +55,7 @@ export function CharacterPage() {
   const available =
     profile.data?.status === "available" ? profile.data : undefined;
   const sections = available
-    ? profileSections(available, detail, history.data, t)
+    ? profileSections(available, detail, history.data, party.data, t)
     : [];
   const profileFallback = profile.isPending ? (
     <StatusBlock>{t("character.profileLoading")}</StatusBlock>

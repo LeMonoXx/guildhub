@@ -39,6 +39,7 @@ import {
   registerCrafting,
 } from "./modules/crafting/index.js";
 import { makeDrizzleRecipeCatalogStore } from "./modules/crafting/infrastructure/index.js";
+import { makeGetGuildParty, registerParty } from "./modules/party/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
@@ -157,6 +158,14 @@ registerCharacter(app, {
 registerChronicle(app, {
   instance,
   getGuildChronicle: makeGetGuildChronicle({
+    getGuild,
+    getRoster: getGuildRoster,
+    loadProfiles,
+  }),
+});
+registerParty(app, {
+  instance,
+  getGuildParty: makeGetGuildParty({
     getGuild,
     getRoster: getGuildRoster,
     loadProfiles,

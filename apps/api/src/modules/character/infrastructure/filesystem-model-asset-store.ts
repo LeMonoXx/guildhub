@@ -1,6 +1,6 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ModelAssetStore } from "../application/ports.js";
+import type { ModelAssetStore, WorldMapAssets } from "../application/ports.js";
 import type { LookBakeDocument } from "../domain/look.js";
 import { readLookProgress } from "./look-progress-file.js";
 
@@ -39,6 +39,19 @@ export function makeFilesystemModelAssetStore(
         path.join(directory, "look.request.json"),
         `${JSON.stringify(job, null, 2)}\n`,
       );
+    },
+  };
+}
+
+export function makeFilesystemWorldMapAssets(root: string): WorldMapAssets {
+  return {
+    hasWorldMap: async () => {
+      try {
+        await access(path.join(root, "maps", "v1", "atlas.json"));
+        return true;
+      } catch {
+        return false;
+      }
     },
   };
 }

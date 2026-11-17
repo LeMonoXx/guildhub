@@ -49,6 +49,12 @@ const professionsRoute = createRoute({
   ),
 });
 
+const partyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/party",
+  component: lazyRouteComponent(() => import("../pages/party"), "PartyPage"),
+});
+
 const characterRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/characters/$characterSlug",
@@ -80,6 +86,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   membersRoute,
   professionsRoute,
+  partyRoute,
   characterRoute,
   labCinematicRoute,
   labViewerRoute,

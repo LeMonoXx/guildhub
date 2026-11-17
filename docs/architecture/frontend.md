@@ -52,11 +52,13 @@ apps/web/
       members/           /members     searchable roster
       character/         /characters/:slug
       professions/       /professions recipe catalog
+      party/             /party       group radar on the in-game world map
       lab/               /lab/*       cinematic and viewer proofs
       not-found/
     widgets/
       character-model/   Three.js character assembly; its look and asset types live in model/types.ts
       character-cinematic/  stage adapters and the lazy LiveCharacterStage
+      party/             group radar lists and the animated world map (camera, tokens, portals, arcs)
     features/
       roster-filter/
       locale-switcher/

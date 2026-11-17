@@ -1,5 +1,4 @@
 using GuildHub.ModelBaker.Cli.Sessions;
-using GuildHub.ModelBaker.Hosted;
 
 namespace GuildHub.ModelBaker.Cli.Serve;
 
@@ -28,10 +27,10 @@ public sealed class ServeSessionHost(ServeOptions options, TextWriter log) : IAs
   }
 
   // `stage` hears "opening" before the storage opens and "baking" once it is open.
-  public async Task<FixedLookBaker> BakerAsync(Action<string> stage, CancellationToken cancellationToken)
+  public async Task<BakeSession> SessionAsync(Action<string> stage, CancellationToken cancellationToken)
   {
     var build = await CurrentBuildAsync(cancellationToken);
-    if (_session != null && SessionBuild == build) return _session.Baker;
+    if (_session != null && SessionBuild == build) return _session;
     if (_session != null)
     {
       log.WriteLine($"Build changed from {SessionBuild} to {build}; reopening.");
@@ -46,7 +45,7 @@ public sealed class ServeSessionHost(ServeOptions options, TextWriter log) : IAs
         cancellationToken);
     SessionBuild = _session.Build;
     stage("baking");
-    return _session.Baker;
+    return _session;
   }
 
   public async ValueTask DisposeAsync()

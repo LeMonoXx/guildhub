@@ -9,6 +9,7 @@ public static class CliCommandRegistry
       new BakeLookCommand(),
       new BakeLooksCommand(),
       new BakeFileCommand(),
+      new BakeWorldMapCommand(),
       new ServeCliCommand(),
       new BakeProofSceneCommand());
 

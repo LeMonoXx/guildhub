@@ -31,6 +31,7 @@ export function GuildPage() {
   });
   const chronicle = useQuery(guildQueries.chronicle());
   const history = useQuery(guildQueries.history());
+  const party = useQuery(guildQueries.party());
 
   if (profile.isPending || featured.isPending)
     return <StatusBlock>{t("status.loading")}</StatusBlock>;
@@ -39,7 +40,7 @@ export function GuildPage() {
 
   const guild = profile.data;
   const sections = chronicle.data
-    ? chronicleSections(chronicle.data, history.data, guild, t)
+    ? chronicleSections(chronicle.data, history.data, party.data, guild, t)
     : [];
   const chronicleFallback = chronicle.isError ? (
     <p className="page-notice">{t("home.chronicleError")}</p>

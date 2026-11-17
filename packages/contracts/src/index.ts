@@ -129,7 +129,32 @@ export {
   type HistoryEvent,
   type HistoryEventKind,
 } from "./guild-history.js";
+export {
+  dungeonKeySchema,
+  guildPartyResponseSchema,
+  partyAreaSchema,
+  partyDungeonSchema,
+  partyMemberSchema,
+  partyQuestSchema,
+  partyRoleSchema,
+  type DungeonKey,
+  type GuildPartyResponse,
+  type PartyArea,
+  type PartyDungeon,
+  type PartyMember,
+  type PartyQuest,
+  type PartyRole,
+} from "./guild-party.js";
 export { instanceConfigSchema, type InstanceConfig } from "./instance.js";
+export {
+  WORLD_MAP_ATLAS,
+  worldMapAtlasSchema,
+  worldMapContinentSchema,
+  worldMapZoneSchema,
+  type WorldMapAtlas,
+  type WorldMapContinent,
+  type WorldMapZone,
+} from "./world-map.js";
 export {
   craftedItemSchema,
   recipeCrafterSchema,

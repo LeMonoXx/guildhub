@@ -1,6 +1,7 @@
 import type {
   GuildChronicleResponse,
   GuildHistoryResponse,
+  GuildPartyResponse,
   GuildProfileResponse,
 } from "@guildhub/contracts";
 import type { ReactNode } from "react";
@@ -12,6 +13,7 @@ import { GuildDossiers } from "../../../widgets/guild-dossiers";
 import { GuildHallOfFame } from "../../../widgets/guild-hall-of-fame";
 import { GuildHistory } from "../../../widgets/guild-history";
 import { GuildPulse } from "../../../widgets/guild-pulse";
+import { GuildPartyRadar } from "../../../widgets/party";
 import { GuildTimeline } from "../../../widgets/guild-timeline";
 
 export interface ChronicleSection {
@@ -24,6 +26,7 @@ export interface ChronicleSection {
 export const chronicleSections = (
   chronicle: GuildChronicleResponse,
   history: GuildHistoryResponse | undefined,
+  party: GuildPartyResponse | undefined,
   guild: GuildProfileResponse,
   t: (key: string, values?: Record<string, string | number>) => string,
 ): ChronicleSection[] => {
@@ -41,6 +44,12 @@ export const chronicleSections = (
       eyebrow: t("home.eyebrow.history"),
       lead: t("home.lead.history"),
       body: <GuildHistory history={history} />,
+    },
+    party !== undefined && {
+      link: { id: "party", label: t("home.section.party") },
+      eyebrow: t("home.eyebrow.party"),
+      lead: t("home.lead.party"),
+      body: <GuildPartyRadar party={party} />,
     },
     chronicle.hallOfFame.length > 0 && {
       link: { id: "fame", label: t("home.section.fame") },

@@ -5,4 +5,6 @@ export const guildKeys = {
   featured: () => [...guildKeys.all, "featured"] as const,
   chronicle: () => [...guildKeys.all, "chronicle"] as const,
   history: () => [...guildKeys.all, "history"] as const,
+  party: () => [...guildKeys.all, "party"] as const,
+  worldMap: () => [...guildKeys.all, "world-map"] as const,
 };

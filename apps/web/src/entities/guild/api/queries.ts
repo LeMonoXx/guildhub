@@ -24,4 +24,15 @@ export const guildQueries = (source: GuildDataSource) => ({
     queryFn: () => source.getHistory(),
     staleTime: 10 * 60_000,
   }),
+  party: () => ({
+    queryKey: guildKeys.party(),
+    queryFn: () => source.getParty(),
+    staleTime: 2 * 60_000,
+  }),
+  worldMap: () => ({
+    queryKey: guildKeys.worldMap(),
+    queryFn: () => source.getWorldMap(),
+    staleTime: Infinity,
+    retry: false,
+  }),
 });

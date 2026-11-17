@@ -32,11 +32,12 @@ apps/api/
         index.ts               The module's public API and its register function
       character/
       history/
+      party/
       crafting/
       ...
 ```
 
-Shared HTTP, config, kernel, db, Battle.net, jobs, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. `src/worker.ts` is the model-worker composition root.
+Shared HTTP, config, kernel, db, Battle.net, jobs, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. The party module serves `GET /api/guild/party`: from the cached member profiles it derives quests that two or more members share, where members quest, and for each classic dungeon who fits its level and faction plus a suggested tank, healer, and three damage seats. It has no tables and calls no Battle.net endpoint of its own. `src/worker.ts` is the model-worker composition root.
 
 ## 2. Layers and what they may import
 

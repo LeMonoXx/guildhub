@@ -4,6 +4,7 @@ import { composeGuild } from "./composition.js";
 import {
   makeBakeLook,
   makeEnsureFixedLook,
+  makeEnsureWorldMap,
   makePrebakeBodies,
   publicIconUrl,
 } from "./modules/character/index.js";
@@ -13,6 +14,7 @@ import {
   makeFileBakeProgressSink,
   makeFilePrebakeLedger,
   makeFilesystemModelAssetStore,
+  makeFilesystemWorldMapAssets,
   makeServeModelBaker,
   registerModelJobs,
 } from "./modules/character/infrastructure/index.js";
@@ -87,6 +89,17 @@ try {
 } catch (error) {
   logger.error({ module: "baker", err: error }, "fixed look bake failed");
 }
+void makeEnsureWorldMap({
+  assets: makeFilesystemWorldMapAssets(assetRoot),
+  baker,
+})().then(
+  (state) => {
+    if (state === "baked") logger.info({ module: "baker" }, "world map baked");
+  },
+  (error: unknown) => {
+    logger.error({ module: "baker", err: error }, "world map bake failed");
+  },
+);
 
 const boss = await startJobQueue(env.DATABASE_URL);
 boss.on("error", (error) => {

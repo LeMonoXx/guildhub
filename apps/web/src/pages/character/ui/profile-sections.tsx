@@ -2,6 +2,7 @@ import type {
   CharacterDetailResponse,
   CharacterHistoryResponse,
   CharacterProfileResponse,
+  GuildPartyResponse,
 } from "@guildhub/contracts";
 import type { ReactNode } from "react";
 import { wowClassColorVar } from "../../../entities/character";
@@ -15,6 +16,7 @@ import { CharacterHistory } from "../../../widgets/character-history";
 import { CharacterProfessions } from "../../../widgets/character-professions";
 import { CharacterReputations } from "../../../widgets/character-reputations";
 import { CharacterTalents } from "../../../widgets/character-talents";
+import { CharacterPartyRadar } from "../../../widgets/party";
 
 export interface ProfileSection {
   readonly link: SectionLink;
@@ -27,6 +29,7 @@ export const profileSections = (
   profile: CharacterProfileResponse,
   detail: CharacterDetailResponse,
   history: CharacterHistoryResponse | undefined,
+  party: GuildPartyResponse | undefined,
   t: (key: string, values?: Record<string, string | number>) => string,
 ): ProfileSection[] => {
   const sections: (ProfileSection | false)[] = [
@@ -85,6 +88,12 @@ export const profileSections = (
       eyebrow: t("character.eyebrow.history"),
       lead: t("character.lead.history"),
       body: <CharacterHistory history={history} classId={detail.classId} />,
+    },
+    party !== undefined && {
+      link: { id: "party", label: t("character.section.party") },
+      eyebrow: t("character.eyebrow.party"),
+      lead: t("character.lead.party"),
+      body: <CharacterPartyRadar party={party} slug={detail.slug} />,
     },
     {
       link: { id: "collections", label: t("character.section.collections") },

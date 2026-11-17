@@ -22,6 +22,7 @@ describe("mapQuestDocument", () => {
     ).toEqual({
       description: "Bring the report back.",
       area: "Durotar",
+      areaId: 14,
       category: "Horde",
       cadence: "daily",
       minLevel: 5,

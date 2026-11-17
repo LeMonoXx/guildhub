@@ -4,6 +4,7 @@ import { createInterface } from "node:readline";
 export type BakerRequest =
   | { readonly command: "look"; readonly look: unknown }
   | { readonly command: "fixed" }
+  | { readonly command: "worldmap" }
   | {
       readonly command: "file";
       readonly kind: string;

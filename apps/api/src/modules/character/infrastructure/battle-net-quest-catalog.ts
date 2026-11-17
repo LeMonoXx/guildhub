@@ -58,6 +58,7 @@ export function mapQuestDocument(value: unknown): QuestInfo {
   return {
     ...optional("description", str(record.description)),
     ...optional("area", name(record.area)),
+    ...optional("areaId", positiveInt(rec(record.area).id)),
     ...optional("category", name(record.category)),
     ...optional("cadence", cadenceOf(record)),
     ...optional("minLevel", amount(requirements.min_character_level)),

@@ -65,6 +65,12 @@ Bake the gitignored model assets from Blizzard's `wowf` CDN:
 dotnet run --project apps/model-baker/src/GuildHub.ModelBaker.Cli -- bake-fixed
 ```
 
+The group page's world map is baked the same way, into `assets/maps/v1`. Copy that folder next to the fixed character's output (`assets/fixed/maps/v1`) to see it in the dev server:
+
+```sh
+dotnet run --project apps/model-baker/src/GuildHub.ModelBaker.Cli -- bake-world-map
+```
+
 Then run the viewer against that output:
 
 ```powershell

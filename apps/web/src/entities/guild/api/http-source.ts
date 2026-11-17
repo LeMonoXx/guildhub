@@ -2,8 +2,11 @@ import {
   featuredMembersResponseSchema,
   guildChronicleResponseSchema,
   guildHistoryResponseSchema,
+  guildPartyResponseSchema,
   guildProfileResponseSchema,
   guildRosterResponseSchema,
+  WORLD_MAP_ATLAS,
+  worldMapAtlasSchema,
 } from "@guildhub/contracts";
 import { getJson } from "../../../shared/api";
 import type { GuildDataSource } from "./source";
@@ -16,4 +19,6 @@ export const createHttpGuildSource = (): GuildDataSource => ({
   getChronicle: () =>
     getJson("/api/guild/chronicle", guildChronicleResponseSchema),
   getHistory: () => getJson("/api/guild/history", guildHistoryResponseSchema),
+  getParty: () => getJson("/api/guild/party", guildPartyResponseSchema),
+  getWorldMap: () => getJson(`/assets/${WORLD_MAP_ATLAS}`, worldMapAtlasSchema),
 });

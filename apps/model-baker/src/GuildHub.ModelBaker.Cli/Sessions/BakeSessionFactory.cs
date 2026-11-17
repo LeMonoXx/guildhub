@@ -1,4 +1,5 @@
 using GuildHub.ModelBaker.Hosted;
+using GuildHub.ModelBaker.Maps;
 using GuildHub.ModelBaker.Storage;
 using GuildHub.ModelBaker.Tables;
 
@@ -35,6 +36,10 @@ public static class BakeSessionFactory
         output.WriteLine);
     var definitions = new DefinitionProvider(Path.Combine(cacheDirectory, "definitions"));
     var tables = new Db2Tables(storage, definitions, source.Version, hotfixPath: null);
-    return new BakeSession(http, new FixedLookBaker(storage, tables, source.Version), source.Version);
+    return new BakeSession(
+        http,
+        new FixedLookBaker(storage, tables, source.Version),
+        new WorldMapBaker(storage, tables, source.Version),
+        source.Version);
   }
 }

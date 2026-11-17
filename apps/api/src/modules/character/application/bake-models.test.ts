@@ -5,6 +5,7 @@ import type { LookBakeDocument } from "../domain/look.js";
 import {
   makeBakeLook,
   makeEnsureFixedLook,
+  makeEnsureWorldMap,
   makePrebakeBodies,
 } from "./bake-models.js";
 import type {
@@ -23,6 +24,7 @@ function baker(overrides: Partial<ModelBaker> = {}): ModelBaker {
     bakeLook: () => Promise.resolve(),
     bakeFile: () => Promise.resolve(),
     bakeFixedLook: () => Promise.resolve(),
+    bakeWorldMap: () => Promise.resolve(),
     currentBuild: () => Promise.resolve("2.0"),
     prebakeBody: () => Promise.resolve({ baked: true }),
     ...overrides,
@@ -101,6 +103,26 @@ describe("bake models", () => {
     ).toBe("present");
     expect(
       await makeEnsureFixedLook({ assets: assets(false), baker: counting })(),
+    ).toBe("baked");
+    expect(bakes).toBe(1);
+  });
+
+  it("bakes the world map only when its atlas is missing", async () => {
+    let bakes = 0;
+    const counting = baker({
+      bakeWorldMap: () => {
+        bakes++;
+        return Promise.resolve();
+      },
+    });
+    const assets = (present: boolean) => ({
+      hasWorldMap: () => Promise.resolve(present),
+    });
+    expect(
+      await makeEnsureWorldMap({ assets: assets(true), baker: counting })(),
+    ).toBe("present");
+    expect(
+      await makeEnsureWorldMap({ assets: assets(false), baker: counting })(),
     ).toBe("baked");
     expect(bakes).toBe(1);
   });

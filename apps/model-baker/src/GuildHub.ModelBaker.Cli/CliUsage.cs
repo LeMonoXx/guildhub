@@ -11,6 +11,7 @@ public static class CliUsage
           GuildHub.ModelBaker.Cli bake-look --look <file> [options]
           GuildHub.ModelBaker.Cli bake-looks --looks <dir> [options]
           GuildHub.ModelBaker.Cli bake-file --kind model|texture|animation --file-id <id> [options]
+          GuildHub.ModelBaker.Cli bake-world-map [--output <path>] [--cache <path>] [--region <region>]
           GuildHub.ModelBaker.Cli bake-proof-scene rogue-t2 [options]
           GuildHub.ModelBaker.Cli serve [--output <path>] [--cache <path>] [--region <region>]
 
@@ -48,6 +49,7 @@ public static class CliUsage
             {"id":"3","command":"file","kind":"texture","fileId":123}
             {"id":"4","command":"prebake","race":2,"sex":0}
             {"id":"5","command":"build"}
+            {"id":"6","command":"worldmap"}
           Events: ready, stage (opening, baking), progress (fraction 0..1), done, failed.
           Logs go to stderr. The game storage stays open until stdin closes.
 

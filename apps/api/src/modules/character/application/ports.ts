@@ -91,6 +91,10 @@ export interface ModelAssetStore {
 
 export type BakeUpdate = Omit<BakeProgress, "updatedAt">;
 
+export interface WorldMapAssets {
+  hasWorldMap(): Promise<boolean>;
+}
+
 /** Turns looks and game files into the model assets the viewer loads. */
 export interface ModelBaker {
   bakeLook(
@@ -99,6 +103,8 @@ export interface ModelBaker {
   ): Promise<void>;
   bakeFile(job: ConvertFileJob): Promise<void>;
   bakeFixedLook(): Promise<void>;
+  /** Stitches the in-game world map and writes its atlas. */
+  bakeWorldMap(): Promise<void>;
   /** The game build Blizzard serves right now. */
   currentBuild(): Promise<string>;
   /** `baked` is false when the current game build already has this body. */

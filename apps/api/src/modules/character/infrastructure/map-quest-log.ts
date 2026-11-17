@@ -13,6 +13,7 @@ const RECENT_QUEST_LIMIT = 12;
 export interface QuestInfo {
   readonly description?: string;
   readonly area?: string;
+  readonly areaId?: number;
   readonly category?: string;
   readonly cadence?: QuestLogEntry["cadence"];
   readonly minLevel?: number;
@@ -58,6 +59,7 @@ function withQuestInfo(
     ...quest,
     ...optional("description", info.description),
     ...optional("area", info.area),
+    ...optional("areaId", info.areaId),
     ...optional("category", info.category),
     ...optional("cadence", info.cadence),
     ...optional("minLevel", info.minLevel),

@@ -32,6 +32,21 @@ public sealed class Row
         var v => [(int)ToLong(v)],
     };
 
+    public double[] Floats(string column) => _get(column) switch
+    {
+        null => [],
+        string => [],
+        IEnumerable e => e.Cast<object?>().Select(ToDouble).ToArray(),
+        var v => [ToDouble(v)],
+    };
+
+    static double ToDouble(object? v) => v switch
+    {
+        null => 0,
+        IConvertible c when v is not string => System.Convert.ToDouble(c, System.Globalization.CultureInfo.InvariantCulture),
+        _ => 0,
+    };
+
     public int Int(string column, int index)
     {
         var values = Ints(column);

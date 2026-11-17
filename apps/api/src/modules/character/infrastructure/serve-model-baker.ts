@@ -40,6 +40,9 @@ export function makeServeModelBaker(baker: BakerProcess): ModelBaker {
     bakeFixedLook: async () => {
       await baker.run({ command: "fixed" });
     },
+    bakeWorldMap: async () => {
+      await baker.run({ command: "worldmap" }, { priority: "background" });
+    },
     currentBuild: async () => {
       const result = await baker.run(
         { command: "build" },

@@ -222,6 +222,7 @@ export const questRefSchema = z.object({
 export const questLogEntrySchema = questRefSchema.extend({
   description: z.string().min(1).optional(),
   area: z.string().min(1).optional(),
+  areaId: z.number().int().positive().optional(),
   category: z.string().min(1).optional(),
   cadence: z.enum(["daily", "weekly", "repeatable"]).optional(),
   minLevel: z.number().int().nonnegative().optional(),

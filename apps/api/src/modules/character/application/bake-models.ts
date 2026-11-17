@@ -8,6 +8,7 @@ import type {
   PlayableRaceSource,
   PrebakeLedger,
   PrebakeRecord,
+  WorldMapAssets,
 } from "./ports.js";
 
 /** Every body comes in both sexes the game knows. */
@@ -38,6 +39,15 @@ export const makeEnsureFixedLook =
   async (): Promise<"present" | "baked"> => {
     if (await deps.assets.hasLook(FIXED_LOOK)) return "present";
     await deps.baker.bakeFixedLook();
+    return "baked";
+  };
+
+/** The party map shows the in-game world map; it is baked once per asset volume. */
+export const makeEnsureWorldMap =
+  (deps: { readonly assets: WorldMapAssets; readonly baker: ModelBaker }) =>
+  async (): Promise<"present" | "baked"> => {
+    if (await deps.assets.hasWorldMap()) return "present";
+    await deps.baker.bakeWorldMap();
     return "baked";
   };
 

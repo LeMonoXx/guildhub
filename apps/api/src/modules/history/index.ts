@@ -6,6 +6,7 @@ export {
 } from "./application/get-history.js";
 export {
   makeRecordGuildCheck,
+  type OnHistoryChanges,
   type RecordGuildCheck,
 } from "./application/record-guild-check.js";
 export { calendarDay } from "./domain/guild-check.js";

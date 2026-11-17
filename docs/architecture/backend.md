@@ -33,11 +33,12 @@ apps/api/
       character/
       history/
       party/
+      celebrations/
       crafting/
       ...
 ```
 
-Shared HTTP, config, kernel, db, Battle.net, jobs, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. The party module serves `GET /api/guild/party`: from the cached member profiles it derives quests that two or more members share, where members quest, and for each classic dungeon who fits its level and faction plus a suggested tank, healer, and three damage seats. It has no tables and calls no Battle.net endpoint of its own. `src/worker.ts` is the model-worker composition root.
+Shared HTTP, config, kernel, db, Battle.net, jobs, and observability live under `src/platform/`. The guild module serves `GET /api/guild`, `GET /api/guild/roster`, and `GET /api/guild/featured`. The character module serves `GET /api/characters/:slug` and `GET /api/characters/:slug/render`, snapshots appearance/equipment/media, and enqueues look bakes. The party module serves `GET /api/guild/party`: from the cached member profiles it derives quests that two or more members share, where members quest, and for each classic dungeon who fits its level and faction plus a suggested tank, healer, and three damage seats. It has no tables and calls no Battle.net endpoint of its own. The celebrations module has no route: the worker hands it the events of each new history check (`onChanges` of `makeRecordGuildCheck`), it keeps the milestones, and its Discord webhook adapter posts them. `src/worker.ts` is the model-worker composition root.
 
 ## 2. Layers and what they may import
 

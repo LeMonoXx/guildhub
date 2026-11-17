@@ -54,6 +54,8 @@ The worker keeps one baker process (`serve` mode) and hands it one bake at a tim
 
 Once a day (11:17 in `HISTORY_TIME_ZONE`) and at startup, the worker asks the baker for the current game build. `prebake.json` in the baker cache remembers the playable races and the last build whose every body is baked; for that build the check ends there, without Battle.net and without opening the game data. Only a new build makes the worker ask Battle.net for the playable races again and prebake each race and sex: body, every appearance texture, and the lineup animations, one body after another, with real looks going first. A marker per body under `builds/<build>/v<version>/prebake/` skips bodies an interrupted run already finished. A build counts as complete only when every body baked; otherwise the next day's run continues. If Battle.net is down at a new build, the worker bakes with the races it already knows and asks again the next day. A first prebake of a build takes a while on a small host and holds the baker's memory peak for that time.
 
+With `DISCORD_WEBHOOK_URL` set in `app.env`, each hourly history check that finds a new state also posts its milestones to that Discord channel, in `DISCORD_LOCALE`: a member reaching the level cap, a profession crossing 150, 225, or 300, reputation reaching Revered or Exalted, and new achievements. Up to ten go in one message. A failed post is logged as `celebrations not posted` and is not retried; the check itself is kept either way. Restart the worker after changing either variable.
+
 ## 2. What the server needs
 
 - Linux on amd64 with Docker Engine and the Compose plugin (`docker compose version`).

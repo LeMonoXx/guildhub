@@ -7,7 +7,10 @@ import { ok } from "../../../platform/kernel/result.js";
 import type { GuildCheck } from "../domain/guild-check.js";
 import { makeGetCharacterHistory, makeGetGuildHistory } from "./get-history.js";
 import type { HistoryStore } from "./ports.js";
-import { makeRecordGuildCheck } from "./record-guild-check.js";
+import {
+  makeRecordGuildCheck,
+  type OnHistoryChanges,
+} from "./record-guild-check.js";
 
 const guild = { slug: "example" };
 
@@ -80,7 +83,11 @@ function profile(
   };
 }
 
-function setup(now: { value: Date }, progress: Progress) {
+function setup(
+  now: { value: Date },
+  progress: Progress,
+  onChanges?: OnHistoryChanges,
+) {
   const store = memoryStore();
   const clock = { now: () => now.value };
   const record = makeRecordGuildCheck({
@@ -109,6 +116,7 @@ function setup(now: { value: Date }, progress: Progress) {
     clock,
     timeZone: "Europe/Berlin",
     locales: ["en", "de"],
+    ...(onChanges === undefined ? {} : { onChanges }),
   });
   const deps = { store, clock, timeZone: "Europe/Berlin" };
   return {
@@ -227,6 +235,23 @@ describe("history", () => {
     expect((await guildHistory(guild, "en")).events).toEqual([
       expect.objectContaining({ kind: "level", to: 25, day: "2026-11-14" }),
     ]);
+  });
+
+  it("tells the hook what a new check changed, once per language", async () => {
+    const now = { value: new Date("2026-11-13T08:00:00.000Z") };
+    const progress = { level: 24, quests: 10 };
+    const heard: string[] = [];
+    const { record } = setup(now, progress, (events, locale) => {
+      heard.push(...events.map((event) => `${locale} ${event.kind}`));
+      return Promise.resolve();
+    });
+    await record(guild);
+    now.value = new Date("2026-11-13T09:00:00.000Z");
+    await record(guild);
+    expect(heard).toEqual([]);
+    progress.level = 25;
+    await record(guild);
+    expect(heard.sort()).toEqual(["de level", "en level"]);
   });
 
   it("serves each language's own checks", async () => {

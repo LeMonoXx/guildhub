@@ -18,13 +18,19 @@ import {
   makeServeModelBaker,
   registerModelJobs,
 } from "./modules/character/infrastructure/index.js";
+import { makeAnnounceCelebrations } from "./modules/celebrations/index.js";
+import { makeDiscordWebhookNotifier } from "./modules/celebrations/infrastructure/index.js";
 import { makeRefreshRecipeCatalog } from "./modules/crafting/index.js";
 import {
   makeBattleNetRecipeCatalogSource,
   makeDrizzleRecipeCatalogStore,
   registerRecipeJobs,
 } from "./modules/crafting/infrastructure/index.js";
-import { calendarDay, makeRecordGuildCheck } from "./modules/history/index.js";
+import {
+  calendarDay,
+  makeRecordGuildCheck,
+  type OnHistoryChanges,
+} from "./modules/history/index.js";
 import { registerHistoryJobs } from "./modules/history/infrastructure/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
@@ -129,6 +135,29 @@ await registerModelJobs(boss, {
   timeZone: env.HISTORY_TIME_ZONE,
   log: logger,
 });
+const celebrate = (webhookUrl: string): OnHistoryChanges => {
+  const announce = makeAnnounceCelebrations({
+    notifier: makeDiscordWebhookNotifier({
+      webhookUrl,
+      siteUrl: new URL(env.BATTLENET_REDIRECT_URI).origin,
+      locale: env.DISCORD_LOCALE,
+    }),
+    locale: env.DISCORD_LOCALE,
+  });
+  return async (events, locale) => {
+    try {
+      const count = await announce(events, locale);
+      if (count > 0)
+        logger.info({ module: "celebrations", count }, "celebrations posted");
+    } catch (error) {
+      logger.warn(
+        { module: "celebrations", err: error },
+        "celebrations not posted",
+      );
+    }
+  };
+};
+
 await registerHistoryJobs(boss, {
   guild: composed.guild,
   recordGuildCheck: makeRecordGuildCheck({
@@ -137,6 +166,9 @@ await registerHistoryJobs(boss, {
     loadProfiles: composed.loadProfiles,
     locales: contentLocales,
     ...composed.history,
+    ...(env.DISCORD_WEBHOOK_URL === undefined
+      ? {}
+      : { onChanges: celebrate(env.DISCORD_WEBHOOK_URL) }),
   }),
   cron: env.HISTORY_CRON,
   timeZone: env.HISTORY_TIME_ZONE,

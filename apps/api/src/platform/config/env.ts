@@ -1,3 +1,4 @@
+import { contentLocaleSchema } from "@guildhub/contracts";
 import { z } from "zod";
 
 const optionalUrl = z
@@ -52,6 +53,13 @@ const schema = z.object({
     .transform((value) =>
       value === undefined || value === "" ? "Europe/Berlin" : value,
     ),
+  /** Secret. Unset turns the Discord celebrations off. */
+  DISCORD_WEBHOOK_URL: optionalUrl,
+  DISCORD_LOCALE: z
+    .string()
+    .optional()
+    .transform((value) => (value === undefined || value === "" ? "en" : value))
+    .pipe(contentLocaleSchema),
   INSTANCE_DIR: z.string().min(1),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])

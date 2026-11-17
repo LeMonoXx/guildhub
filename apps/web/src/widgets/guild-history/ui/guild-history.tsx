@@ -19,13 +19,13 @@ export function GuildHistory({ history }: GuildHistoryProps) {
   const whole = (value: number) => formatNumber(value, locale);
   const tenth = (value: number) => formatNumber(value, locale, 1);
   const itemLevels = series((point) => point.averageItemLevel);
-  const since = `${history.since ?? history.series[0]?.day ?? ""}T12:00:00Z`;
+  const since = history.since ?? history.series[0]?.day ?? "";
   return (
     <div className="history">
       <p className="history-since">
         {t("history.since", {
-          date: formatDate(since, locale),
-          days: daysBetween(since) + 1,
+          date: formatDate(`${since}T12:00:00Z`, locale),
+          days: daysBetween(`${since}T00:00:00Z`) + 1,
           changes: history.events.length,
         })}
       </p>

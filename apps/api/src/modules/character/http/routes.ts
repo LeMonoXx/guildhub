@@ -109,6 +109,7 @@ export function registerCharacter(
 
   app.get("/api/items/:itemId{[0-9]+}", async (context) => {
     const result = await deps.getItem({
+      guild,
       itemId: Number(context.req.param("itemId")),
       locale: requestLocale(context),
     });

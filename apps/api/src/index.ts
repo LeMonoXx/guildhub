@@ -145,7 +145,11 @@ registerCharacter(app, {
     media,
   }),
   getItemIcon: makeGetItemIcon({ media }),
-  getItem: makeGetItem({ items: makeBattleNetItemCatalog(battleNet) }),
+  getItem: makeGetItem({
+    items: makeBattleNetItemCatalog(battleNet),
+    getRoster: getGuildRoster,
+    profiles: profileDeps.cache,
+  }),
   onStaleCache: () => {
     onStaleCache("roster");
   },

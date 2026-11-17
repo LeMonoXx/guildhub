@@ -51,6 +51,7 @@ export function DungeonCard({ dungeon, members, spotlight }: DungeonCardProps) {
             : t("party.missing", { count: dungeon.missing.length })}
         </span>
       </header>
+      <p className="party-seats-title">{t("party.suggestion")}</p>
       <ol className="party-seats">
         {seats.map((seat, index) => (
           <li

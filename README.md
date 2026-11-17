@@ -71,6 +71,12 @@ The group page's world map is baked the same way, into `assets/maps/v1`. Copy th
 dotnet run --project apps/model-baker/src/GuildHub.ModelBaker.Cli -- bake-world-map
 ```
 
+The dungeon bosses the map shows on hover bake into the default output beside the fixed character. Pass every creature display id from the party module's dungeon table (`apps/api/src/modules/party/domain/dungeons.ts`):
+
+```sh
+dotnet run --project apps/model-baker/src/GuildHub.ModelBaker.Cli -- bake-bosses --display 2837 --display 4088
+```
+
 Then run the viewer against that output:
 
 ```powershell

@@ -4,6 +4,7 @@ import { err, ok } from "../../../platform/kernel/result.js";
 import type { LookBakeDocument } from "../domain/look.js";
 import {
   makeBakeLook,
+  makeEnsureBosses,
   makeEnsureFixedLook,
   makeEnsureWorldMap,
   makePrebakeBodies,
@@ -25,6 +26,7 @@ function baker(overrides: Partial<ModelBaker> = {}): ModelBaker {
     bakeFile: () => Promise.resolve(),
     bakeFixedLook: () => Promise.resolve(),
     bakeWorldMap: () => Promise.resolve(),
+    bakeBosses: (ids) => Promise.resolve({ baked: ids.length, skipped: 0 }),
     currentBuild: () => Promise.resolve("2.0"),
     prebakeBody: () => Promise.resolve({ baked: true }),
     ...overrides,
@@ -125,6 +127,21 @@ describe("bake models", () => {
       await makeEnsureWorldMap({ assets: assets(false), baker: counting })(),
     ).toBe("baked");
     expect(bakes).toBe(1);
+  });
+
+  it("asks the baker for every boss display", async () => {
+    const asked: number[][] = [];
+    const ensure = makeEnsureBosses({
+      displayIds: [2837, 4088],
+      baker: baker({
+        bakeBosses: (ids) => {
+          asked.push([...ids]);
+          return Promise.resolve({ baked: 1, skipped: 1 });
+        },
+      }),
+    });
+    expect(await ensure()).toEqual({ baked: 1, skipped: 1 });
+    expect(asked).toEqual([[2837, 4088]]);
   });
 
   it("prebakes both sexes of every race and keeps going past a failure", async () => {

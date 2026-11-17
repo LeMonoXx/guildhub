@@ -58,7 +58,7 @@ apps/web/
     widgets/
       character-model/   Three.js character assembly; its look and asset types live in model/types.ts
       character-cinematic/  stage adapters and the lazy LiveCharacterStage
-      party/             group radar lists and the animated world map (camera, tokens, portals, arcs)
+      party/             group radar lists and the animated world map (pan and zoom camera, tokens, portals, arcs, caption, legend)
     features/
       roster-filter/
       locale-switcher/

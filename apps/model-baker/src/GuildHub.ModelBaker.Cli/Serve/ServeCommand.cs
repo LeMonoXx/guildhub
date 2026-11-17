@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using GuildHub.ModelBaker.Bosses;
 using GuildHub.ModelBaker.Cli.Options;
 using GuildHub.ModelBaker.Hosted;
 using GuildHub.ModelBaker.Maps;
@@ -64,6 +65,7 @@ public sealed class ServeCommand
         "file" => await FileAsync(id, request, cancellationToken),
         "prebake" => await PrebakeAsync(id, request, cancellationToken),
         "worldmap" => await WorldMapAsync(id, cancellationToken),
+        "bosses" => await BossesAsync(id, request, cancellationToken),
         _ => throw new InvalidOperationException($"Unknown command: {command}"),
       };
       _protocol.Done(id, result);
@@ -169,6 +171,21 @@ public sealed class ServeCommand
     {
       ["build"] = atlas.Build,
       ["atlas"] = WorldMapBaker.AtlasPath,
+    };
+  }
+
+  async Task<JsonNode> BossesAsync(string id, JsonObject request, CancellationToken cancellationToken)
+  {
+    var displays = request["displays"]?.AsArray().Select(node => node!.GetValue<int>()).ToList()
+        ?? throw new InvalidOperationException("A bosses request needs displays.");
+    var session = await _sessions.SessionAsync(stage => _protocol.Stage(id, stage), cancellationToken);
+    var result = session.Bosses.Bake(_options.OutputDirectory, displays, _log.WriteLine, fraction => _protocol.Progress(id, fraction));
+    return new JsonObject
+    {
+      ["build"] = _sessions.SessionBuild,
+      ["root"] = BossBaker.Root,
+      ["baked"] = new JsonArray(result.Baked.Select(displayId => (JsonNode)displayId).ToArray()),
+      ["skipped"] = new JsonArray(result.Skipped.Select(displayId => (JsonNode)displayId).ToArray()),
     };
   }
 

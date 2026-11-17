@@ -23,6 +23,7 @@ export {
 } from "./application/present-looks.js";
 export {
   makeBakeLook,
+  makeEnsureBosses,
   makeEnsureFixedLook,
   makeEnsureWorldMap,
   makePrebakeBodies,

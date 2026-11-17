@@ -105,6 +105,10 @@ export interface ModelBaker {
   bakeFixedLook(): Promise<void>;
   /** Stitches the in-game world map and writes its atlas. */
   bakeWorldMap(): Promise<void>;
+  /** Bakes creature displays into `bosses/v1/`; a display the game draws as a character is skipped. */
+  bakeBosses(
+    displayIds: readonly number[],
+  ): Promise<{ readonly baked: number; readonly skipped: number }>;
   /** The game build Blizzard serves right now. */
   currentBuild(): Promise<string>;
   /** `baked` is false when the current game build already has this body. */

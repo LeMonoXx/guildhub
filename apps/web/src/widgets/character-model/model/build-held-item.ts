@@ -8,20 +8,43 @@ import { CharacterRuntime } from "./model-runtime";
 import { mountModel } from "./mount-model";
 import { ResourceOwner } from "./resource-owner";
 
-export interface HeldItem {
+/** Models shown on their own, without a character: a held item or a creature. */
+export interface StandaloneModel {
   readonly object: THREE.Group;
   update(delta: number): void;
   dispose(): void;
 }
 
+export type HeldItem = StandaloneModel;
+
 const HELD_ITEM_TIME_SCALE = 0.35;
 const OBJECT_SKIN_SLOT = 2;
 
 /** One item's meshes, with the same materials as on the character, and no body. */
-export async function buildHeldItem(
+export const buildHeldItem = (
   models: readonly { fileDataId: number; textureFileDataId?: number }[],
   urls: Pick<AssetUrls, "model" | "texture">,
-): Promise<HeldItem> {
+): Promise<HeldItem> =>
+  buildStandaloneModels(
+    models.map((model) => {
+      const replacements: Record<number, number> = {};
+      if (model.textureFileDataId !== undefined)
+        replacements[OBJECT_SKIN_SLOT] = model.textureFileDataId;
+      return { fileDataId: model.fileDataId, replacements };
+    }),
+    urls,
+    HELD_ITEM_TIME_SCALE,
+  );
+
+/** Loads models side by side, each with its texture types replaced by file ids. */
+export async function buildStandaloneModels(
+  models: readonly {
+    fileDataId: number;
+    replacements: Record<number, number>;
+  }[],
+  urls: Pick<AssetUrls, "model" | "texture">,
+  timeScale: number,
+): Promise<StandaloneModel> {
   const assets = new AssetStore();
   const owner = new ResourceOwner();
   const runtime = new CharacterRuntime();
@@ -54,12 +77,10 @@ export async function buildHeldItem(
       );
       await mountModel(
         loaded,
-        model.textureFileDataId === undefined
-          ? {}
-          : { [OBJECT_SKIN_SLOT]: model.textureFileDataId },
+        model.replacements,
         context,
         `held_${String(index)}`,
-        { timeScale: HELD_ITEM_TIME_SCALE },
+        { timeScale },
       );
       group.add(loaded.scene);
     }

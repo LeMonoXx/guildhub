@@ -12,6 +12,7 @@ public static class CliUsage
           GuildHub.ModelBaker.Cli bake-looks --looks <dir> [options]
           GuildHub.ModelBaker.Cli bake-file --kind model|texture|animation --file-id <id> [options]
           GuildHub.ModelBaker.Cli bake-world-map [--output <path>] [--cache <path>] [--region <region>]
+          GuildHub.ModelBaker.Cli bake-bosses --display <id> [--display <id> ...] [options]
           GuildHub.ModelBaker.Cli bake-proof-scene rogue-t2 [options]
           GuildHub.ModelBaker.Cli serve [--output <path>] [--cache <path>] [--region <region>]
 
@@ -39,6 +40,10 @@ public static class CliUsage
           --model-file-id <id>  Body FileDataID (animation only)
           --animation-id <id>   AnimationData ID (animation only)
 
+        bake-bosses:
+          --display <id>      CreatureDisplayInfo ID of a creature boss; repeat for more
+          Writes bosses/v{N}/{id}.json beside the shared models and textures it uses.
+
         proof scenes:
           rogue-t2  Human male Rogue in Bloodfang with dual daggers and proof animations
 
@@ -50,6 +55,7 @@ public static class CliUsage
             {"id":"4","command":"prebake","race":2,"sex":0}
             {"id":"5","command":"build"}
             {"id":"6","command":"worldmap"}
+            {"id":"7","command":"bosses","displays":[2837,4088]}
           Events: ready, stage (opening, baking), progress (fraction 0..1), done, failed.
           Logs go to stderr. The game storage stays open until stdin closes.
 

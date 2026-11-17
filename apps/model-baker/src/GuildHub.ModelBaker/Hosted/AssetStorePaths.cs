@@ -20,7 +20,9 @@ public sealed class AssetStorePaths(string build)
 
   public string MetadataPath(int fileDataId) => $"{BuildRoot}/models/{fileDataId}.json";
 
-  public string TexturePath(int fileDataId) => $"{BuildRoot}/textures/{fileDataId}.png";
+  public string TextureDirectory => $"{BuildRoot}/textures/";
+
+  public string TexturePath(int fileDataId) => $"{TextureDirectory}{fileDataId}.png";
 
   public string AnimationPath(int modelFileDataId, int animationId) =>
       $"{BuildRoot}/anims/{modelFileDataId}/{animationId}.glb";

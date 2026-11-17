@@ -39,6 +39,7 @@ export function MapPanel({
         <h2 id="party-panel-quests" className="party-column-title">
           {t("party.sharedQuests")}
         </h2>
+        <p className="party-panel-lead muted">{t("party.sharedQuestsLead")}</p>
         {party.quests.length === 0 ? (
           <p className="muted">{t("party.noSharedQuests")}</p>
         ) : (
@@ -59,6 +60,7 @@ export function MapPanel({
         <h2 id="party-panel-dungeons" className="party-column-title">
           {t("party.dungeons")}
         </h2>
+        <p className="party-panel-lead muted">{t("party.dungeonsLead")}</p>
         {dungeons.length === 0 ? (
           <p className="muted">{t("party.noDungeons")}</p>
         ) : (

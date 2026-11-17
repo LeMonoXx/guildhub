@@ -43,6 +43,15 @@ export function makeServeModelBaker(baker: BakerProcess): ModelBaker {
     bakeWorldMap: async () => {
       await baker.run({ command: "worldmap" }, { priority: "background" });
     },
+    bakeBosses: async (displayIds) => {
+      const result = await baker.run(
+        { command: "bosses", displays: displayIds },
+        { priority: "background" },
+      );
+      const count = (value: unknown) =>
+        Array.isArray(value) ? value.length : 0;
+      return { baked: count(result.baked), skipped: count(result.skipped) };
+    },
     currentBuild: async () => {
       const result = await baker.run(
         { command: "build" },

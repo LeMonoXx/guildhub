@@ -3,6 +3,7 @@ import { contentLocales } from "@guildhub/contracts";
 import { composeGuild } from "./composition.js";
 import {
   makeBakeLook,
+  makeEnsureBosses,
   makeEnsureFixedLook,
   makeEnsureWorldMap,
   makePrebakeBodies,
@@ -32,6 +33,7 @@ import {
   type OnHistoryChanges,
 } from "./modules/history/index.js";
 import { registerHistoryJobs } from "./modules/history/infrastructure/index.js";
+import { BOSS_DISPLAY_IDS } from "./modules/party/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
 import { createDatabase } from "./platform/db/client.js";
@@ -104,6 +106,14 @@ void makeEnsureWorldMap({
   },
   (error: unknown) => {
     logger.error({ module: "baker", err: error }, "world map bake failed");
+  },
+);
+void makeEnsureBosses({ baker, displayIds: BOSS_DISPLAY_IDS })().then(
+  (result) => {
+    logger.info({ module: "baker", ...result }, "dungeon bosses ready");
+  },
+  (error: unknown) => {
+    logger.error({ module: "baker", err: error }, "dungeon boss bake failed");
   },
 );
 

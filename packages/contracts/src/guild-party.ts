@@ -88,6 +88,11 @@ export const partyDungeonSchema = z.object({
   missing: z.array(partyRoleSchema),
   /** Open quests that send someone into this dungeon. */
   quests: z.array(z.number().int().positive()),
+  /** The last boss: its model is baked under `bosses/v1/{displayId}`; no level means a skull. */
+  boss: z.object({
+    displayId: z.number().int().positive(),
+    level: z.number().int().positive().optional(),
+  }),
 });
 
 export const guildPartyResponseSchema = z.object({

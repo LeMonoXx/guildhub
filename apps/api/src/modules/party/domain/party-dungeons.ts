@@ -110,6 +110,7 @@ export function plannedDungeons(
           maxLevel: dungeon.maxLevel,
           entrance: dungeon.entrance,
           areaIds: [...dungeon.areaIds],
+          boss: { ...dungeon.boss },
           members: candidates.map((candidate) => candidate.slug),
           ...suggestGroup(candidates),
           quests,

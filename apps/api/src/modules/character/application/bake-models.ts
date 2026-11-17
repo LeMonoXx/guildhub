@@ -51,6 +51,15 @@ export const makeEnsureWorldMap =
     return "baked";
   };
 
+/** Every dungeon's last boss is baked ahead, so the party map never waits for one. */
+export const makeEnsureBosses =
+  (deps: {
+    readonly baker: ModelBaker;
+    readonly displayIds: readonly number[];
+  }) =>
+  () =>
+    deps.baker.bakeBosses(deps.displayIds);
+
 export interface PrebakeSummary {
   readonly build: string;
   /** True when this build was already complete; nothing was asked or baked. */

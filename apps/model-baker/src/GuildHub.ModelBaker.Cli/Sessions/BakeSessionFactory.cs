@@ -1,3 +1,4 @@
+using GuildHub.ModelBaker.Bosses;
 using GuildHub.ModelBaker.Hosted;
 using GuildHub.ModelBaker.Maps;
 using GuildHub.ModelBaker.Storage;
@@ -40,6 +41,7 @@ public static class BakeSessionFactory
         http,
         new FixedLookBaker(storage, tables, source.Version),
         new WorldMapBaker(storage, tables, source.Version),
+        new BossBaker(storage, tables, source.Version),
         source.Version);
   }
 }

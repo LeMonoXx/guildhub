@@ -4,6 +4,7 @@ import type {
   WorldMapContinent,
   WorldMapZone,
 } from "@guildhub/contracts";
+import { useRef, type ReactNode } from "react";
 import { useLocale } from "../../../shared/i18n";
 import type { Camera, MapPoint, MemberToken } from "../model/map-layout";
 import {
@@ -14,6 +15,16 @@ import {
 } from "../model/map-scene";
 import { MapPortal } from "./map-portal";
 import { MapToken } from "./map-token";
+import { useMapGestures, type MapGestureHandlers } from "./use-map-gestures";
+
+/** How the camera got where it is; a flight eases, a drag follows the hand. */
+export type CameraMotion = "fly" | "wheel" | "drag";
+
+const CAMERA_MS: Record<CameraMotion, number> = {
+  fly: 1100,
+  wheel: 180,
+  drag: 0,
+};
 
 export interface PortalPlace {
   readonly dungeon: PartyDungeon;
@@ -33,6 +44,11 @@ interface MapStageProps {
   readonly onZone: (zone: WorldMapZone) => void;
   readonly onHover: (spotlight: MapSpotlight | undefined) => void;
   readonly onSelect: (spotlight: MapSpotlight) => void;
+  readonly motion: CameraMotion;
+  readonly gestures: MapGestureHandlers;
+  /** Stands beside the lit dungeon's entrance. */
+  readonly boss?:
+    { readonly point: MapPoint; readonly node: ReactNode } | undefined;
 }
 
 const asset = (path: string) => `/assets/${path}`;
@@ -59,8 +75,13 @@ export function MapStage({
   onZone,
   onHover,
   onSelect,
+  motion,
+  gestures,
+  boss,
 }: MapStageProps) {
   const { t } = useLocale();
+  const stage = useRef<HTMLDivElement>(null);
+  const { dragging, handlers } = useMapGestures(stage, gestures);
   const { width, height } = continent.image;
   const anyLit = scene.lit.size > 0;
   const hover = (target: MapSpotlight) => (on: boolean) => {
@@ -68,10 +89,17 @@ export function MapStage({
   };
   return (
     <div
+      ref={stage}
       className="party-map-stage"
-      style={{ aspectRatio: `${String(width)} / ${String(height)}` }}
+      style={{
+        aspectRatio: `${String(width)} / ${String(height)}`,
+        ["--camera-ms" as string]: `${String(dragging ? 0 : CAMERA_MS[motion])}ms`,
+      }}
       data-zoomed={zone !== undefined}
+      data-panned={camera.scale > 1}
+      data-dragging={dragging}
       data-lit={anyLit}
+      {...handlers}
     >
       <div
         key={continent.uiMapId}
@@ -179,9 +207,24 @@ export function MapStage({
               lit={lit}
               dimmed={anyLit && !lit}
               onHover={hover({ kind: "member", slug: token.slug })}
+              onSelect={() => {
+                onSelect({ kind: "member", slug: token.slug });
+              }}
             />
           );
         })}
+        {boss !== undefined && (
+          <div
+            className="party-boss"
+            style={{
+              left: `${String(boss.point.x * 100)}%`,
+              top: `${String(boss.point.y * 100)}%`,
+            }}
+            aria-hidden="true"
+          >
+            <div className="party-boss-body">{boss.node}</div>
+          </div>
+        )}
       </div>
       <div className="party-map-sweep" aria-hidden="true" />
       <div className="party-map-fog" aria-hidden="true" />

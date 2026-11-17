@@ -1,6 +1,18 @@
-import type { GuildPartyResponse, WorldMapAtlas } from "@guildhub/contracts";
-import { useEffect, useMemo, useState } from "react";
+import type {
+  GuildPartyResponse,
+  PartyDungeon,
+  WorldMapAtlas,
+  WorldMapZone,
+} from "@guildhub/contracts";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale } from "../../../shared/i18n";
+import {
+  clampCamera,
+  panBy,
+  sameCamera,
+  ZONE_SCALE,
+  zoomAt,
+} from "../model/map-camera";
 import {
   busiestContinent,
   cameraOn,
@@ -8,6 +20,7 @@ import {
   memberTokens,
   WIDE_CAMERA,
   zoneIndex,
+  type Camera,
 } from "../model/map-layout";
 import {
   mapScene,
@@ -16,17 +29,23 @@ import {
   type MapSpotlight,
 } from "../model/map-scene";
 import { membersBySlug } from "../model/party-lookup";
+import { MapCaption } from "./map-caption";
+import { MapLegend } from "./map-legend";
 import { MapPanel } from "./map-panel";
-import { MapStage, type PortalPlace } from "./map-stage";
+import { MapStage, type CameraMotion, type PortalPlace } from "./map-stage";
 import { MemberChip } from "./member-chip";
 
 interface PartyMapProps {
   readonly party: GuildPartyResponse;
   readonly atlas: WorldMapAtlas;
+  /** Draws a dungeon's last boss; the map stands it at the entrance while the dungeon is lit. */
+  readonly renderBoss?: ((dungeon: PartyDungeon) => ReactNode) | undefined;
 }
 
+const BUTTON_ZOOM = 1.6;
+
 /** The in-game world map with every member where they quest and every dungeon they could run. */
-export function PartyMap({ party, atlas }: PartyMapProps) {
+export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
   const { t } = useLocale();
   const index = useMemo(() => zoneIndex(atlas), [atlas]);
   const tokens = useMemo(() => memberTokens(index, party), [index, party]);
@@ -35,14 +54,16 @@ export function PartyMap({ party, atlas }: PartyMapProps) {
     () => busiestContinent(atlas, tokens)?.uiMapId,
   );
   const [zoneId, setZoneId] = useState<number>();
+  const [camera, setCamera] = useState<Camera>(WIDE_CAMERA);
+  // Wheel and pointer events can arrive several times per frame, before React renders.
+  const latestCamera = useRef<Camera>(WIDE_CAMERA);
+  const [motion, setMotion] = useState<CameraMotion>("fly");
   const [hovered, setHovered] = useState<MapSpotlight>();
   const [pinned, setPinned] = useState<MapSpotlight>();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setZoneId(undefined);
-      setPinned(undefined);
+      if (event.key === "Escape") setPinned(undefined);
     };
     globalThis.addEventListener("keydown", onKey);
     return () => {
@@ -68,17 +89,40 @@ export function PartyMap({ party, atlas }: PartyMapProps) {
   );
   const placed = new Set(tokens.map((token) => token.slug));
   const wanderers = party.members.filter((member) => !placed.has(member.slug));
+  const litPortal =
+    spotlight?.kind === "dungeon"
+      ? portals.find((portal) => portal.dungeon.key === spotlight.key)
+      : undefined;
 
-  const select = (target: MapSpotlight) => {
+  const setView = (next: Camera, nextMotion: CameraMotion) => {
+    latestCamera.current = next;
+    setMotion(nextMotion);
+    setCamera(next);
+  };
+  const fly = (next: Camera, focused: WorldMapZone | undefined) => {
+    setView(next, "fly");
+    setZoneId(focused?.uiMapId);
+  };
+  const moveCamera = (next: Camera, nextMotion: CameraMotion) => {
+    setView(next, nextMotion);
+    if (next.scale < ZONE_SCALE) setZoneId(undefined);
+  };
+  const zoomCenter = (factor: number) => {
+    moveCamera(zoomAt(latestCamera.current, factor, 0.5, 0.5), "fly");
+  };
+
+  /** Picks from the list fly the map there; picks on the map leave the camera alone. */
+  const select = (target: MapSpotlight, travel: boolean) => {
     if (sameSpotlight(pinned, target)) {
       setPinned(undefined);
       return;
     }
     setPinned(target);
+    if (!travel) return;
     const place = mapScene(target, party, index, tokens).place;
     if (place === undefined) return;
     setContinentId(place.continent.uiMapId);
-    setZoneId(place.zone.uiMapId);
+    if (place.zone.uiMapId !== zoneId) fly(cameraOn(place.zone), place.zone);
   };
 
   return (
@@ -100,7 +144,7 @@ export function PartyMap({ party, atlas }: PartyMapProps) {
                 aria-pressed={candidate.uiMapId === continent.uiMapId}
                 onClick={() => {
                   setContinentId(candidate.uiMapId);
-                  setZoneId(undefined);
+                  fly(WIDE_CAMERA, undefined);
                 }}
               >
                 {t(`party.continent.${String(candidate.uiMapId)}`)}
@@ -109,41 +153,102 @@ export function PartyMap({ party, atlas }: PartyMapProps) {
             );
           })}
         </div>
-        {zone !== undefined && (
-          <button
-            type="button"
-            className="party-map-back"
-            onClick={() => {
-              setZoneId(undefined);
-            }}
-          >
-            {t("party.zoomOut")}
-          </button>
-        )}
       </div>
       <div className="party-map-layout">
-        <MapStage
-          continent={continent}
-          zone={zone}
-          camera={zone === undefined ? WIDE_CAMERA : cameraOn(zone)}
-          heat={zoneHeat(party, index, continent)}
-          tokens={onContinent}
-          members={members}
-          portals={portals}
-          scene={scene}
-          spotlight={spotlight}
-          onZone={(next) => {
-            setZoneId(next.uiMapId === zoneId ? undefined : next.uiMapId);
-          }}
-          onHover={setHovered}
-          onSelect={select}
-        />
+        <div className="party-map-main">
+          <div className="party-map-viewport">
+            <MapStage
+              continent={continent}
+              zone={zone}
+              camera={camera}
+              heat={zoneHeat(party, index, continent)}
+              tokens={onContinent}
+              members={members}
+              portals={portals}
+              scene={scene}
+              spotlight={spotlight}
+              onZone={(next) => {
+                if (camera.scale < ZONE_SCALE) fly(cameraOn(next), next);
+              }}
+              onHover={setHovered}
+              onSelect={(target) => {
+                select(target, false);
+              }}
+              motion={motion}
+              gestures={{
+                onPan: (dx, dy) => {
+                  setView(panBy(latestCamera.current, dx, dy), "drag");
+                },
+                onZoom: (factor, fx, fy) => {
+                  const current = latestCamera.current;
+                  const next = zoomAt(current, factor, fx, fy);
+                  if (sameCamera(next, current)) return false;
+                  moveCamera(next, "wheel");
+                  return true;
+                },
+              }}
+              boss={
+                litPortal === undefined || renderBoss === undefined
+                  ? undefined
+                  : {
+                      point: litPortal.point,
+                      node: renderBoss(litPortal.dungeon),
+                    }
+              }
+            />
+            <div className="party-map-zoom">
+              <button
+                type="button"
+                aria-label={t("party.zoomIn")}
+                title={t("party.zoomIn")}
+                onClick={() => {
+                  zoomCenter(BUTTON_ZOOM);
+                }}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                aria-label={t("party.zoomStep")}
+                title={t("party.zoomStep")}
+                disabled={camera.scale <= 1}
+                onClick={() => {
+                  zoomCenter(1 / BUTTON_ZOOM);
+                }}
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className="party-map-zoom-reset"
+                disabled={sameCamera(clampCamera(camera), WIDE_CAMERA)}
+                onClick={() => {
+                  fly(WIDE_CAMERA, undefined);
+                }}
+              >
+                {t("party.zoomOut")}
+              </button>
+            </div>
+            <MapCaption
+              spotlight={spotlight}
+              pinned={
+                spotlight !== undefined && sameSpotlight(spotlight, pinned)
+              }
+              party={party}
+              members={members}
+              index={index}
+            />
+          </div>
+          <MapLegend />
+        </div>
         <MapPanel
           party={party}
           members={members}
           spotlight={spotlight}
           onHover={setHovered}
-          onSelect={select}
+          onSelect={(target) => {
+            select(target, true);
+          }}
         />
       </div>
       {wanderers.length > 0 && (

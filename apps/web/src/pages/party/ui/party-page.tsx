@@ -8,6 +8,7 @@ import {
   Embers,
   StatusBlock,
 } from "../../../shared/ui";
+import { LazyBossModel } from "../../../widgets/character-cinematic";
 import { GuildPartyRadar, PartyMap } from "../../../widgets/party";
 
 export function PartyPage() {
@@ -79,7 +80,18 @@ export function PartyPage() {
           <GuildPartyRadar party={party.data} />
         </>
       ) : (
-        <PartyMap party={party.data} atlas={atlas.data} />
+        <PartyMap
+          party={party.data}
+          atlas={atlas.data}
+          renderBoss={(dungeon) => (
+            <LazyBossModel
+              key={dungeon.key}
+              displayId={dungeon.boss.displayId}
+              assetBase="/assets/"
+              className="party-boss-canvas"
+            />
+          )}
+        />
       )}
     </article>
   );

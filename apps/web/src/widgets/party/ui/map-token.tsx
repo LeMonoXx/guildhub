@@ -1,5 +1,4 @@
 import type { PartyMember } from "@guildhub/contracts";
-import { Link } from "@tanstack/react-router";
 import { useLocale } from "../../../shared/i18n";
 import { formatRelativeTime } from "../../../shared/lib";
 import type { MemberToken } from "../model/map-layout";
@@ -13,6 +12,7 @@ interface MapTokenProps {
   readonly lit: boolean;
   readonly dimmed: boolean;
   readonly onHover: (on: boolean) => void;
+  readonly onSelect: () => void;
 }
 
 export function MapToken({
@@ -22,15 +22,15 @@ export function MapToken({
   lit,
   dimmed,
   onHover,
+  onSelect,
 }: MapTokenProps) {
   const { t, locale } = useLocale();
   const hover = (on: boolean) => () => {
     onHover(on);
   };
   return (
-    <Link
-      to="/characters/$characterSlug"
-      params={{ characterSlug: member.slug }}
+    <button
+      type="button"
       className="party-token"
       data-lit={lit}
       data-dimmed={dimmed}
@@ -46,6 +46,7 @@ export function MapToken({
           ? t(`dungeon.${token.place.dungeon.key}`)
           : (member.focus?.area ?? ""),
       })}
+      onClick={onSelect}
       onPointerEnter={hover(true)}
       onPointerLeave={hover(false)}
       onFocus={hover(true)}
@@ -76,6 +77,6 @@ export function MapToken({
           )}
         </span>
       </span>
-    </Link>
+    </button>
   );
 }

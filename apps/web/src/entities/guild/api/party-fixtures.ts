@@ -78,6 +78,7 @@ export const fixtureGuildParty = (): GuildPartyResponse =>
         ],
         missing: ["damage"],
         quests: [],
+        boss: { displayId: 2353, level: 26 },
       },
     ],
     fetchedAt: "2026-11-17T12:00:00.000Z",

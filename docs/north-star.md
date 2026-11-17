@@ -16,7 +16,7 @@ Detailed rules live in:
 
 ## 1. What GuildHub is
 
-GuildHub is a website platform for a World of Warcraft: Forever guild. One deployment serves one guild. The guild comes from an instance configuration (region, guild slug, name, logo, copy, theme), not from code.
+GuildHub is a website platform for a World of Warcraft: Forever guild. One deployment serves one guild. The guild comes from an instance configuration (region, guild slug, name, and up to eight featured characters), not from code.
 
 Traceless (`eu` / `traceless`) is the first instance. Nothing in `apps/` or `packages/` may name Traceless. Only `instances/traceless/` does.
 

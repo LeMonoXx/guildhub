@@ -12,12 +12,16 @@ export type GetFeaturedMembersResult = Result<
 
 /** Returns every member in featuring order; presenters apply the limit. */
 export const makeGetFeaturedMembers =
-  (deps: { getRoster: GetGuildRoster }) =>
+  (deps: {
+    getRoster: GetGuildRoster;
+    /** Instance list. Missing or ambiguous names are skipped. */
+    preferred?: readonly string[];
+  }) =>
   async (guild: GuildRef): Promise<GetFeaturedMembersResult> => {
     const roster = await deps.getRoster(guild);
     if (!roster.ok) return roster;
     return ok({
-      data: rankFeaturedCandidates(roster.value.data),
+      data: rankFeaturedCandidates(roster.value.data, deps.preferred ?? []),
       fetchedAt: roster.value.fetchedAt,
       stale: roster.value.stale,
     });

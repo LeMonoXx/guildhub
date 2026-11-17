@@ -12,7 +12,10 @@ import type { GetGuild } from "../application/get-guild.js";
 import type { GetGuildRoster } from "../application/get-guild-roster.js";
 import type { GuildView } from "../application/ports.js";
 import type { RosterMember } from "../domain/roster-member.js";
-import { selectFeaturedMembers } from "../application/featured.js";
+import {
+  FEATURED_MEMBER_LIMIT,
+  selectFeaturedMembers,
+} from "../application/featured.js";
 
 import {
   lineupIsSettled,
@@ -83,7 +86,11 @@ export function registerGuild(
     setCacheHeaders(context, result.value);
     const members: readonly FeaturedPresentation[] = await Promise.resolve(
       deps.presentFeaturedMembers?.(result.value.data) ??
-        selectFeaturedMembers(result.value.data).map(presentMember),
+        selectFeaturedMembers(
+          result.value.data,
+          FEATURED_MEMBER_LIMIT,
+          deps.instance.guild.featured,
+        ).map(presentMember),
     );
     if (!lineupIsSettled(members)) {
       context.header("ETag", undefined);

@@ -12,7 +12,7 @@ export type { Pose } from "./stage-view";
 export { maxCoverage } from "./spacing-resolver";
 export { silhouetteOf, type TroopPlace } from "./troop-place";
 
-const maxFeatured = 6;
+const maxFeatured = 8;
 const pairGap = 0.32;
 const rowGap = 1.18;
 const backZ = 0.04;

@@ -108,7 +108,10 @@ registerGuild(app, {
   instance,
   getGuild,
   getGuildRoster,
-  getFeaturedMembers: makeGetFeaturedMembers({ getRoster: getGuildRoster }),
+  getFeaturedMembers: makeGetFeaturedMembers({
+    getRoster: getGuildRoster,
+    preferred: instance.guild.featured,
+  }),
   presentRosterMembers: makePresentRosterMembers({ cache: characterCache }),
   presentFeaturedMembers: makePresentFeaturedMembers(lookDeps),
   onStaleCache,

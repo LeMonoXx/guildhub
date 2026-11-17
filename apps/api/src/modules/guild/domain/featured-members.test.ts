@@ -17,7 +17,7 @@ function member(
 }
 
 describe("selectFeaturedMembers", () => {
-  it("keeps at most six members, guild master first", () => {
+  it("keeps at most eight members, guild master first", () => {
     const members = [
       member({ characterId: "8", name: "Zed", rankId: rankId(3) }),
       member({ characterId: "1", name: "Ann", rankId: rankId(1) }),
@@ -35,7 +35,28 @@ describe("selectFeaturedMembers", () => {
       "Di",
       "Ed",
       "Fa",
+      "Go",
+      "Zed",
     ]);
+  });
+
+  it("puts named members first and then follows rank", () => {
+    const members = [
+      member({ characterId: "1", name: "Ann", rankId: rankId(0) }),
+      member({ characterId: "2", name: "Bo", rankId: rankId(1) }),
+      member({
+        characterId: "3",
+        name: "Cy",
+        surname: "Nightfall",
+        rankId: rankId(4),
+        slug: "cy-nightfall",
+      }),
+    ];
+    expect(
+      selectFeaturedMembers(members, 8, ["Cy Nightfall", "missing"]).map(
+        (item) => item.name,
+      ),
+    ).toEqual(["Cy", "Ann", "Bo"]);
   });
 });
 

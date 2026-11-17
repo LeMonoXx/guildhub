@@ -3,6 +3,7 @@
   "name": "Traceless",
   "region": "eu",
   "guild": {
-    "slug": "traceless"
+    "slug": "traceless",
+    "featured": []
   }
 }

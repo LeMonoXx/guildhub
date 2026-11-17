@@ -13,7 +13,7 @@ import { buildLineupScene } from "./build-lineup-scene";
 import { LineupChoreography } from "./lineup-choreography";
 import { LineupFraming } from "./lineup-framing";
 
-const featuredLimit = 6;
+const featuredLimit = 8;
 
 /** Everything about a member the stage is built from; bake news is not part of it. */
 const stageKeyOf = (member: FeaturedMember): string =>

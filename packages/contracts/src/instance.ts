@@ -12,6 +12,8 @@ export const instanceConfigSchema = z.object({
       .string()
       .min(1)
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use a lowercase guild slug"),
+    /** Up to eight members who stand on the home stage before rank order fills it. */
+    featured: z.array(z.string().trim().min(1).max(64)).max(8).default([]),
   }),
 });
 

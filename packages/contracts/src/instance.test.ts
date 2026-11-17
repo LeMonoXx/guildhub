@@ -14,8 +14,24 @@ describe("instanceConfigSchema", () => {
       slug: "example-guild",
       name: "Example Guild",
       region: "eu",
-      guild: { slug: "example-guild" },
+      guild: { slug: "example-guild", featured: [] },
     });
+  });
+
+  it("accepts up to eight featured members", () => {
+    const result = instanceConfigSchema.safeParse({
+      slug: "example-guild",
+      name: "Example Guild",
+      region: "eu",
+      guild: {
+        slug: "example-guild",
+        featured: ["Silence", "cy-nightfall"],
+      },
+    });
+    expect(result.success && result.data.guild.featured).toEqual([
+      "Silence",
+      "cy-nightfall",
+    ]);
   });
 
   it("rejects an uppercase slug", () => {

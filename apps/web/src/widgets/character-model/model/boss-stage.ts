@@ -43,6 +43,8 @@ const SWAY_SECONDS = 7;
 async function loadBoss(options: BossStageOptions): Promise<StandaloneModel> {
   const response = await fetch(
     resolveAsset(options.assetBase, bossManifestPath(options.displayId)),
+    // Revalidates past an old 404 that was cached as immutable.
+    { cache: "no-cache" },
   );
   if (!response.ok)
     throw new Error(

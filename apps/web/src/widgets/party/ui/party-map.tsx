@@ -2,12 +2,12 @@ import type {
   GuildPartyResponse,
   PartyDungeon,
   WorldMapAtlas,
-  WorldMapZone,
 } from "@guildhub/contracts";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale } from "../../../shared/i18n";
 import {
   clampCamera,
+  focusedZone,
   panBy,
   sameCamera,
   ZONE_SCALE,
@@ -53,7 +53,6 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
   const [continentId, setContinentId] = useState(
     () => busiestContinent(atlas, tokens)?.uiMapId,
   );
-  const [zoneId, setZoneId] = useState<number>();
   const [camera, setCamera] = useState<Camera>(WIDE_CAMERA);
   // Wheel and pointer events can arrive several times per frame, before React renders.
   const latestCamera = useRef<Camera>(WIDE_CAMERA);
@@ -75,7 +74,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
     atlas.continents.find((c) => c.uiMapId === continentId) ??
     atlas.continents[0];
   if (continent === undefined) return null;
-  const zone = continent.zones.find((z) => z.uiMapId === zoneId);
+  const zone = focusedZone(continent.zones, camera);
   const spotlight = hovered ?? pinned;
   const scene = mapScene(spotlight, party, index, tokens);
   const portals = party.dungeons.flatMap((dungeon): PortalPlace[] => {
@@ -99,16 +98,11 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
     setMotion(nextMotion);
     setCamera(next);
   };
-  const fly = (next: Camera, focused: WorldMapZone | undefined) => {
+  const fly = (next: Camera) => {
     setView(next, "fly");
-    setZoneId(focused?.uiMapId);
-  };
-  const moveCamera = (next: Camera, nextMotion: CameraMotion) => {
-    setView(next, nextMotion);
-    if (next.scale < ZONE_SCALE) setZoneId(undefined);
   };
   const zoomCenter = (factor: number) => {
-    moveCamera(zoomAt(latestCamera.current, factor, 0.5, 0.5), "fly");
+    setView(zoomAt(latestCamera.current, factor, 0.5, 0.5), "fly");
   };
 
   /** Picks from the list fly the map there; picks on the map leave the camera alone. */
@@ -122,7 +116,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
     const place = mapScene(target, party, index, tokens).place;
     if (place === undefined) return;
     setContinentId(place.continent.uiMapId);
-    if (place.zone.uiMapId !== zoneId) fly(cameraOn(place.zone), place.zone);
+    if (place.zone.uiMapId !== zone?.uiMapId) fly(cameraOn(place.zone));
   };
 
   return (
@@ -144,7 +138,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
                 aria-pressed={candidate.uiMapId === continent.uiMapId}
                 onClick={() => {
                   setContinentId(candidate.uiMapId);
-                  fly(WIDE_CAMERA, undefined);
+                  fly(WIDE_CAMERA);
                 }}
               >
                 {t(`party.continent.${String(candidate.uiMapId)}`)}
@@ -175,7 +169,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
               scene={scene}
               spotlight={spotlight}
               onZone={(next) => {
-                if (camera.scale < ZONE_SCALE) fly(cameraOn(next), next);
+                if (camera.scale < ZONE_SCALE) fly(cameraOn(next));
               }}
               onHover={setHovered}
               onSelect={(target) => {
@@ -190,7 +184,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
                   const current = latestCamera.current;
                   const next = zoomAt(current, factor, fx, fy);
                   if (sameCamera(next, current)) return false;
-                  moveCamera(next, "wheel");
+                  setView(next, "wheel");
                   return true;
                 },
               }}
@@ -230,7 +224,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
                 className="party-map-zoom-reset"
                 disabled={sameCamera(clampCamera(camera), WIDE_CAMERA)}
                 onClick={() => {
-                  fly(WIDE_CAMERA, undefined);
+                  fly(WIDE_CAMERA);
                 }}
               >
                 {t("party.zoomOut")}

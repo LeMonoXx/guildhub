@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { clampCamera, MAX_SCALE, panBy, zoomAt } from "./map-camera";
+import {
+  clampCamera,
+  focusedZone,
+  MAX_SCALE,
+  panBy,
+  zoomAt,
+} from "./map-camera";
 
 describe("map camera", () => {
   test("never zooms out past the whole map or lets an edge show", () => {
@@ -23,6 +29,21 @@ describe("map camera", () => {
     const after = (25 - next.x) / next.scale;
     expect(next.scale).toBe(3);
     expect(after).toBeCloseTo(before);
+  });
+
+  test("focuses the zone under the middle of the stage once zoomed in", () => {
+    const zone = (uiMapId: number, left: number, right: number) => ({
+      uiMapId,
+      name: String(uiMapId),
+      areaIds: [],
+      rect: { left, right, top: 0, bottom: 1 },
+      image: { path: `${String(uiMapId)}.png`, width: 1, height: 1 },
+    });
+    const zones = [zone(1, 0, 0.5), zone(2, 0.4, 1)];
+    const onLeft = { scale: 4, x: -50, y: -150 };
+    expect(focusedZone(zones, onLeft)?.uiMapId).toBe(1);
+    expect(focusedZone(zones, { ...onLeft, x: -230 })?.uiMapId).toBe(2);
+    expect(focusedZone(zones, { scale: 1.5, x: 0, y: 0 })).toBeUndefined();
   });
 
   test("pans by stage percent and stops at the edge", () => {

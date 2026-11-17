@@ -1,9 +1,10 @@
-import type { Camera } from "./map-layout";
+import type { WorldMapZone } from "@guildhub/contracts";
+import { zoneCenter, type Camera } from "./map-layout";
 
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 8;
-/** Below this zoom no single zone fills the stage any more, so none stays focused. */
-export const ZONE_SCALE = 1.4;
+/** From this zoom on, the zone in the middle of the stage shows its detailed map. */
+export const ZONE_SCALE = 2;
 
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -45,3 +46,27 @@ export function zoomAt(
 
 export const sameCamera = (a: Camera, b: Camera): boolean =>
   a.scale === b.scale && a.x === b.x && a.y === b.y;
+
+/** The zone under the middle of the stage, once the camera is close enough to read it. */
+export function focusedZone(
+  zones: readonly WorldMapZone[],
+  camera: Camera,
+): WorldMapZone | undefined {
+  if (camera.scale < ZONE_SCALE) return undefined;
+  const x = (50 - camera.x) / camera.scale / 100;
+  const y = (50 - camera.y) / camera.scale / 100;
+  const distance = (zone: WorldMapZone) => {
+    const center = zoneCenter(zone);
+    return Math.hypot(center.x - x, center.y - y);
+  };
+  return zones
+    .filter(
+      (zone) =>
+        zone.image !== null &&
+        x >= zone.rect.left &&
+        x <= zone.rect.right &&
+        y >= zone.rect.top &&
+        y <= zone.rect.bottom,
+    )
+    .sort((a, b) => distance(a) - distance(b))[0];
+}

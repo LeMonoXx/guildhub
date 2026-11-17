@@ -22,11 +22,11 @@ flowchart LR
 
 The proxy sends the whole hostname to the `web` container. Caddy in that container routes by path:
 
-| Path            | Goes to                       |
-| --------------- | ----------------------------- |
-| `/api`, `/auth` | API container                 |
-| `/assets`       | asset volume, immutable cache |
-| everything else | web assets                    |
+| Path            | Goes to                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------- |
+| `/api`, `/auth` | API container                                                                           |
+| `/assets`       | asset volume: immutable cache; bosses and maps revalidate; a missing file is not cached |
+| everything else | web assets                                                                              |
 
 One hostname is required. The session cookie is `SameSite=Lax` and has no `Domain`, and the web app calls the API on the same origin. A split like `api.example.com` plus `www.example.com` breaks that. TLS for that hostname is the proxy's certificate, the one it already uses for the other sites. GuildHub stores no certificate and runs no ACME client.
 

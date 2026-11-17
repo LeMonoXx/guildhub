@@ -8,7 +8,19 @@
 
 	handle_path /assets/* {
 		root * /srv/assets
-		header Cache-Control "public, max-age=31536000, immutable"
+		# Bosses and maps keep their URL when a new game build rewrites them.
+		@immutable {
+			file
+			not path /bosses/* /looks/boss-* /maps/*
+		}
+		@revalidate {
+			file
+			path /bosses/* /looks/boss-* /maps/*
+		}
+		@missing not file
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+		header @revalidate Cache-Control "no-cache"
+		header @missing Cache-Control "no-store"
 		file_server
 	}
 

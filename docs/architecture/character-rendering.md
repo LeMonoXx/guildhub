@@ -112,7 +112,7 @@ Six layers. A page view should hit layers 1 to 3 and never reach 5 or 6.
 
 Rules:
 
-- **Asset URLs are content-addressed** (`/assets/looks/{lookHash}/look.json`). They never change, so the cache time is a year and `immutable`. The character JSON is the only short-lived response; it points at those URLs. Shared meshes live under `builds/{build}/v{N}/`.
+- **Asset URLs are content-addressed** (`/assets/looks/{lookHash}/look.json`). They never change, so the cache time is a year and `immutable`. Boss manifests and looks (`bosses/`, `looks/boss-*`) and map images (`maps/`) keep their URL when a new build rewrites them, so they are `no-cache` and revalidate by ETag. A missing asset is `no-store`, so a file baked later shows up without a stale 404. The character JSON is the only short-lived response; it points at those URLs. Shared meshes live under `builds/{build}/v{N}/`.
 - **The API never waits for a bake.** `GET /api/characters/:slug` reads the snapshot and the asset store and answers. The model field is one of:
 
 ```json

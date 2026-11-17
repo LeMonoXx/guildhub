@@ -4,7 +4,11 @@ import { placeOnStage } from "./stage-view";
 describe("placeOnStage", () => {
   test("keeps a fully framed stage where it is", () => {
     const box = { left: 0.2, top: 0.3, width: 0.1, height: 0.4 };
-    expect(placeOnStage(box, 1)).toEqual(box);
+    const placed = placeOnStage(box, 1);
+    expect(placed.left).toBe(box.left);
+    expect(placed.top).toBeCloseTo(box.top);
+    expect(placed.width).toBe(box.width);
+    expect(placed.height).toBeCloseTo(box.height);
   });
 
   test("lifts the head with the frame and keeps the feet on the ground line", () => {

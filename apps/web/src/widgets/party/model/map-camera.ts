@@ -47,8 +47,11 @@ export function zoomAt(
 export const sameCamera = (a: Camera, b: Camera): boolean =>
   a.scale === b.scale && a.x === b.x && a.y === b.y;
 
-/** The zone under the middle of the stage, once the camera is close enough to read it. */
-export function focusedZone(
+/**
+ * The zone under the middle of the stage, once the camera is close enough to read it.
+ * Only one: every zone map paints its neighbours too, so two side by side would ghost.
+ */
+export function zoneInView(
   zones: readonly WorldMapZone[],
   camera: Camera,
 ): WorldMapZone | undefined {

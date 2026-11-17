@@ -2,12 +2,13 @@ import type {
   GuildPartyResponse,
   PartyDungeon,
   WorldMapAtlas,
+  WorldMapZone,
 } from "@guildhub/contracts";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale } from "../../../shared/i18n";
 import {
   clampCamera,
-  focusedZone,
+  zoneInView,
   panBy,
   sameCamera,
   ZONE_SCALE,
@@ -53,6 +54,8 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
   const [continentId, setContinentId] = useState(
     () => busiestContinent(atlas, tokens)?.uiMapId,
   );
+  /** The zone a click flew to; dragging or zooming by hand lets go of it. */
+  const [focusedId, setFocusedId] = useState<number>();
   const [camera, setCamera] = useState<Camera>(WIDE_CAMERA);
   // Wheel and pointer events can arrive several times per frame, before React renders.
   const latestCamera = useRef<Camera>(WIDE_CAMERA);
@@ -74,7 +77,8 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
     atlas.continents.find((c) => c.uiMapId === continentId) ??
     atlas.continents[0];
   if (continent === undefined) return null;
-  const zone = focusedZone(continent.zones, camera);
+  const zone = continent.zones.find((z) => z.uiMapId === focusedId);
+  const detailed = zone ?? zoneInView(continent.zones, camera);
   const spotlight = hovered ?? pinned;
   const scene = mapScene(spotlight, party, index, tokens);
   const portals = party.dungeons.flatMap((dungeon): PortalPlace[] => {
@@ -93,13 +97,18 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
       ? portals.find((portal) => portal.dungeon.key === spotlight.key)
       : undefined;
 
-  const setView = (next: Camera, nextMotion: CameraMotion) => {
+  const setView = (
+    next: Camera,
+    nextMotion: CameraMotion,
+    focused?: WorldMapZone,
+  ) => {
     latestCamera.current = next;
     setMotion(nextMotion);
     setCamera(next);
+    setFocusedId(focused?.uiMapId);
   };
-  const fly = (next: Camera) => {
-    setView(next, "fly");
+  const fly = (next: Camera, focused?: WorldMapZone) => {
+    setView(next, "fly", focused);
   };
   const zoomCenter = (factor: number) => {
     setView(zoomAt(latestCamera.current, factor, 0.5, 0.5), "fly");
@@ -116,7 +125,8 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
     const place = mapScene(target, party, index, tokens).place;
     if (place === undefined) return;
     setContinentId(place.continent.uiMapId);
-    if (place.zone.uiMapId !== zone?.uiMapId) fly(cameraOn(place.zone));
+    if (place.zone.uiMapId !== zone?.uiMapId)
+      fly(cameraOn(place.zone), place.zone);
   };
 
   return (
@@ -161,6 +171,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
             <MapStage
               continent={continent}
               zone={zone}
+              detailed={detailed}
               camera={camera}
               heat={zoneHeat(party, index, continent)}
               tokens={onContinent}
@@ -169,7 +180,7 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
               scene={scene}
               spotlight={spotlight}
               onZone={(next) => {
-                if (camera.scale < ZONE_SCALE) fly(cameraOn(next));
+                if (camera.scale < ZONE_SCALE) fly(cameraOn(next), next);
               }}
               onHover={setHovered}
               onSelect={(target) => {

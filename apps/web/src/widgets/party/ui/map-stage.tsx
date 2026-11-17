@@ -36,7 +36,10 @@ export interface PortalPlace {
 
 interface MapStageProps {
   readonly continent: WorldMapContinent;
+  /** The zone a click flew to; the rest of the continent dims around it. */
   readonly zone: WorldMapZone | undefined;
+  /** The zone close enough to show its detailed map. */
+  readonly detailed: WorldMapZone | undefined;
   readonly camera: Camera;
   readonly heat: readonly ZoneHeat[];
   readonly tokens: readonly MemberToken[];
@@ -68,6 +71,7 @@ const heatLevel = (quests: number) => Math.min(3, Math.ceil(quests / 6));
 export function MapStage({
   continent,
   zone,
+  detailed,
   camera,
   heat,
   tokens,
@@ -121,24 +125,21 @@ export function MapStage({
             decoding="async"
           />
         </div>
-        {continent.zones.map(
-          (candidate) =>
-            candidate.image !== null && (
-              <img
-                key={candidate.uiMapId}
-                className="party-zone-art"
-                data-visible={candidate.uiMapId === zone?.uiMapId}
-                src={
-                  candidate.uiMapId === zone?.uiMapId
-                    ? asset(candidate.image.path)
-                    : undefined
-                }
-                alt=""
-                aria-hidden="true"
-                style={rectStyle(candidate)}
-              />
-            ),
-        )}
+        {continent.zones.map((candidate) => {
+          if (candidate.image === null) return null;
+          const shown = candidate.uiMapId === detailed?.uiMapId;
+          return (
+            <img
+              key={candidate.uiMapId}
+              className="party-zone-art"
+              data-visible={shown}
+              src={shown ? asset(candidate.image.path) : undefined}
+              alt=""
+              aria-hidden="true"
+              style={rectStyle(candidate)}
+            />
+          );
+        })}
         {heat.map((entry, index) => (
           <button
             key={entry.zone.uiMapId}

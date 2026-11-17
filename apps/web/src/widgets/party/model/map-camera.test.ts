@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   clampCamera,
-  focusedZone,
+  zoneInView,
   MAX_SCALE,
   panBy,
   zoomAt,
@@ -31,7 +31,7 @@ describe("map camera", () => {
     expect(after).toBeCloseTo(before);
   });
 
-  test("focuses the zone under the middle of the stage once zoomed in", () => {
+  test("details the zone under the middle of the stage once zoomed in", () => {
     const zone = (uiMapId: number, left: number, right: number) => ({
       uiMapId,
       name: String(uiMapId),
@@ -41,9 +41,9 @@ describe("map camera", () => {
     });
     const zones = [zone(1, 0, 0.5), zone(2, 0.4, 1)];
     const onLeft = { scale: 4, x: -50, y: -150 };
-    expect(focusedZone(zones, onLeft)?.uiMapId).toBe(1);
-    expect(focusedZone(zones, { ...onLeft, x: -230 })?.uiMapId).toBe(2);
-    expect(focusedZone(zones, { scale: 1.5, x: 0, y: 0 })).toBeUndefined();
+    expect(zoneInView(zones, onLeft)?.uiMapId).toBe(1);
+    expect(zoneInView(zones, { ...onLeft, x: -230 })?.uiMapId).toBe(2);
+    expect(zoneInView(zones, { scale: 1.5, x: 0, y: 0 })).toBeUndefined();
   });
 
   test("pans by stage percent and stops at the edge", () => {

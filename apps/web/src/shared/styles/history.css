@@ -297,9 +297,11 @@
   --member-class: var(--color-gold);
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) 3.4rem;
   align-items: center;
   gap: 0.75rem;
+  box-sizing: border-box;
+  height: 100%;
   padding: 0.75rem 1rem 0.75rem 0.75rem;
   overflow: hidden;
   border: 1px solid rgb(var(--accent-rgb) / 0.45);
@@ -369,8 +371,11 @@
 }
 
 .history-levelup-body .character-link {
+  overflow: hidden;
   font-family: var(--font-fantasy);
   font-size: 1.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-levelup-label {
@@ -383,12 +388,16 @@
 }
 
 .history-levelup-climb {
+  overflow: hidden;
   color: var(--color-muted);
   font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-levelup-level {
   position: relative;
+  text-align: center;
   color: #ffe9a8;
   font-family: var(--font-fantasy);
   font-size: clamp(2.2rem, 5vw, 2.8rem);

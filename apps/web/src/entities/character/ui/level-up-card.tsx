@@ -22,8 +22,11 @@ export function LevelUpCard({
       <div className="history-levelup-body">
         <span className="history-levelup-label">{t("history.levelUp")}</span>
         <HistoryName event={event} />
+        <span className="history-levelup-climb" title={event.surname}>
+          {event.surname}
+        </span>
         <span className="history-levelup-climb">
-          {event.surname} · {t("history.levelFrom", { from: event.from })}
+          {t("history.levelFrom", { from: event.from })}
           {gained > 1 ? ` · +${String(gained)}` : null}
         </span>
       </div>

@@ -63,10 +63,14 @@ function frameBoss(
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
   boss.object.position.set(-center.x, -bounds.min.y, -center.z);
-  const reach = Math.max(size.y, Math.hypot(size.x, size.z) * 0.8, 0.5);
+  // The sway turns the boss, so its footprint's diagonal is the widest it ever gets.
+  const footprint = Math.max(Math.hypot(size.x, size.z), 0.5);
+  const halfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const halfWidth = halfHeight * camera.aspect;
   const distance =
-    (reach / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) * 1.12;
-  camera.position.set(distance, size.y * 0.58, 0);
+    Math.max(size.y / 2 / halfHeight, footprint / 2 / halfWidth) * 1.1 +
+    footprint / 2;
+  camera.position.set(distance, size.y * 0.55, 0);
   camera.lookAt(0, size.y * 0.5, 0);
 }
 

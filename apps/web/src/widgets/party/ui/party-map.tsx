@@ -156,7 +156,14 @@ export function PartyMap({ party, atlas, renderBoss }: PartyMapProps) {
       </div>
       <div className="party-map-layout">
         <div className="party-map-main">
-          <div className="party-map-viewport">
+          <div
+            className="party-map-viewport"
+            style={{
+              ["--map-ratio" as string]: String(
+                continent.image.width / continent.image.height,
+              ),
+            }}
+          >
             <MapStage
               continent={continent}
               zone={zone}

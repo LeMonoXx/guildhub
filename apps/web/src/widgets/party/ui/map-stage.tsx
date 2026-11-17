@@ -20,6 +20,9 @@ import { useMapGestures, type MapGestureHandlers } from "./use-map-gestures";
 /** How the camera got where it is; a flight eases, a drag follows the hand. */
 export type CameraMotion = "fly" | "wheel" | "drag";
 
+/** Stage height fraction a boss needs above its portal; nearer the top it stands below. */
+const BOSS_ROOM_ABOVE = 0.42;
+
 const CAMERA_MS: Record<CameraMotion, number> = {
   fly: 1100,
   wheel: 180,
@@ -216,6 +219,9 @@ export function MapStage({
         {boss !== undefined && (
           <div
             className="party-boss"
+            data-below={
+              boss.point.y * camera.scale + camera.y / 100 < BOSS_ROOM_ABOVE
+            }
             style={{
               left: `${String(boss.point.x * 100)}%`,
               top: `${String(boss.point.y * 100)}%`,

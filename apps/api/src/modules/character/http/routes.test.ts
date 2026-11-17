@@ -13,7 +13,7 @@ const instance: InstanceConfig = {
   slug: "example-guild",
   name: "Example Guild",
   region: "eu",
-  guild: { slug: "example-guild" },
+  guild: { slug: "example-guild", featured: [] },
 };
 
 const fetchedAt = new Date("2026-11-13T12:00:00.000Z");

@@ -46,14 +46,14 @@ importers:
   apps/api:
     dependencies:
       '@blizzard-api/client':
-        specifier: ^5.5.7
-        version: 5.5.7(@blizzard-api/core@4.5.2)
+        specifier: ^5.5.8
+        version: 5.5.8(@blizzard-api/core@4.5.2)
       '@blizzard-api/core':
         specifier: ^4.5.2
         version: 4.5.2
       '@blizzard-api/wow-forever':
-        specifier: ^0.3.3
-        version: 0.3.3(@blizzard-api/core@4.5.2)
+        specifier: ^0.3.4
+        version: 0.3.4(@blizzard-api/core@4.5.2)
       '@guildhub/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -184,8 +184,8 @@ importers:
         specifier: 16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/user-event':
-        specifier: 14.6.10
-        version: 14.6.10(@testing-library/dom@10.4.2)
+        specifier: 14.6.12
+        version: 14.6.12(@testing-library/dom@10.4.2)
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -334,8 +334,8 @@ packages:
   '@balena/dockerignore@1.0.2':
     resolution: {integrity: sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==}
 
-  '@blizzard-api/client@5.5.7':
-    resolution: {integrity: sha512-tVK7IzXKolTQ9cVMnv9/YAS5kymMTus79Ds6GMUiF1gBldS8NQAFtVEOUcNYaYAe+PMJQ8F4CkCH5Q1osb2oJA==}
+  '@blizzard-api/client@5.5.8':
+    resolution: {integrity: sha512-U/JIYgVu0Ur77w4TC3AluqceqvAnwPtRxYEJ1s2lFleWD4AX2RRM4iy3TZjU2k6zk6sHPcqpq35bvD5r4lsk/A==}
     engines: {node: ^22.13.0 || ^24 || ^26}
     peerDependencies:
       '@blizzard-api/core': 4.5.2
@@ -344,8 +344,8 @@ packages:
     resolution: {integrity: sha512-tnM3xBq0FVLArMHcKhNWiRhLohin9OUwHTFOGmS39nWldKYAbKMy+o47hGkRSo5bSqLv9mqid3cPKviNNmyxFQ==}
     engines: {node: ^22.13.0 || ^24 || ^26}
 
-  '@blizzard-api/wow-forever@0.3.3':
-    resolution: {integrity: sha512-NMGhAXa9qqutnin1XdOzIFCWpH9pUFrT6v4zPwjSw5zwc3XMHMTX4YOoDTZaYgRcaVQIuIBnABiLBjo1mBTCkA==}
+  '@blizzard-api/wow-forever@0.3.4':
+    resolution: {integrity: sha512-YNFWjOdXzbyjlj47SrYv8yQkqK2GmN8aKwL5AavUwE1PMgVgO+wWwXW9lILMe2xa3kBhJ97sSkazgjwuMas8Cw==}
     engines: {node: ^22.13.0 || ^24 || ^26}
     peerDependencies:
       '@blizzard-api/core': 4.5.2
@@ -1071,8 +1071,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@testing-library/user-event@14.6.10':
-    resolution: {integrity: sha512-tA4stGNp3mLGOGO+lh87UA56Tz4c8NVGBSkyIF58O+W/bs2Re9BCI9xihnL70+DsThncFznE0skS88SM1D2hyg==}
+  '@testing-library/user-event@14.6.12':
+    resolution: {integrity: sha512-8yQV8v+eToBhsUO4oYrZY7fzhpTEMZx4IDx0/iuER/x0Xuy0NdqQOhsaaUNlvXE03N7vQ+4RCXUieKC0NJty9w==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
@@ -3109,14 +3109,14 @@ snapshots:
 
   '@balena/dockerignore@1.0.2': {}
 
-  '@blizzard-api/client@5.5.7(@blizzard-api/core@4.5.2)':
+  '@blizzard-api/client@5.5.8(@blizzard-api/core@4.5.2)':
     dependencies:
       '@blizzard-api/core': 4.5.2
       ky: 2.2.0
 
   '@blizzard-api/core@4.5.2': {}
 
-  '@blizzard-api/wow-forever@0.3.3(@blizzard-api/core@4.5.2)':
+  '@blizzard-api/wow-forever@0.3.4(@blizzard-api/core@4.5.2)':
     dependencies:
       '@blizzard-api/core': 4.5.2
 
@@ -3755,7 +3755,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@testing-library/user-event@14.6.10(@testing-library/dom@10.4.2)':
+  '@testing-library/user-event@14.6.12(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
 

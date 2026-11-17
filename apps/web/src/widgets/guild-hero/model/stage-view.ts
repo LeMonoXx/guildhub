@@ -72,16 +72,19 @@ export interface StageBox {
 }
 
 /**
- * The camera frames the stage's content box. Padding below it is drawn into,
- * so a fraction of that framed view lands this far down the full element.
+ * The head follows the framed camera. The feet stay on the ground line the
+ * models are drawn on: the padding below the frame is part of that picture,
+ * so lifting the feet with the head puts the floor light on the body.
  */
 export function placeOnStage(box: StageBox, framedShare: number): StageBox {
   const share = Math.min(1, Math.max(0.05, framedShare));
+  const top = box.top * share;
+  const feet = box.top + box.height;
   return {
     left: box.left,
     width: box.width,
-    top: box.top * share,
-    height: box.height * share,
+    top,
+    height: Math.max(0, feet - top),
   };
 }
 

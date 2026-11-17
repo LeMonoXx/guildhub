@@ -1,4 +1,4 @@
-import type { HistoryEvent } from "@guildhub/contracts";
+import type { EquippedItem, HistoryEvent } from "@guildhub/contracts";
 
 export type HistoryEventOf<K extends HistoryEvent["kind"]> = Extract<
   HistoryEvent,
@@ -29,3 +29,21 @@ export const questsKey = (event: HistoryEventOf<"quests">) =>
   event.to - event.from === 1
     ? "history.event.questOne"
     : "history.event.quests";
+
+/** The tooltip a gear change can show before the item's full data arrives. */
+export const itemOfEvent = (
+  event: HistoryEventOf<"item">,
+  slotName: string,
+): EquippedItem => ({
+  slot: event.slot,
+  slotName,
+  itemId: event.itemId,
+  name: event.item,
+  quality: event.quality,
+  qualityName: event.quality,
+  ...(event.itemLevel === undefined ? {} : { itemLevel: event.itemLevel }),
+  ...(event.iconUrl === undefined ? {} : { iconUrl: event.iconUrl }),
+  stats: [],
+  enchantments: [],
+  quantity: 1,
+});

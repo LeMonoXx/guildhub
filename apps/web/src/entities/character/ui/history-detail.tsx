@@ -1,7 +1,12 @@
 import type { HistoryEvent } from "@guildhub/contracts";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
-import { achievementsKey, questsKey } from "../model/history-event";
+import {
+  achievementsKey,
+  itemOfEvent,
+  questsKey,
+} from "../model/history-event";
+import { ItemHover } from "./item-hover";
 import { itemQualityColorVar } from "../model/item";
 import { reputationColorVar } from "../model/vitals";
 
@@ -13,12 +18,14 @@ export function HistoryDetail({ event }: { readonly event: HistoryEvent }) {
       return (
         <>
           <span>{t("history.event.item")} </span>
-          <span
-            className="history-item"
-            style={{ color: itemQualityColorVar(event.quality) }}
-          >
-            [{event.item}]
-          </span>
+          <ItemHover item={itemOfEvent(event, t(`slot.${event.slot}`))}>
+            <span
+              className="history-item"
+              style={{ color: itemQualityColorVar(event.quality) }}
+            >
+              [{event.item}]
+            </span>
+          </ItemHover>
           <span className="history-chips">
             <span className="history-chip">{t(`slot.${event.slot}`)}</span>
             {event.itemLevel === undefined || event.itemLevel <= 1 ? null : (

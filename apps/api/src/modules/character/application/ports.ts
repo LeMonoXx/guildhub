@@ -1,4 +1,4 @@
-import type { ContentLocale } from "@guildhub/contracts";
+import type { ContentLocale, EquippedItem } from "@guildhub/contracts";
 import type { AppError } from "../../../platform/kernel/app-error.js";
 import type { Result } from "../../../platform/kernel/result.js";
 import type { CharacterFacts, LookBakeDocument } from "../domain/look.js";
@@ -25,6 +25,17 @@ export interface CharacterSource {
   fetchFacts(
     character: CharacterRef,
   ): Promise<Result<CharacterFacts, CharacterSourceError>>;
+}
+
+export type ItemLookupError =
+  AppError<"item.not_found"> | AppError<"upstream.unavailable">;
+
+/** Static game data: what an item is, as its tooltip shows it. */
+export interface ItemCatalog {
+  item(
+    itemId: number,
+    locale: ContentLocale,
+  ): Promise<Result<EquippedItem, ItemLookupError>>;
 }
 
 export interface CharacterProfileSource {

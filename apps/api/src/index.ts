@@ -8,6 +8,7 @@ import {
   makeGetCharacterAvatar,
   makeGetCharacterProfile,
   makeGetCharacterRender,
+  makeGetItem,
   makeGetItemIcon,
   makePresentFeaturedMembers,
   makePresentRosterMembers,
@@ -16,6 +17,7 @@ import {
 import {
   ensureModelQueues,
   makeBattleNetCharacterSource,
+  makeBattleNetItemCatalog,
   makeDrizzleCharacterCache,
   makeFilesystemModelAssetStore,
   makeHttpCharacterMediaGateway,
@@ -143,6 +145,7 @@ registerCharacter(app, {
     media,
   }),
   getItemIcon: makeGetItemIcon({ media }),
+  getItem: makeGetItem({ items: makeBattleNetItemCatalog(battleNet) }),
   onStaleCache: () => {
     onStaleCache("roster");
   },

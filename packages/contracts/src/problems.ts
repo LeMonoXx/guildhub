@@ -52,6 +52,11 @@ export const PROBLEMS = {
     title: "This character was not found.",
     retryable: false,
   },
+  "item.not_found": {
+    status: 404,
+    title: "This item was not found.",
+    retryable: false,
+  },
   "upstream.unavailable": {
     status: 503,
     title: "Battle.net is not reachable right now.",

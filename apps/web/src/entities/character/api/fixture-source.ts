@@ -1,5 +1,6 @@
 import { fixtureCharacterBySlug } from "./fixtures";
 import { fixtureCharacterHistory } from "./history-fixtures";
+import { fixtureItem } from "./item-fixtures";
 import { fixtureCharacterProfile } from "./profile-fixtures";
 import { CharacterNotFoundError, type CharacterDataSource } from "./source";
 
@@ -15,4 +16,5 @@ export const createFixtureCharacterSource = (): CharacterDataSource => ({
     return Promise.resolve(profile);
   },
   getHistory: (slug) => Promise.resolve(fixtureCharacterHistory(slug)),
+  getItem: (itemId) => Promise.resolve(fixtureItem(itemId)),
 });

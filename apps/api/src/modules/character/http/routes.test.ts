@@ -62,6 +62,7 @@ function app(overrides?: {
   getCharacterRender?: Deps["getCharacterRender"];
   getCharacterProfile?: Deps["getCharacterProfile"];
   getItemIcon?: Deps["getItemIcon"];
+  getItem?: Deps["getItem"];
 }) {
   const png = () =>
     Promise.resolve(
@@ -89,6 +90,9 @@ function app(overrides?: {
           }),
         )),
     getItemIcon: overrides?.getItemIcon ?? png,
+    getItem:
+      overrides?.getItem ??
+      (() => Promise.resolve(err(appError("item.not_found")))),
     onStaleCache: () => undefined,
   });
   return hono;
@@ -169,6 +173,39 @@ describe("GET /api/icons/:iconId", () => {
 
   it("does not match non-numeric ids", async () => {
     const response = await app().request("/api/icons/abc");
+    expect(response.status).toBe(404);
+  });
+});
+
+describe("GET /api/items/:itemId", () => {
+  it("serves an item tooltip in the asked language", async () => {
+    const asked: string[] = [];
+    const response = await app({
+      getItem: ({ itemId, locale }) => {
+        asked.push(`${String(itemId)} ${locale}`);
+        return Promise.resolve(
+          ok({
+            slot: "LEGS",
+            slotName: "Beine",
+            itemId,
+            name: "Gamaschen",
+            quality: "UNCOMMON",
+            qualityName: "Selten",
+            stats: [],
+            enchantments: [],
+            quantity: 1,
+          }),
+        );
+      },
+    }).request("/api/items/2582?locale=de");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("max-age=86400");
+    expect(await response.json()).toMatchObject({ name: "Gamaschen" });
+    expect(asked).toEqual(["2582 de"]);
+  });
+
+  it("answers an unknown item with a problem", async () => {
+    const response = await app().request("/api/items/999999");
     expect(response.status).toBe(404);
   });
 });

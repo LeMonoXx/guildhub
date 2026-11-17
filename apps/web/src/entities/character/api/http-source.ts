@@ -2,6 +2,7 @@ import {
   characterDetailResponseSchema,
   characterHistoryResponseSchema,
   characterProfileResponseSchema,
+  equippedItemSchema,
 } from "@guildhub/contracts";
 import { ApiError, getJson } from "../../../shared/api";
 import { CharacterNotFoundError, type CharacterDataSource } from "./source";
@@ -31,4 +32,6 @@ export const createHttpCharacterSource = (): CharacterDataSource => ({
     ),
   getHistory: (slug) =>
     getJson(`${characterPath(slug)}/history`, characterHistoryResponseSchema),
+  getItem: (itemId) =>
+    getJson(`/api/items/${String(itemId)}`, equippedItemSchema),
 });

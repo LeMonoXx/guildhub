@@ -11,6 +11,7 @@ export {
   makeGetItemIcon,
 } from "./application/get-character-media.js";
 export { makeGetCharacterProfile } from "./application/get-character-profile.js";
+export { makeGetItem } from "./application/get-item.js";
 export {
   makeLoadMemberProfiles,
   type LoadMemberProfiles,

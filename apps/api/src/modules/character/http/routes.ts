@@ -2,6 +2,7 @@ import {
   characterDetailResponseSchema,
   characterProfileResponseSchema,
   characterSlugSchema,
+  equippedItemSchema,
   type InstanceConfig,
 } from "@guildhub/contracts";
 import type { Hono } from "hono";
@@ -16,6 +17,7 @@ import type {
   GetItemIcon,
 } from "../application/get-character-media.js";
 import type { GetCharacterProfile } from "../application/get-character-profile.js";
+import type { GetItem } from "../application/get-item.js";
 import type { CharacterView } from "../application/character-view.js";
 
 export interface RegisterCharacterDeps {
@@ -25,6 +27,7 @@ export interface RegisterCharacterDeps {
   readonly getCharacterProfile: GetCharacterProfile;
   readonly getCharacterAvatar: GetCharacterAvatar;
   readonly getItemIcon: GetItemIcon;
+  readonly getItem: GetItem;
   readonly onStaleCache: () => void;
 }
 
@@ -102,6 +105,16 @@ export function registerCharacter(
     const result = await deps.getCharacterAvatar({ guild, slug: parsed.data });
     if (!result.ok) return problemResponse(context, result.error);
     return image(result.value, "public, max-age=3600");
+  });
+
+  app.get("/api/items/:itemId{[0-9]+}", async (context) => {
+    const result = await deps.getItem({
+      itemId: Number(context.req.param("itemId")),
+      locale: requestLocale(context),
+    });
+    if (!result.ok) return problemResponse(context, result.error);
+    context.header("Cache-Control", "public, max-age=86400");
+    return context.json(equippedItemSchema.parse(result.value));
   });
 
   app.get("/api/icons/:iconId{[0-9]+}", async (context) => {

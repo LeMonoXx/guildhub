@@ -16,4 +16,9 @@ export const characterQueries = (source: CharacterDataSource) => ({
     queryFn: () => source.getHistory(slug),
     staleTime: 10 * 60_000,
   }),
+  item: (itemId: number) => ({
+    queryKey: characterKeys.item(itemId),
+    queryFn: () => source.getItem(itemId),
+    staleTime: Number.POSITIVE_INFINITY,
+  }),
 });

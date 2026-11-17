@@ -87,18 +87,25 @@
   margin: 0;
 }
 
-.achievement-hover {
+.achievement-hover,
+.item-hover {
   position: relative;
   border-bottom: 1px dotted rgb(255 209 0 / 0.45);
   cursor: help;
 }
 
-.achievement-hover:focus-visible {
+.item-hover {
+  border-bottom-color: rgb(255 255 255 / 0.3);
+}
+
+.achievement-hover:focus-visible,
+.item-hover:focus-visible {
   outline: 1px solid var(--color-gold);
   outline-offset: 2px;
 }
 
-.achievement-hover-tip {
+.achievement-hover-tip,
+.item-hover-tip {
   position: absolute;
   bottom: calc(100% + 0.5rem);
   left: 0;
@@ -114,7 +121,9 @@
 }
 
 .achievement-hover:hover .achievement-hover-tip,
-.achievement-hover:focus-visible .achievement-hover-tip {
+.achievement-hover:focus-visible .achievement-hover-tip,
+.item-hover:hover .item-hover-tip,
+.item-hover:focus-visible .item-hover-tip {
   visibility: visible;
   opacity: 1;
   transform: none;

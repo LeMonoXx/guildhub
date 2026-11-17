@@ -40,10 +40,12 @@ export function GuildHero({
   const lineup = useLineupStage(members);
   const size = useElementSize(stageRef);
   const framedShare = useFramedShare(stageRef, size, live);
-  const aspect = size.width / size.height;
+  const share = Math.min(1, Math.max(0.05, framedShare));
+  // The renderer frames the area above the lower padding, then draws into it.
+  const framedAspect = size.width / Math.max(size.height * share, 1);
   const camera = useMemo(
-    () => lineup.framing.frameFor(aspect),
-    [lineup.framing, aspect],
+    () => lineup.framing.frameFor(framedAspect),
+    [lineup.framing, framedAspect],
   );
   // The fog reads where everyone stands; it watches the frame, never changes it.
   const decorators = useMemo(

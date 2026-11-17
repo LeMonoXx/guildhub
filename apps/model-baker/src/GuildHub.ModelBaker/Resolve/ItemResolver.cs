@@ -61,18 +61,6 @@ public sealed class ItemResolver
     if (!_itemAppearance.TryGetValue(ima.Int("ItemAppearanceID"), out var appearance)) return Fail($"no ItemAppearance {ima.Int("ItemAppearanceID")}");
     if (!_itemDisplayInfo.TryGetValue(appearance.Int("ItemDisplayInfoID"), out var display)) return Fail($"no ItemDisplayInfo {appearance.Int("ItemDisplayInfoID")}");
 
-    // A slot can have a texture with no model: cloaks paint onto the body's own cape geoset.
-    var models = new List<ModelSlot>();
-    for (var i = 0; i < 2; i++)
-    {
-      var resId = display.Int("ModelResourcesID", i);
-      var matId = display.Int("ModelMaterialResourcesID", i);
-      if (resId == 0 && matId == 0) continue;
-      var files = resId != 0 ? _modelFilesByRes.Of(resId).Select(r => r.Int("FileDataID")).ToList() : [];
-      var textures = matId != 0 ? Pick(_textureFilesByRes.Of(matId).Select(r => r.Int("FileDataID")).ToList(), _componentTexture, raceId, sex, "Texture") : [];
-      models.Add(new ModelSlot(i, resId, resId != 0 ? Pick(files, _componentModel, raceId, sex, "Model") : [], textures));
-    }
-
     // Some items have a model but no ItemSparse row (tier 2 in the Forever beta); Item has the slot too.
     int? inventoryType = sparse?.Int("InventoryType") ?? (_item.TryGetValue(itemId, out var itemRow) ? itemRow.Int("InventoryType") : null);
     int? equipSlot = inventoryType is { } it && EquipmentSlotTables.InventoryTypeToSlot.TryGetValue(it, out var s) ? s : null;
@@ -83,6 +71,47 @@ public sealed class ItemResolver
       // Dual-wield only. Staves, shields, and wands keep the inventory-type slot instead of vanishing.
       if (inventoryType == OneHandInventoryType)
         equipSlot = requestedSlot;
+    }
+
+    return FromDisplay(display, raceId, sex, inventoryType, equipSlot) with
+    {
+      ItemId = itemId,
+      Name = name,
+      ItemAppearanceId = ima.Int("ItemAppearanceID"),
+      SheatheType = _item.TryGetValue(itemId, out var itemInfo) ? itemInfo.Int("SheatheType") : null,
+      ItemSubclass = _item.TryGetValue(itemId, out var itemSub) ? itemSub.Int("SubclassID") : null,
+    };
+
+    ResolvedItem Fail(string error) => new() { ItemId = itemId, Name = name, Error = error };
+  }
+
+  /// <summary>
+  /// An item display worn in an equipment slot without an item behind it, as creatures that the
+  /// game draws as characters wear their armour.
+  /// </summary>
+  public ResolvedItem ResolveDisplay(int displayInfoId, int equipSlot, int raceId, int sex)
+  {
+    if (!_itemDisplayInfo.TryGetValue(displayInfoId, out var display))
+      return new() { ItemId = -displayInfoId, Name = NoName, Error = $"no ItemDisplayInfo {displayInfoId}" };
+    return FromDisplay(display, raceId, sex, inventoryType: null, equipSlot) with
+    {
+      ItemId = -displayInfoId,
+      Name = NoName,
+    };
+  }
+
+  ResolvedItem FromDisplay(Row display, int raceId, int sex, int? inventoryType, int? equipSlot)
+  {
+    // A slot can have a texture with no model: cloaks paint onto the body's own cape geoset.
+    var models = new List<ModelSlot>();
+    for (var i = 0; i < 2; i++)
+    {
+      var resId = display.Int("ModelResourcesID", i);
+      var matId = display.Int("ModelMaterialResourcesID", i);
+      if (resId == 0 && matId == 0) continue;
+      var files = resId != 0 ? _modelFilesByRes.Of(resId).Select(r => r.Int("FileDataID")).ToList() : [];
+      var textures = matId != 0 ? Pick(_textureFilesByRes.Of(matId).Select(r => r.Int("FileDataID")).ToList(), _componentTexture, raceId, sex, "Texture") : [];
+      models.Add(new ModelSlot(i, resId, resId != 0 ? Pick(files, _componentModel, raceId, sex, "Model") : [], textures));
     }
 
     // ChrRaces flag 0x2, "Bare Feet" (wowdev.wiki DB/ChrRaces): Tauren and Trolls keep their own feet in
@@ -111,12 +140,9 @@ public sealed class ItemResolver
 
     return new ResolvedItem
     {
-      ItemId = itemId,
-      Name = name,
       InventoryType = inventoryType,
       EquipSlot = equipSlot,
       LayerPriority = equipSlot is { } es && EquipmentSlotTables.SlotLayer.TryGetValue(es, out var layer) ? layer : null,
-      ItemAppearanceId = ima.Int("ItemAppearanceID"),
       ItemDisplayInfoId = display.Int("ID"),
       GeosetGroup = geosetGroup,
       AttachmentGeosetGroup = display.Ints("AttachmentGeosetGroup"),
@@ -131,11 +157,7 @@ public sealed class ItemResolver
             : new Dictionary<int, int>(),
       Attachments = equipSlot is { } a ? Attachments(a, models, inventoryType) : [],
       Effects = Effects(display.Int("ItemVisual")),
-      SheatheType = _item.TryGetValue(itemId, out var itemInfo) ? itemInfo.Int("SheatheType") : null,
-      ItemSubclass = _item.TryGetValue(itemId, out var itemSub) ? itemSub.Int("SubclassID") : null,
     };
-
-    ResolvedItem Fail(string error) => new() { ItemId = itemId, Name = name, Error = error };
   }
 
   // wow.export: a group's geoset is group * 100 + 1 + GeosetGroup[n]; feet use GeosetGroup[1] as

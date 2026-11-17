@@ -15,7 +15,11 @@ public sealed record FixedLookRequest(
     int ClassId = LookResolver.DefaultClassId,
     IReadOnlyList<EquipmentSlotOverride>? EquipmentOverrides = null,
     string? LookHash = null,
-    IReadOnlyDictionary<int, int>? Customizations = null);
+    IReadOnlyDictionary<int, int>? Customizations = null,
+    IReadOnlyList<ItemDisplaySlot>? ItemDisplays = null);
+
+/// <summary>An item display worn in an equipment slot with no item behind it.</summary>
+public sealed record ItemDisplaySlot(int DisplayInfoId, int EquipSlot);
 
 public sealed record FixedLookAsset(string Path, int FileDataId);
 

@@ -2,18 +2,29 @@ import * as THREE from "three";
 import { resolveAsset } from "../lib/look-assets";
 import { createViewerRenderer, followSize } from "../lib/viewer-renderer";
 import { buildStandaloneModels, type StandaloneModel } from "./build-held-item";
+import { prepareCharacter } from "./prepare-character";
 
 export type BossState = "loading" | "ready" | "missing";
 
-/** What the baker writes to `bosses/v1/{displayId}.json`. */
-export interface BossManifest {
-  readonly schemaVersion: number;
-  readonly displayId: number;
+/** A creature drawn from its own model and the skins its display puts on it. */
+interface CreatureBossManifest {
   readonly model: { path: string; metadata: string; fileDataId: number };
   readonly textureDirectory: string;
-  /** Texture type to file id: the skins this display puts on the model. */
+  /** Texture type to file id. */
   readonly textures: Readonly<Record<string, number>>;
+  readonly look?: null;
 }
+
+/** A creature the game draws as a character: a baked look. */
+interface CharacterBossManifest {
+  readonly look: string;
+}
+
+/** What the baker writes to `bosses/v1/{displayId}.json`. */
+export type BossManifest = {
+  readonly schemaVersion: number;
+  readonly displayId: number;
+} & (CreatureBossManifest | CharacterBossManifest);
 
 export interface BossStageOptions {
   readonly displayId: number;
@@ -38,7 +49,16 @@ async function loadBoss(options: BossStageOptions): Promise<StandaloneModel> {
       `boss ${String(options.displayId)}: HTTP ${String(response.status)}`,
     );
   const manifest = (await response.json()) as BossManifest;
-  const asset = (path: string) => resolveAsset(options.assetBase, path);
+  return typeof manifest.look === "string"
+    ? loadCharacter(manifest.look, options.assetBase)
+    : loadCreature(manifest, options.assetBase);
+}
+
+function loadCreature(
+  manifest: CreatureBossManifest,
+  assetBase: string,
+): Promise<StandaloneModel> {
+  const asset = (path: string) => resolveAsset(assetBase, path);
   const modelDirectory = manifest.model.path.replace(/[^/]+$/, "");
   const replacements = Object.fromEntries(
     Object.entries(manifest.textures).map(([type, id]) => [Number(type), id]),
@@ -52,6 +72,27 @@ async function loadBoss(options: BossStageOptions): Promise<StandaloneModel> {
     },
     1,
   );
+}
+
+async function loadCharacter(
+  look: string,
+  assetBase: string,
+): Promise<StandaloneModel> {
+  const { character } = await prepareCharacter({
+    manifest: resolveAsset(assetBase, look),
+    assetBase,
+  });
+  const object = new THREE.Group();
+  object.add(character.root);
+  return {
+    object,
+    update: (delta) => {
+      character.update(delta);
+    },
+    dispose: () => {
+      character.dispose();
+    },
+  };
 }
 
 /** Fits the whole boss into view from the front, its feet at the bottom edge. */

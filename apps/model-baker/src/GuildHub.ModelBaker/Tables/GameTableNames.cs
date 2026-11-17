@@ -24,6 +24,8 @@ public static class GameTableNames
     public const string ComponentModelFileData = nameof(ComponentModelFileData);
     public const string ComponentTextureFileData = nameof(ComponentTextureFileData);
     public const string CreatureDisplayInfo = nameof(CreatureDisplayInfo);
+    public const string CreatureDisplayInfoExtra = nameof(CreatureDisplayInfoExtra);
+    public const string CreatureDisplayInfoOption = nameof(CreatureDisplayInfoOption);
     public const string CreatureModelData = nameof(CreatureModelData);
     public const string HelmetGeosetData = nameof(HelmetGeosetData);
     public const string Item = nameof(Item);
@@ -34,6 +36,7 @@ public static class GameTableNames
     public const string ItemSparse = nameof(ItemSparse);
     public const string ItemVisuals = nameof(ItemVisuals);
     public const string ModelFileData = nameof(ModelFileData);
+    public const string NPCModelItemSlotDisplayInfo = nameof(NPCModelItemSlotDisplayInfo);
     public const string TextureFileData = nameof(TextureFileData);
 
     public static readonly IReadOnlyList<string> All =
@@ -42,7 +45,8 @@ public static class GameTableNames
         ChrCustomizationChoice, ChrCustomizationElement, ChrCustomizationGeoset, ChrCustomizationMaterial,
         ChrCustomizationOption, ChrCustomizationReq, ChrModel, ChrModelAltVariant, ChrModelMaterial,
         ChrModelTextureLayer, ChrRaceXChrModel, ChrRaces, ComponentModelFileData, ComponentTextureFileData,
-        CreatureDisplayInfo, CreatureModelData, HelmetGeosetData, Item, ItemAppearance, ItemDisplayInfo,
-        ItemDisplayInfoMaterialRes, ItemModifiedAppearance, ItemSparse, ItemVisuals, ModelFileData, TextureFileData,
+        CreatureDisplayInfo, CreatureDisplayInfoExtra, CreatureDisplayInfoOption, CreatureModelData, HelmetGeosetData, Item, ItemAppearance, ItemDisplayInfo,
+        ItemDisplayInfoMaterialRes, ItemModifiedAppearance, ItemSparse, ItemVisuals, ModelFileData,
+        NPCModelItemSlotDisplayInfo, TextureFileData,
     ];
 }

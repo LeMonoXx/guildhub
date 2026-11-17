@@ -130,6 +130,16 @@ public sealed class LookBakePlanner
       }
       resolvedItems.Add(item with { Build = _build, ModelSet = "hd" });
     }
+    foreach (var worn in request.ItemDisplays ?? [])
+    {
+      var item = _items.ResolveDisplay(worn.DisplayInfoId, worn.EquipSlot, request.Race, request.Sex);
+      if (item.Error != null)
+      {
+        log?.Invoke($"item display {worn.DisplayInfoId} skipped: {item.Error}");
+        continue;
+      }
+      resolvedItems.Add(item with { Build = _build, ModelSet = "hd" });
+    }
     var duplicateSlot = resolvedItems
         .Where(item => item.EquipSlot != null)
         .GroupBy(item => item.EquipSlot!.Value)

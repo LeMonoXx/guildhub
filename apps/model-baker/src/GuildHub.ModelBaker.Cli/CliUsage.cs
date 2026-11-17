@@ -41,8 +41,9 @@ public static class CliUsage
           --animation-id <id>   AnimationData ID (animation only)
 
         bake-bosses:
-          --display <id>      CreatureDisplayInfo ID of a creature boss; repeat for more
-          Writes bosses/v{N}/{id}.json beside the shared models and textures it uses.
+          --display <id>      CreatureDisplayInfo ID of a boss; repeat for more
+          Writes bosses/v{N}/{id}.json beside the shared models and textures it uses;
+          a boss drawn as a character also gets looks/boss-{id}/look.json.
 
         proof scenes:
           rogue-t2  Human male Rogue in Bloodfang with dual daggers and proof animations

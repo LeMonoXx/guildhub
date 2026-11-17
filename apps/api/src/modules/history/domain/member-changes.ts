@@ -1,12 +1,15 @@
 import type { HistoryEvent } from "@guildhub/contracts";
-import type { MemberDay } from "./guild-day.js";
+import type { MemberState } from "./guild-check.js";
 
 /** Shirts and tabards change looks, not power; they are not worth a headline. */
 const COSMETIC_SLOTS: ReadonlySet<string> = new Set(["SHIRT", "TABARD"]);
 
-export type EventBase = ReturnType<typeof ref> & { readonly day: string };
+export type EventBase = ReturnType<typeof ref> & {
+  readonly day: string;
+  readonly at: string;
+};
 
-export function ref(member: MemberDay) {
+export function ref(member: MemberState) {
   return {
     slug: member.slug,
     name: member.name,
@@ -16,8 +19,8 @@ export function ref(member: MemberDay) {
 }
 
 export function rosterChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
 ): HistoryEvent[] {
   return [
@@ -46,11 +49,11 @@ export function rosterChanges(
 
 /**
  * Changes only a published profile shows. Professions and mounts are compared
- * by name, so they are skipped when the two days are in different languages.
+ * by name, so they are skipped when the two checks are in different languages.
  */
 export function profileChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
   namesComparable: boolean,
 ): HistoryEvent[] {
@@ -59,13 +62,26 @@ export function profileChanges(
     ...(namesComparable ? professionChanges(earlier, member, base) : []),
     ...reputationChanges(earlier, member, base),
     ...achievementChanges(earlier, member, base),
+    ...questChanges(earlier, member, base),
     ...(namesComparable ? mountChanges(earlier, member, base) : []),
   ];
 }
 
+/** Checks from before quests were kept have no count to compare with. */
+function questChanges(
+  earlier: MemberState,
+  member: MemberState,
+  base: EventBase,
+): HistoryEvent[] {
+  const from = earlier.questsCompleted;
+  const to = member.questsCompleted;
+  if (from === undefined || to === undefined || to <= from) return [];
+  return [{ ...base, kind: "quests", from, to }];
+}
+
 function itemChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
 ): HistoryEvent[] {
   const worn = new Map(
@@ -89,8 +105,8 @@ function itemChanges(
 }
 
 function professionChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
 ): HistoryEvent[] {
   const skills = new Map(earlier.professions.map((p) => [p.name, p.skill]));
@@ -113,8 +129,8 @@ function professionChanges(
 }
 
 function reputationChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
 ): HistoryEvent[] {
   const tiers = new Map(earlier.reputations.map((r) => [r.factionId, r.tier]));
@@ -134,8 +150,8 @@ function reputationChanges(
 }
 
 function achievementChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
 ): HistoryEvent[] {
   const gained = member.achievements - earlier.achievements;
@@ -151,8 +167,8 @@ function achievementChanges(
 }
 
 function mountChanges(
-  earlier: MemberDay,
-  member: MemberDay,
+  earlier: MemberState,
+  member: MemberState,
   base: EventBase,
 ): HistoryEvent[] {
   const mounts = new Set(earlier.mounts);

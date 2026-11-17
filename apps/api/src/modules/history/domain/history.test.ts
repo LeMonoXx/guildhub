@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { GuildDay, MemberDay } from "./guild-day.js";
-import { calendarDay, daysBefore } from "./guild-day.js";
-import { diffDays, eventsOf, guildSeries, memberSeries } from "./history.js";
+import type { GuildCheck, MemberState } from "./guild-check.js";
+import { calendarDay, daysBefore, sameState } from "./guild-check.js";
+import { diffChecks, eventsOf, guildSeries, memberSeries } from "./history.js";
 
-function member(overrides: Partial<MemberDay> = {}): MemberDay {
+function member(overrides: Partial<MemberState> = {}): MemberState {
   return {
     characterId: "1",
     slug: "aria",
@@ -28,19 +28,20 @@ function member(overrides: Partial<MemberDay> = {}): MemberDay {
   };
 }
 
-function day(date: string, members: MemberDay[], points = 0): GuildDay {
+function day(date: string, members: MemberState[], points = 0): GuildCheck {
   return {
     day: date,
     recordedAt: new Date(`${date}T04:00:00.000Z`),
+    checkedAt: new Date(`${date}T04:00:00.000Z`),
     achievementPoints: points,
     members,
   };
 }
 
-describe("diffDays", () => {
+describe("diffChecks", () => {
   it("reports nothing when nothing changed", () => {
     expect(
-      diffDays(day("2026-11-01", [member()]), day("2026-11-02", [member()])),
+      diffChecks(day("2026-11-01", [member()]), day("2026-11-02", [member()])),
     ).toEqual([]);
   });
 
@@ -55,11 +56,11 @@ describe("diffDays", () => {
       ]),
       locale: "de" as const,
     };
-    expect(diffDays(english, german)).toEqual([]);
+    expect(diffChecks(english, german)).toEqual([]);
   });
 
   it("reports joins and departures without further detail", () => {
-    const events = diffDays(
+    const events = diffChecks(
       day("2026-11-01", [member()]),
       day("2026-11-02", [
         member({ characterId: "2", slug: "brom", name: "Brom" }),
@@ -72,7 +73,7 @@ describe("diffDays", () => {
   });
 
   it("reports every profile change of a published member", () => {
-    const events = diffDays(
+    const events = diffChecks(
       day("2026-11-01", [member()]),
       day("2026-11-02", [
         member({
@@ -155,16 +156,53 @@ describe("diffDays", () => {
       professions: [],
       mounts: [],
     });
-    const events = diffDays(
+    const events = diffChecks(
       day("2026-11-01", [hidden]),
       day("2026-11-02", [member({ level: 21 })]),
     );
     expect(events.map((event) => event.kind)).toEqual(["level"]);
   });
+
+  it("reports completed quests only when both checks counted them", () => {
+    const counted = diffChecks(
+      day("2026-11-01", [member({ questsCompleted: 4 })]),
+      day("2026-11-02", [member({ questsCompleted: 7 })]),
+    );
+    expect(counted).toEqual([
+      expect.objectContaining({ kind: "quests", from: 4, to: 7 }),
+    ]);
+    const uncounted = diffChecks(
+      day("2026-11-01", [member()]),
+      day("2026-11-02", [member({ questsCompleted: 7 })]),
+    );
+    expect(uncounted).toEqual([]);
+  });
+});
+
+describe("sameState", () => {
+  it("ignores roster order and the time of the check", () => {
+    const aria = member();
+    const brom = member({ characterId: "2", slug: "brom" });
+    expect(
+      sameState(
+        day("2026-11-01", [aria, brom], 5),
+        day("2026-11-02", [brom, aria], 5),
+      ),
+    ).toBe(true);
+  });
+
+  it("sees any change of a member", () => {
+    expect(
+      sameState(
+        day("2026-11-01", [member()]),
+        day("2026-11-01", [member({ questsCompleted: 1 })]),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("eventsOf", () => {
-  it("lists the newest day first and treats the first day as the baseline", () => {
+  it("lists the newest check first and treats the first check as the baseline", () => {
     const events = eventsOf([
       day("2026-11-01", [member()]),
       day("2026-11-02", [member({ level: 21 })]),
@@ -187,10 +225,11 @@ describe("series", () => {
     day("2026-11-02", [member({ level: 21 })], 510),
   ];
 
-  it("averages the guild per day and sums the members' achievements", () => {
+  it("averages the guild per check and sums the members' achievements", () => {
     expect(guildSeries(days)).toEqual([
       {
         day: "2026-11-01",
+        at: "2026-11-01T04:00:00.000Z",
         members: 2,
         averageLevel: 25,
         averageItemLevel: 18,
@@ -198,6 +237,7 @@ describe("series", () => {
       },
       {
         day: "2026-11-02",
+        at: "2026-11-02T04:00:00.000Z",
         members: 1,
         averageLevel: 21,
         averageItemLevel: 18,
@@ -206,9 +246,14 @@ describe("series", () => {
     ]);
   });
 
-  it("follows one member across days", () => {
+  it("follows one member across checks", () => {
     expect(memberSeries(days, "2")).toEqual([
-      { day: "2026-11-01", level: 30, achievements: 10 },
+      {
+        day: "2026-11-01",
+        at: "2026-11-01T04:00:00.000Z",
+        level: 30,
+        achievements: 10,
+      },
     ]);
   });
 });

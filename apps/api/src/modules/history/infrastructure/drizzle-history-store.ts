@@ -3,12 +3,12 @@ import {
   defaultContentLocale,
   itemQualitySchema,
 } from "@guildhub/contracts";
-import { and, asc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "../../../platform/db/client.js";
 import type { HistoryStore } from "../application/ports.js";
-import type { MemberDay } from "../domain/guild-day.js";
-import { guildDay } from "./schema.js";
+import type { GuildCheck, MemberState } from "../domain/guild-check.js";
+import { guildCheck } from "./schema.js";
 
 const membersSchema = z.array(
   z.object({
@@ -23,6 +23,7 @@ const membersSchema = z.array(
     itemLevel: z.number().optional(),
     achievementPoints: z.number(),
     achievements: z.number(),
+    questsCompleted: z.number().optional(),
     equipment: z.array(
       z.object({
         slot: z.string(),
@@ -50,64 +51,97 @@ const membersSchema = z.array(
     ),
     mounts: z.array(z.string()),
   }),
-) satisfies z.ZodType<MemberDay[]>;
+) satisfies z.ZodType<MemberState[]>;
+
+type Row = typeof guildCheck.$inferSelect;
+
+function toCheck(row: Row): GuildCheck[] {
+  const members = membersSchema.safeParse(row.members);
+  if (!members.success) return [];
+  return [
+    {
+      day: row.day,
+      locale: contentLocaleOf(row.locale),
+      recordedAt: row.recordedAt,
+      checkedAt: row.checkedAt,
+      achievementPoints: row.achievementPoints,
+      members: members.data,
+    },
+  ];
+}
 
 export function makeDrizzleHistoryStore(database: Database): HistoryStore {
   return {
-    save: async (guild, day) => {
-      const row = {
-        guildSlug: guild.slug,
-        day: day.day,
-        locale: day.locale ?? defaultContentLocale,
-        achievementPoints: day.achievementPoints,
-        members: day.members,
-        recordedAt: day.recordedAt,
-      };
+    latest: async (guild, locale) => {
+      const [row] = await database.db
+        .select()
+        .from(guildCheck)
+        .where(
+          and(
+            eq(guildCheck.guildSlug, guild.slug),
+            eq(guildCheck.locale, locale),
+          ),
+        )
+        .orderBy(desc(guildCheck.recordedAt))
+        .limit(1);
+      return row === undefined ? undefined : toCheck(row)[0];
+    },
+    append: async (guild, check) => {
       await database.db
-        .insert(guildDay)
-        .values(row)
-        .onConflictDoUpdate({
-          target: [guildDay.guildSlug, guildDay.day, guildDay.locale],
-          set: row,
-        });
+        .insert(guildCheck)
+        .values({
+          guildSlug: guild.slug,
+          locale: check.locale ?? defaultContentLocale,
+          recordedAt: check.recordedAt,
+          checkedAt: check.checkedAt,
+          day: check.day,
+          achievementPoints: check.achievementPoints,
+          members: check.members,
+        })
+        .onConflictDoNothing();
+    },
+    confirm: async (guild, check, checkedAt) => {
+      await database.db
+        .update(guildCheck)
+        .set({ checkedAt })
+        .where(
+          and(
+            eq(guildCheck.guildSlug, guild.slug),
+            eq(guildCheck.locale, check.locale ?? defaultContentLocale),
+            eq(guildCheck.recordedAt, check.recordedAt),
+          ),
+        );
     },
     since: async (guild, fromDay, locale) => {
       const rows = await database.db
         .select()
-        .from(guildDay)
+        .from(guildCheck)
         .where(
           and(
-            eq(guildDay.guildSlug, guild.slug),
-            gte(guildDay.day, fromDay),
-            inArray(guildDay.locale, [locale, defaultContentLocale]),
+            eq(guildCheck.guildSlug, guild.slug),
+            gte(guildCheck.checkedAt, new Date(`${fromDay}T00:00:00.000Z`)),
+            inArray(guildCheck.locale, [locale, defaultContentLocale]),
           ),
         )
-        .orderBy(asc(guildDay.day));
-      const preferred = new Map<string, (typeof rows)[number]>();
-      for (const row of rows) {
-        if (row.locale === locale || !preferred.has(row.day))
-          preferred.set(row.day, row);
-      }
-      return [...preferred.values()].flatMap((row) => {
-        const members = membersSchema.safeParse(row.members);
-        if (!members.success) return [];
-        return [
-          {
-            day: row.day,
-            locale: contentLocaleOf(row.locale),
-            recordedAt: row.recordedAt,
-            achievementPoints: row.achievementPoints,
-            members: members.data,
-          },
-        ];
-      });
+        .orderBy(asc(guildCheck.recordedAt));
+      const firstInLocale = rows.find(
+        (row) => row.locale === locale,
+      )?.recordedAt;
+      return rows
+        .filter(
+          (row) =>
+            row.locale === locale ||
+            firstInLocale === undefined ||
+            row.recordedAt < firstInLocale,
+        )
+        .flatMap(toCheck);
     },
     firstDay: async (guild) => {
       const [row] = await database.db
-        .select({ day: guildDay.day })
-        .from(guildDay)
-        .where(eq(guildDay.guildSlug, guild.slug))
-        .orderBy(asc(guildDay.day))
+        .select({ day: guildCheck.day })
+        .from(guildCheck)
+        .where(eq(guildCheck.guildSlug, guild.slug))
+        .orderBy(asc(guildCheck.recordedAt))
         .limit(1);
       return row?.day;
     },

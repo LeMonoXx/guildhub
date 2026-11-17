@@ -15,6 +15,7 @@ export const historyGlyphs: Readonly<Record<HistoryEvent["kind"], string>> = {
   reputation: "❖",
   achievements: "★",
   mount: "♞",
+  quests: "❢",
 };
 
 export const achievementsKey = (event: HistoryEventOf<"achievements">) => {
@@ -23,3 +24,8 @@ export const achievementsKey = (event: HistoryEventOf<"achievements">) => {
     ? "history.event.achievementOne"
     : "history.event.achievementsCount";
 };
+
+export const questsKey = (event: HistoryEventOf<"quests">) =>
+  event.to - event.from === 1
+    ? "history.event.questOne"
+    : "history.event.quests";

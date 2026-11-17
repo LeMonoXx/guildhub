@@ -6,7 +6,7 @@ import {
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
-import { dailyTrend, TrendChart } from "../../../shared/ui";
+import { checkTrend, TrendChart } from "../../../shared/ui";
 
 interface CharacterHistoryProps {
   readonly history: CharacterHistoryResponse;
@@ -20,9 +20,10 @@ export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
   if (history.series.length === 0)
     return <p className="history-empty">{t("history.notStarted")}</p>;
   const series = (pick: (point: Point) => number | undefined) =>
-    dailyTrend(history.series, pick, locale);
+    checkTrend(history.series, pick, locale);
   const whole = (value: number) => formatNumber(value, locale);
   const itemLevels = series((point) => point.itemLevel);
+  const quests = series((point) => point.quests);
   return (
     <div className="history">
       <HistoryChecked checkedAt={history.checkedAt} />
@@ -47,10 +48,18 @@ export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
           format={whole}
           color="var(--quality-rare)"
         />
+        {quests.length > 0 ? (
+          <TrendChart
+            title={t("history.chart.characterQuests")}
+            points={quests}
+            format={whole}
+            color="var(--quality-uncommon)"
+          />
+        ) : null}
       </div>
       <HistoryChanges
         events={history.events}
-        recordedDays={history.series.length}
+        recordedChecks={history.series.length}
         pageSize={40}
       />
     </div>

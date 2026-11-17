@@ -7,20 +7,20 @@ import { HistoryChecked } from "./history-checked";
 
 afterEach(cleanup);
 
-const textOf = (recordedDays: number) =>
+const textOf = (recordedChecks: number) =>
   render(
     <LocaleProvider>
-      <HistoryChanges events={[]} recordedDays={recordedDays} />
+      <HistoryChanges events={[]} recordedChecks={recordedChecks} />
     </LocaleProvider>,
   ).container.textContent;
 
 describe("HistoryChanges", () => {
-  test("promises changes from tomorrow only on the first recorded day", () => {
-    expect(textOf(1)).toMatch(/next day/);
+  test("promises changes from the next hourly check while only the baseline exists", () => {
+    expect(textOf(1)).toMatch(/next hourly check/);
   });
 
-  test("says nothing changed once a day can be compared", () => {
-    expect(textOf(2)).toMatch(/Nothing has changed since yesterday/);
+  test("says no visible change once checks can be compared", () => {
+    expect(textOf(2)).toMatch(/No visible change/);
   });
 });
 

@@ -8,17 +8,20 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-export const guildDay = pgTable(
-  "guild_day",
+export const guildCheck = pgTable(
+  "guild_check",
   {
     guildSlug: text("guild_slug").notNull(),
+    locale: text("locale").notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
     day: date("day", { mode: "string" }).notNull(),
-    locale: text("locale").notNull().default("en"),
     achievementPoints: integer("achievement_points").notNull(),
     members: jsonb("members").notNull(),
-    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.guildSlug, table.day, table.locale] }),
+    primaryKey({
+      columns: [table.guildSlug, table.locale, table.recordedAt],
+    }),
   ],
 );

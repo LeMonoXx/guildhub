@@ -5,8 +5,8 @@ export {
   type GetGuildHistory,
 } from "./application/get-history.js";
 export {
-  makeRecordGuildDay,
-  type RecordGuildDay,
-} from "./application/record-guild-day.js";
-export { calendarDay } from "./domain/guild-day.js";
+  makeRecordGuildCheck,
+  type RecordGuildCheck,
+} from "./application/record-guild-check.js";
+export { calendarDay } from "./domain/guild-check.js";
 export { registerHistory } from "./http/routes.js";

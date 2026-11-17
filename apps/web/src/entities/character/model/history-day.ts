@@ -1,4 +1,5 @@
 import type { HistoryEvent } from "@guildhub/contracts";
+import { joinClimbs } from "./history-climbs";
 
 export type LevelEvent = Extract<HistoryEvent, { kind: "level" }>;
 export type RosterEvent = Extract<HistoryEvent, { kind: "joined" | "left" }>;
@@ -21,6 +22,7 @@ const rowOrder: Record<HistoryEvent["kind"], number> = {
   reputation: 4,
   profession: 5,
   mount: 6,
+  quests: 7,
 };
 
 /** Gear stays one row per piece; the rest bundles per member and kind. */
@@ -50,17 +52,20 @@ export const groupHistoryByDay = (
   return days;
 };
 
-export const splitHistoryDay = (
-  events: readonly HistoryEvent[],
-): HistoryDay => ({
-  banners: events.filter(
-    (event): event is RosterEvent =>
-      event.kind === "joined" || event.kind === "left",
-  ),
-  levels: events.filter((event): event is LevelEvent => event.kind === "level"),
-  rows: groupRows(
-    events
-      .filter((event) => rowOrder[event.kind] > 0)
-      .sort((a, b) => rowOrder[a.kind] - rowOrder[b.kind]),
-  ),
-});
+export const splitHistoryDay = (day: readonly HistoryEvent[]): HistoryDay => {
+  const events = joinClimbs(day);
+  return {
+    banners: events.filter(
+      (event): event is RosterEvent =>
+        event.kind === "joined" || event.kind === "left",
+    ),
+    levels: events.filter(
+      (event): event is LevelEvent => event.kind === "level",
+    ),
+    rows: groupRows(
+      events
+        .filter((event) => rowOrder[event.kind] > 0)
+        .sort((a, b) => rowOrder[a.kind] - rowOrder[b.kind]),
+    ),
+  };
+};

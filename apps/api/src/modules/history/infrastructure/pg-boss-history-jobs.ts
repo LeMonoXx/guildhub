@@ -4,13 +4,13 @@ import {
   type PgBoss,
 } from "../../../platform/jobs/queue.js";
 import type { GuildRef } from "../../guild/index.js";
-import type { RecordGuildDay } from "../application/record-guild-day.js";
+import type { RecordGuildCheck } from "../application/record-guild-check.js";
 
 export const HISTORY_QUEUE = "record-history";
 
 export interface HistoryJobs {
   readonly guild: GuildRef;
-  readonly recordGuildDay: RecordGuildDay;
+  readonly recordGuildCheck: RecordGuildCheck;
   readonly cron: string;
   readonly timeZone: string;
   /** The calendar day the worker starts on, in `timeZone`. */
@@ -19,8 +19,8 @@ export interface HistoryJobs {
 }
 
 /**
- * The cron refreshes today's record. A startup send covers a worker that was
- * down. Recording a day again replaces it. The chronicle compares days.
+ * The cron checks the guild every hour. A startup send covers a worker that
+ * was down. A check that finds nothing new only confirms the latest one.
  */
 export async function registerHistoryJobs(
   boss: PgBoss,
@@ -39,13 +39,13 @@ export async function registerHistoryJobs(
     },
   );
   await boss.work(HISTORY_QUEUE, async () => {
-    const recorded = await jobs.recordGuildDay(jobs.guild);
+    const recorded = await jobs.recordGuildCheck(jobs.guild);
     if (!recorded.ok) {
       jobs.log.warn(
         { module: "history", code: recorded.error.code },
-        "guild day not recorded",
+        "guild check failed",
       );
-      throw new Error(`guild day not recorded: ${recorded.error.code}`);
+      throw new Error(`guild check failed: ${recorded.error.code}`);
     }
     jobs.log.info(
       {
@@ -53,7 +53,7 @@ export async function registerHistoryJobs(
         day: recorded.value.day,
         members: recorded.value.members.length,
       },
-      "guild day recorded",
+      "guild checked",
     );
   });
 }

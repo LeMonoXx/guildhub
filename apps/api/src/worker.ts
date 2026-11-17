@@ -22,7 +22,7 @@ import {
   makeDrizzleRecipeCatalogStore,
   registerRecipeJobs,
 } from "./modules/crafting/infrastructure/index.js";
-import { calendarDay, makeRecordGuildDay } from "./modules/history/index.js";
+import { calendarDay, makeRecordGuildCheck } from "./modules/history/index.js";
 import { registerHistoryJobs } from "./modules/history/infrastructure/index.js";
 import { readEnv } from "./platform/config/env.js";
 import { loadInstanceConfig } from "./platform/config/instance.js";
@@ -118,7 +118,7 @@ await registerModelJobs(boss, {
 });
 await registerHistoryJobs(boss, {
   guild: composed.guild,
-  recordGuildDay: makeRecordGuildDay({
+  recordGuildCheck: makeRecordGuildCheck({
     getGuild: composed.getGuild,
     getRoster: composed.getGuildRoster,
     loadProfiles: composed.loadProfiles,

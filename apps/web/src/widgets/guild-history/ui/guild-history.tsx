@@ -1,8 +1,8 @@
 import type { GuildHistoryResponse } from "@guildhub/contracts";
 import { HistoryChanges, HistoryChecked } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import { formatDate, formatNumber } from "../../../shared/lib";
-import { dailyTrend, TrendChart } from "../../../shared/ui";
+import { daysBetween, formatDate, formatNumber } from "../../../shared/lib";
+import { checkTrend, TrendChart } from "../../../shared/ui";
 
 interface GuildHistoryProps {
   readonly history: GuildHistoryResponse;
@@ -15,19 +15,17 @@ export function GuildHistory({ history }: GuildHistoryProps) {
   if (history.series.length === 0)
     return <p className="history-empty">{t("history.notStarted")}</p>;
   const series = (pick: (point: Point) => number | undefined) =>
-    dailyTrend(history.series, pick, locale);
+    checkTrend(history.series, pick, locale);
   const whole = (value: number) => formatNumber(value, locale);
   const tenth = (value: number) => formatNumber(value, locale, 1);
   const itemLevels = series((point) => point.averageItemLevel);
+  const since = `${history.since ?? history.series[0]?.day ?? ""}T12:00:00Z`;
   return (
     <div className="history">
       <p className="history-since">
         {t("history.since", {
-          date: formatDate(
-            `${history.since ?? history.series[0]?.day ?? ""}T12:00:00Z`,
-            locale,
-          ),
-          days: history.series.length,
+          date: formatDate(since, locale),
+          days: daysBetween(since) + 1,
           changes: history.events.length,
         })}
       </p>
@@ -61,7 +59,7 @@ export function GuildHistory({ history }: GuildHistoryProps) {
       </div>
       <HistoryChanges
         events={history.events}
-        recordedDays={history.series.length}
+        recordedChecks={history.series.length}
       />
     </div>
   );

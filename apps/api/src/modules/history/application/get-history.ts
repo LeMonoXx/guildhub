@@ -6,18 +6,22 @@ import type {
 import type { Clock } from "../../../platform/kernel/clock.js";
 import { publicAvatarUrl } from "../../character/index.js";
 import type { GuildRef } from "../../guild/index.js";
-import { calendarDay, daysBefore, type GuildDay } from "../domain/guild-day.js";
+import {
+  calendarDay,
+  daysBefore,
+  type GuildCheck,
+} from "../domain/guild-check.js";
 import { eventsOf, guildSeries, memberSeries } from "../domain/history.js";
 import type { HistoryStore } from "./ports.js";
 
 /** Battle.net only renders avatars of characters whose profile is published. */
-function eventsWithAvatars(days: readonly GuildDay[]) {
+function eventsWithAvatars(checks: readonly GuildCheck[]) {
   const published = new Set(
-    days.flatMap((day) =>
-      day.members.filter((m) => m.published).map((m) => m.slug),
+    checks.flatMap((check) =>
+      check.members.filter((m) => m.published).map((m) => m.slug),
     ),
   );
-  return eventsOf(days).map((event) =>
+  return eventsOf(checks).map((event) =>
     published.has(event.slug)
       ? { ...event, avatarUrl: publicAvatarUrl(event.slug) }
       : event,
@@ -33,20 +37,20 @@ export interface HistoryDeps {
   readonly timeZone: string;
 }
 
-/** The window includes one extra day so the oldest shown day can be compared. */
+/** The oldest check in the window is the baseline the next one is compared with. */
 async function window(
   deps: HistoryDeps,
   guild: GuildRef,
   locale: ContentLocale,
 ) {
   const today = calendarDay(deps.clock.now(), deps.timeZone);
-  const [days, since] = await Promise.all([
+  const [checks, since] = await Promise.all([
     deps.store.since(guild, daysBefore(today, HISTORY_WINDOW_DAYS), locale),
     deps.store.firstDay(guild),
   ]);
-  const checkedAt = days.at(-1)?.recordedAt.toISOString();
+  const checkedAt = checks.at(-1)?.checkedAt.toISOString();
   return {
-    days,
+    checks,
     recorded: {
       ...(since === undefined ? {} : { since }),
       ...(checkedAt === undefined ? {} : { checkedAt }),
@@ -60,11 +64,11 @@ export const makeGetGuildHistory =
     guild: GuildRef,
     locale: ContentLocale,
   ): Promise<GuildHistoryResponse> => {
-    const { days, recorded } = await window(deps, guild, locale);
+    const { checks, recorded } = await window(deps, guild, locale);
     return {
       ...recorded,
-      series: guildSeries(days),
-      events: eventsWithAvatars(days).slice(0, GUILD_EVENT_LIMIT),
+      series: guildSeries(checks),
+      events: eventsWithAvatars(checks).slice(0, GUILD_EVENT_LIMIT),
     };
   };
 
@@ -75,9 +79,9 @@ export const makeGetCharacterHistory =
     slug: string;
     locale: ContentLocale;
   }): Promise<CharacterHistoryResponse> => {
-    const { days, recorded } = await window(deps, query.guild, query.locale);
-    const member = days
-      .flatMap((day) => day.members)
+    const { checks, recorded } = await window(deps, query.guild, query.locale);
+    const member = checks
+      .flatMap((check) => check.members)
       .findLast((candidate) => candidate.slug === query.slug);
     const history = {
       ...recorded,
@@ -87,8 +91,8 @@ export const makeGetCharacterHistory =
     if (member === undefined) return history;
     return {
       ...history,
-      series: memberSeries(days, member.characterId),
-      events: eventsWithAvatars(days).filter(
+      series: memberSeries(checks, member.characterId),
+      events: eventsWithAvatars(checks).filter(
         (event) => event.slug === member.slug,
       ),
     };

@@ -1,7 +1,7 @@
 import type { MemberProfile } from "../../character/index.js";
-import type { MemberDay } from "../domain/guild-day.js";
+import type { MemberState } from "../domain/guild-check.js";
 
-export function toMemberDay({ member, profile }: MemberProfile): MemberDay {
+export function toMemberState({ member, profile }: MemberProfile): MemberState {
   const base = {
     characterId: member.characterId,
     slug: member.slug,
@@ -31,6 +31,7 @@ export function toMemberDay({ member, profile }: MemberProfile): MemberDay {
     ...(itemLevel === undefined ? {} : { itemLevel }),
     achievementPoints: data.summary?.achievementPoints ?? 0,
     achievements: data.achievements.total,
+    questsCompleted: data.quests.completedCount,
     equipment: data.equipment.map((item) => ({
       slot: item.slot,
       itemId: item.itemId,

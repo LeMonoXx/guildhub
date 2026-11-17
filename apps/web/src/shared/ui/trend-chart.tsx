@@ -24,7 +24,7 @@ const trendBySign: readonly Trend[] = ["down", "flat", "up"];
 const trendOf = (delta: number): Trend =>
   trendBySign[Math.sign(delta) + 1] ?? "flat";
 
-/** A line that draws itself across the recorded days once it scrolls into view. */
+/** A line that draws itself across the recorded checks once it scrolls into view. */
 export function TrendChart({
   title,
   points,

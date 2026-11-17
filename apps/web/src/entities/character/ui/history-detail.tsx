@@ -1,7 +1,7 @@
 import type { HistoryEvent } from "@guildhub/contracts";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
-import { achievementsKey } from "../model/history-event";
+import { achievementsKey, questsKey } from "../model/history-event";
 import { itemQualityColorVar } from "../model/item";
 import { reputationColorVar } from "../model/vitals";
 
@@ -89,6 +89,19 @@ export function HistoryDetail({ event }: { readonly event: HistoryEvent }) {
         <>
           {t("history.event.mountShort")}{" "}
           <span className="history-mount">{event.mount}</span>
+        </>
+      );
+    case "quests":
+      return (
+        <>
+          {t(questsKey(event), {
+            count: formatNumber(event.to - event.from, locale),
+          })}
+          <span className="history-chip">
+            {t("history.questsTotal", {
+              total: formatNumber(event.to, locale),
+            })}
+          </span>
         </>
       );
     case "level":

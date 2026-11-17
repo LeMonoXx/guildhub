@@ -1,0 +1,200 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "530c547a-177a-47ce-915a-52d29b7ab6cc",
+  "prevIds": ["7a9c83db-74ea-4b8c-8bf6-686ede2bb2c3"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "guild_check"],
+      "writes": [
+        "s|tbl|public.guild_check",
+        "n|tbl|public.guild_check",
+        "e|tbl|public.guild_check",
+        "n|rel|public.guild_check",
+        "n|type|public.guild_check",
+        "n|rel|public.guild_check_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "drop_table",
+      "statementTarget": ["table", "public", "guild_day"],
+      "writes": [
+        "s|tbl|public.guild_day",
+        "n|tbl|public.guild_day",
+        "e|tbl|public.guild_day",
+        "n|rel|public.guild_day",
+        "n|type|public.guild_day"
+      ],
+      "reads": ["n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "guild_check",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "guild_slug",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "locale",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "recorded_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "checked_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "achievement_points",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "members",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "guild_check",
+        "name": "guild_check_pkey",
+        "columns": ["guild_slug", "locale", "recorded_at"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "tables\u0000[\"public\",\"guild_day\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"guild_day\",\"guild_slug\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"guild_day\",\"day\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"guild_day\",\"achievement_points\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"guild_day\",\"members\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"guild_day\",\"recorded_at\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"guild_day\",\"locale\"]"
+    },
+    {
+      "op": "drop",
+      "key": "pks\u0000[\"public\",\"guild_day\",\"guild_day_pkey\"]"
+    }
+  ]
+}

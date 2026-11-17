@@ -4,31 +4,36 @@ import { emptyProfileData } from "../../character/domain/profile.js";
 import type { MemberProfile } from "../../character/index.js";
 import { rankId, type RosterMember } from "../../guild/index.js";
 import { ok } from "../../../platform/kernel/result.js";
-import type { GuildDay } from "../domain/guild-day.js";
+import type { GuildCheck } from "../domain/guild-check.js";
 import { makeGetCharacterHistory, makeGetGuildHistory } from "./get-history.js";
 import type { HistoryStore } from "./ports.js";
-import { makeRecordGuildDay } from "./record-guild-day.js";
+import { makeRecordGuildCheck } from "./record-guild-check.js";
 
 const guild = { slug: "example" };
 
-function memoryStore(): HistoryStore & { days: GuildDay[] } {
-  const days: GuildDay[] = [];
+function memoryStore(): HistoryStore & { checks: GuildCheck[] } {
+  const checks: GuildCheck[] = [];
+  const inLocale = (locale: ContentLocale) =>
+    checks.filter((check) => check.locale === locale);
   return {
-    days,
-    save: (_guild, day) => {
-      const index = days.findIndex(
-        (item) => item.day === day.day && item.locale === day.locale,
-      );
-      if (index === -1) days.push(day);
-      else days[index] = day;
-      days.sort((a, b) => a.day.localeCompare(b.day));
+    checks,
+    latest: (_guild, locale) => Promise.resolve(inLocale(locale).at(-1)),
+    append: (_guild, check) => {
+      checks.push(check);
+      return Promise.resolve();
+    },
+    confirm: (_guild, check, checkedAt) => {
+      const index = checks.indexOf(check);
+      checks[index] = { ...check, checkedAt };
       return Promise.resolve();
     },
     since: (_guild, fromDay, locale) =>
       Promise.resolve(
-        days.filter((item) => item.day >= fromDay && item.locale === locale),
+        inLocale(locale).filter(
+          (check) => check.checkedAt.toISOString().slice(0, 10) >= fromDay,
+        ),
       ),
-    firstDay: () => Promise.resolve(days[0]?.day),
+    firstDay: () => Promise.resolve(checks[0]?.day),
   };
 }
 
@@ -43,19 +48,24 @@ const roster: RosterMember = {
   slug: "ann-example",
 };
 
+interface Progress {
+  level: number;
+  quests: number;
+}
+
 function profile(
-  level: number,
-  status: "available" | "unavailable",
+  { level, quests }: Progress,
   locale: ContentLocale = "en",
 ): MemberProfile {
+  const data = emptyProfileData(level);
   return {
     member: { ...roster, level },
     profile: {
       characterId: roster.characterId,
       slug: roster.slug,
-      status,
+      status: "available",
       data: {
-        ...emptyProfileData(level),
+        ...data,
         summary: { level, achievementPoints: 50, equippedItemLevel: 21 },
         collections: {
           mounts: [locale === "de" ? "Schecke" : "Pinto"],
@@ -63,16 +73,17 @@ function profile(
           toys: [],
           heirlooms: [],
         },
+        quests: { ...data.quests, completedCount: quests },
       },
       fetchedAt: new Date(),
     },
   };
 }
 
-function setup(now: { value: Date }, level: { value: number }) {
+function setup(now: { value: Date }, progress: Progress) {
   const store = memoryStore();
   const clock = { now: () => now.value };
-  const record = makeRecordGuildDay({
+  const record = makeRecordGuildCheck({
     getGuild: () =>
       Promise.resolve(
         ok({
@@ -93,7 +104,7 @@ function setup(now: { value: Date }, level: { value: number }) {
         ok({ data: [roster], fetchedAt: now.value, stale: false }),
       ),
     loadProfiles: (_members, locale) =>
-      Promise.resolve([profile(level.value, "available", locale)]),
+      Promise.resolve([profile(progress, locale)]),
     store,
     clock,
     timeZone: "Europe/Berlin",
@@ -109,16 +120,21 @@ function setup(now: { value: Date }, level: { value: number }) {
 }
 
 describe("history", () => {
-  it("records a day per calendar day in the guild's time zone", async () => {
+  it("confirms the latest check when nothing changed", async () => {
     const now = { value: new Date("2026-11-13T04:00:00.000Z") };
-    const level = { value: 24 };
-    const { store, record } = setup(now, level);
+    const { store, record, guildHistory } = setup(now, {
+      level: 24,
+      quests: 10,
+    });
     await record(guild);
+    now.value = new Date("2026-11-13T05:00:00.000Z");
     await record(guild);
     expect(
-      store.days.map((day) => `${day.day} ${day.locale ?? ""}`).sort(),
+      store.checks.map((check) => `${check.day} ${check.locale ?? ""}`).sort(),
     ).toEqual(["2026-11-13 de", "2026-11-13 en"]);
-    expect(store.days.find((day) => day.locale === "en")).toMatchObject({
+    expect(store.checks.find((check) => check.locale === "en")).toMatchObject({
+      recordedAt: new Date("2026-11-13T04:00:00.000Z"),
+      checkedAt: new Date("2026-11-13T05:00:00.000Z"),
       achievementPoints: 900,
       members: [
         {
@@ -126,30 +142,45 @@ describe("history", () => {
           published: true,
           itemLevel: 21,
           achievementPoints: 50,
+          questsCompleted: 10,
           mounts: ["Pinto"],
         },
       ],
     });
+    expect((await guildHistory(guild, "en")).checkedAt).toBe(
+      "2026-11-13T05:00:00.000Z",
+    );
   });
 
-  it("serves the series and the changes between recorded days", async () => {
-    const now = { value: new Date("2026-11-13T04:00:00.000Z") };
-    const level = { value: 24 };
-    const { record, guildHistory, characterHistory } = setup(now, level);
+  it("keeps every hourly change of the same day", async () => {
+    const now = { value: new Date("2026-11-13T08:00:00.000Z") };
+    const progress = { level: 24, quests: 10 };
+    const { record, guildHistory, characterHistory } = setup(now, progress);
     await record(guild);
-    now.value = new Date("2026-11-14T04:00:00.000Z");
-    level.value = 25;
+    now.value = new Date("2026-11-13T09:00:00.000Z");
+    progress.level = 25;
+    await record(guild);
+    now.value = new Date("2026-11-13T10:00:00.000Z");
+    progress.level = 26;
     await record(guild);
 
     const history = await guildHistory(guild, "en");
     expect(history.since).toBe("2026-11-13");
-    expect(history.series.map((point) => point.averageLevel)).toEqual([24, 25]);
+    expect(history.series.map((point) => point.averageLevel)).toEqual([
+      24, 25, 26,
+    ]);
     expect(history.events).toEqual([
+      expect.objectContaining({
+        kind: "level",
+        from: 25,
+        to: 26,
+        at: "2026-11-13T10:00:00.000Z",
+      }),
       expect.objectContaining({
         kind: "level",
         from: 24,
         to: 25,
-        day: "2026-11-14",
+        at: "2026-11-13T09:00:00.000Z",
       }),
     ]);
 
@@ -158,32 +189,49 @@ describe("history", () => {
       slug: "ann-example",
       locale: "en",
     });
-    expect(character.series.map((point) => point.level)).toEqual([24, 25]);
-    expect(character.events).toHaveLength(1);
+    expect(character.series.map((point) => point.at)).toEqual([
+      "2026-11-13T08:00:00.000Z",
+      "2026-11-13T09:00:00.000Z",
+      "2026-11-13T10:00:00.000Z",
+    ]);
+    expect(character.events).toHaveLength(2);
   });
 
-  it("shows a change from the hourly run that saw it, not the next day", async () => {
-    const now = { value: new Date("2026-11-13T22:00:00.000Z") };
-    const level = { value: 24 };
-    const { record, guildHistory } = setup(now, level);
+  it("reports completed quests", async () => {
+    const now = { value: new Date("2026-11-13T08:00:00.000Z") };
+    const progress = { level: 24, quests: 10 };
+    const { record, characterHistory } = setup(now, progress);
     await record(guild);
-    now.value = new Date("2026-11-14T00:00:00.000Z");
+    now.value = new Date("2026-11-13T09:00:00.000Z");
+    progress.quests = 13;
     await record(guild);
-    expect((await guildHistory(guild, "en")).events).toEqual([]);
+    const character = await characterHistory({
+      guild,
+      slug: "ann-example",
+      locale: "en",
+    });
+    expect(character.events).toEqual([
+      expect.objectContaining({ kind: "quests", from: 10, to: 13 }),
+    ]);
+    expect(character.series.map((point) => point.quests)).toEqual([10, 13]);
+  });
 
-    now.value = new Date("2026-11-14T09:00:00.000Z");
-    level.value = 25;
+  it("dates a change by the hourly check that saw it", async () => {
+    const now = { value: new Date("2026-11-13T22:00:00.000Z") };
+    const progress = { level: 24, quests: 10 };
+    const { record, guildHistory } = setup(now, progress);
     await record(guild);
-    const history = await guildHistory(guild, "en");
-    expect(history.checkedAt).toBe("2026-11-14T09:00:00.000Z");
-    expect(history.events).toEqual([
+    now.value = new Date("2026-11-14T09:00:00.000Z");
+    progress.level = 25;
+    await record(guild);
+    expect((await guildHistory(guild, "en")).events).toEqual([
       expect.objectContaining({ kind: "level", to: 25, day: "2026-11-14" }),
     ]);
   });
 
-  it("serves each language's own recording", async () => {
+  it("serves each language's own checks", async () => {
     const now = { value: new Date("2026-11-13T04:00:00.000Z") };
-    const { record, characterHistory } = setup(now, { value: 24 });
+    const { record, characterHistory } = setup(now, { level: 24, quests: 0 });
     await record(guild);
     const german = await characterHistory({
       guild,
@@ -193,9 +241,9 @@ describe("history", () => {
     expect(german.series).toHaveLength(1);
   });
 
-  it("returns an empty history for a character not recorded yet", async () => {
+  it("returns an empty history for a character not checked yet", async () => {
     const now = { value: new Date("2026-11-13T04:00:00.000Z") };
-    const { characterHistory } = setup(now, { value: 24 });
+    const { characterHistory } = setup(now, { level: 24, quests: 0 });
     expect(
       await characterHistory({ guild, slug: "new-member", locale: "en" }),
     ).toEqual({

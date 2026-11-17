@@ -6,6 +6,7 @@ import { useLocale } from "../../../shared/i18n";
 import { FigureSilhouette } from "../../../shared/ui";
 import type { StagePlan } from "../model/stage-plan";
 import {
+  aimBox,
   placeOnStage,
   StageProjection,
   type CameraPose,
@@ -80,9 +81,11 @@ export function HeroStageOverlay({
   );
   const spots: readonly Spot[] = places.map((place) => ({
     place,
-    box: placeOnStage(
-      projection.box(silhouetteAt(place, plan.targetOf(place.member.slug))),
-      share,
+    box: aimBox(
+      placeOnStage(
+        projection.box(silhouetteAt(place, plan.targetOf(place.member.slug))),
+        share,
+      ),
     ),
   }));
   const focused = spots.find(

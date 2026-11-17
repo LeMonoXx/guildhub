@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { placeOnStage } from "./stage-view";
+import { aimBox, placeOnStage } from "./stage-view";
 
 describe("placeOnStage", () => {
   test("keeps a fully framed stage where it is", () => {
@@ -20,5 +20,13 @@ describe("placeOnStage", () => {
     expect(placed.width).toBe(0.1);
     expect(placed.top).toBeCloseTo(0.35);
     expect(placed.height).toBeCloseTo(0.28);
+  });
+
+  test("covers the crown and keeps the pointer on the torso", () => {
+    const aimed = aimBox({ left: 0.2, top: 0.4, width: 0.2, height: 0.5 });
+    expect(aimed.top).toBeCloseTo(0.31);
+    expect(aimed.top + aimed.height).toBeCloseTo(0.9);
+    expect(aimed.left + aimed.width / 2).toBeCloseTo(0.3);
+    expect(aimed.width).toBeLessThan(0.2);
   });
 });

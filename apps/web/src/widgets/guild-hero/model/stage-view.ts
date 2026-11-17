@@ -85,6 +85,23 @@ export function placeOnStage(box: StageBox, framedShare: number): StageBox {
   };
 }
 
+/** Hair and horns sit above the race height the silhouette measures. */
+const crownShare = 0.18;
+/** The spacing footprint includes elbows; the pointer wants the torso. */
+const torsoShare = 0.58;
+
+/** The clickable body: narrower than the elbow gap, tall enough for the crown. */
+export function aimBox(box: StageBox): StageBox {
+  const crown = box.height * crownShare;
+  const width = box.width * torsoShare;
+  return {
+    left: box.left + (box.width - width) / 2,
+    width,
+    top: box.top - crown,
+    height: box.height + crown,
+  };
+}
+
 type Vector = readonly [number, number, number];
 
 const subtract = (a: Vector, b: Vector): Vector => [

@@ -58,6 +58,24 @@ describe("selectFeaturedMembers", () => {
       ),
     ).toEqual(["Cy", "Ann", "Bo"]);
   });
+
+  it("matches a name whose slug dropped a letter", () => {
+    const members = [
+      member({
+        characterId: "9",
+        name: "Filouo",
+        surname: "Knørsok",
+        slug: "filouo-kn-rsok",
+        rankId: rankId(5),
+      }),
+      member({ characterId: "1", name: "Ann", rankId: rankId(0) }),
+    ];
+    expect(
+      selectFeaturedMembers(members, 8, ["Filouo Knørsok"]).map(
+        (item) => item.slug,
+      ),
+    ).toEqual(["filouo-kn-rsok", "ann-example"]);
+  });
 });
 
 describe("pickFeatured", () => {

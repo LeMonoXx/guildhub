@@ -27,28 +27,38 @@ export function guildSeries(
   });
 }
 
+const sameValues = (a: CharacterHistoryPoint, b: CharacterHistoryPoint) =>
+  a.level === b.level &&
+  a.itemLevel === b.itemLevel &&
+  a.achievements === b.achievements &&
+  a.quests === b.quests;
+
+/** A point only where the member's own values moved, not where the rest of the guild did. */
 export function memberSeries(
   checks: readonly GuildCheck[],
   characterId: string,
 ): CharacterHistoryPoint[] {
-  return checks.flatMap((check) => {
+  const points: CharacterHistoryPoint[] = [];
+  for (const check of checks) {
     const member = check.members.find((m) => m.characterId === characterId);
-    if (member === undefined) return [];
-    return [
-      {
-        day: check.day,
-        at: check.recordedAt.toISOString(),
-        level: member.level,
-        ...(member.itemLevel === undefined
-          ? {}
-          : { itemLevel: member.itemLevel }),
-        achievements: member.achievements,
-        ...(member.questsCompleted === undefined
-          ? {}
-          : { quests: member.questsCompleted }),
-      },
-    ];
-  });
+    if (member === undefined) continue;
+    const point: CharacterHistoryPoint = {
+      day: check.day,
+      at: check.recordedAt.toISOString(),
+      level: member.level,
+      ...(member.itemLevel === undefined
+        ? {}
+        : { itemLevel: member.itemLevel }),
+      achievements: member.achievements,
+      ...(member.questsCompleted === undefined
+        ? {}
+        : { quests: member.questsCompleted }),
+    };
+    const previous = points.at(-1);
+    if (previous === undefined || !sameValues(previous, point))
+      points.push(point);
+  }
+  return points;
 }
 
 function average(values: readonly number[]): number | undefined {

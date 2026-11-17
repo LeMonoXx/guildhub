@@ -246,6 +246,19 @@ describe("series", () => {
     ]);
   });
 
+  it("adds a member point only when the member's own values moved", () => {
+    const aria = member();
+    const checks = [
+      day("2026-11-01", [aria]),
+      day("2026-11-02", [aria, member({ characterId: "2", slug: "brom" })]),
+      day("2026-11-03", [member({ level: 21 })]),
+    ];
+    expect(memberSeries(checks, "1").map((point) => point.day)).toEqual([
+      "2026-11-01",
+      "2026-11-03",
+    ]);
+  });
+
   it("follows one member across checks", () => {
     expect(memberSeries(days, "2")).toEqual([
       {

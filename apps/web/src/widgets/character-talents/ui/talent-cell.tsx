@@ -19,9 +19,9 @@ export function TalentCell({
       data-state={state}
       style={{ gridRow: node.row, gridColumn: node.column }}
     >
-      <span
+      <button
+        type="button"
         className="talent-cell-button"
-        tabIndex={0}
         aria-describedby={tooltipId}
       >
         <span className="talent-cell-icon">
@@ -38,7 +38,7 @@ export function TalentCell({
         <span className="talent-cell-tip">
           <TalentTooltip node={node} tree={tree} id={tooltipId} />
         </span>
-      </span>
+      </button>
     </li>
   );
 }

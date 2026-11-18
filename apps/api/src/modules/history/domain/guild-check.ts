@@ -1,5 +1,13 @@
 import type { ContentLocale, ItemQuality } from "@guildhub/contracts";
 
+/** An achievement as Battle.net lists it, with when it was earned. */
+export interface ListedAchievement {
+  readonly id: number;
+  readonly name: string;
+  readonly iconUrl?: string;
+  readonly at: string;
+}
+
 /** What one member looked like at a check. */
 export interface MemberState {
   readonly characterId: string;
@@ -15,12 +23,7 @@ export interface MemberState {
   readonly achievementPoints: number;
   readonly achievements: number;
   /** The latest achievements Battle.net lists; absent in checks recorded before they were kept. */
-  readonly recentAchievements?: readonly {
-    readonly id: number;
-    readonly name: string;
-    readonly iconUrl?: string;
-    readonly at: string;
-  }[];
+  readonly recentAchievements?: readonly ListedAchievement[];
   /** Absent in checks recorded before quests were kept. */
   readonly questsCompleted?: number;
   readonly equipment: readonly {

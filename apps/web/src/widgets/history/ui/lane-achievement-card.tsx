@@ -1,21 +1,23 @@
+import {
+  AchievementHover,
+  AchievementIcon,
+  HistoryName,
+  type HistoryEventOf,
+} from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import type { TimelineAchievement } from "../model/history-lanes";
-import { AchievementHover } from "./achievement-hover";
-import { AchievementIcon } from "./achievement-icon";
-import { HistoryName } from "./history-name";
 
 /** An achievement shines on its own card, its icon as the trophy. */
-export function TimelineAchievementCard({
-  achievement,
+export function LaneAchievementCard({
+  event,
 }: {
-  readonly achievement: TimelineAchievement;
+  readonly event: HistoryEventOf<"achievement">;
 }) {
   const { t } = useLocale();
   return (
     <div className="history-timeline-card history-timeline-achievement">
       <AchievementIcon
         className="history-timeline-trophy"
-        iconUrl={achievement.iconUrl}
+        iconUrl={event.iconUrl}
         fallback="★"
       />
       <div className="history-timeline-achievement-body">
@@ -23,16 +25,12 @@ export function TimelineAchievementCard({
           {t("timeline.achievementEyebrow")}
         </span>
         <p>
-          <HistoryName event={achievement} /> {t("timeline.earnedShort")}{" "}
+          <HistoryName event={event} /> {t("timeline.earnedShort")}{" "}
           <AchievementHover
-            achievement={{
-              name: achievement.title,
-              iconUrl: achievement.iconUrl,
-              details: achievement.details,
-            }}
+            achievement={{ name: event.achievement, iconUrl: event.iconUrl }}
           >
             <strong className="history-timeline-achievement-title">
-              {achievement.title}
+              {event.achievement}
             </strong>
           </AchievementHover>
         </p>

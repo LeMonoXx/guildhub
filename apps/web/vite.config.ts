@@ -56,7 +56,10 @@ const assetRoot =
   (existsSync(localSharedAssets) ? localSharedAssets : undefined);
 
 export default defineConfig({
-  plugins: [react(), ...(assetRoot ? [localAssets(assetRoot)] : [])],
+  plugins: [
+    react({ babel: { plugins: ["babel-plugin-react-compiler"] } }),
+    ...(assetRoot ? [localAssets(assetRoot)] : []),
+  ],
   publicDir: "test-fixtures",
   server: {
     proxy: {

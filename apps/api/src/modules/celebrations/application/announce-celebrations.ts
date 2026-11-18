@@ -1,24 +1,35 @@
 import type { ContentLocale, HistoryEvent } from "@guildhub/contracts";
 import { celebrationsOf } from "../domain/celebration.js";
-import type { CelebrationNotifier } from "./ports.js";
+import type { CelebrationQueue } from "./ports.js";
 
 export interface AnnounceCelebrationsDeps {
-  readonly notifier: CelebrationNotifier;
+  readonly queue: CelebrationQueue;
+  /** The most celebrations one post may carry. */
+  readonly batchSize: number;
   /** The language the channel reads; checks in other languages repeat the same changes. */
   readonly locale: ContentLocale;
 }
 
-/** Announces the milestones among a check's changes and returns how many it posted. */
+function chunks<T>(items: readonly T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, (index + 1) * size),
+  );
+}
+
+/**
+ * Queues the milestones among a check's changes, one post per batch so a
+ * retry never repeats a post the channel already took. Returns how many.
+ */
 export const makeAnnounceCelebrations =
-  ({ notifier, locale }: AnnounceCelebrationsDeps) =>
+  ({ queue, batchSize, locale }: AnnounceCelebrationsDeps) =>
   async (
     events: readonly HistoryEvent[],
     eventLocale: ContentLocale,
   ): Promise<number> => {
     if (eventLocale !== locale) return 0;
     const celebrations = celebrationsOf(events);
-    if (celebrations.length === 0) return 0;
-    await notifier.announce(celebrations);
+    for (const batch of chunks(celebrations, batchSize))
+      await queue.enqueue(batch);
     return celebrations.length;
   };
 

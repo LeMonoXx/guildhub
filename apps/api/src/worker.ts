@@ -22,7 +22,10 @@ import {
   registerModelJobs,
 } from "./modules/character/infrastructure/index.js";
 import { makeAnnounceCelebrations } from "./modules/celebrations/index.js";
-import { makeDiscordWebhookNotifier } from "./modules/celebrations/infrastructure/index.js";
+import {
+  makeDiscordWebhookNotifier,
+  registerCelebrationJobs,
+} from "./modules/celebrations/infrastructure/index.js";
 import { makeRefreshRecipeCatalog } from "./modules/crafting/index.js";
 import {
   makeBattleNetRecipeCatalogSource,
@@ -110,14 +113,6 @@ void makeEnsureWorldMap({
     logger.error({ module: "baker", err: error }, "world map bake failed");
   },
 );
-void makeEnsureBosses({ baker, displayIds: BOSS_DISPLAY_IDS })().then(
-  (result) => {
-    logger.info({ module: "baker", ...result }, "dungeon bosses ready");
-  },
-  (error: unknown) => {
-    logger.error({ module: "baker", err: error }, "dungeon boss bake failed");
-  },
-);
 
 const boss = await startJobQueue(env.DATABASE_URL);
 boss.on("error", (error) => {
@@ -154,32 +149,26 @@ await registerModelJobs(boss, {
     },
     cache: makeDrizzleCharacterCache(database),
   }),
+  ensureBosses: makeEnsureBosses({ baker, displayIds: BOSS_DISPLAY_IDS }),
   stopping: () => shuttingDown,
   timeZone: env.HISTORY_TIME_ZONE,
   log: logger,
 });
-const celebrate = (webhookUrl: string): OnHistoryChanges => {
+async function celebrate(webhookUrl: string): Promise<OnHistoryChanges> {
+  const notifier = makeDiscordWebhookNotifier({
+    webhookUrl,
+    siteUrl: new URL(env.BATTLENET_REDIRECT_URI).origin,
+    locale: env.DISCORD_LOCALE,
+  });
   const announce = makeAnnounceCelebrations({
-    notifier: makeDiscordWebhookNotifier({
-      webhookUrl,
-      siteUrl: new URL(env.BATTLENET_REDIRECT_URI).origin,
-      locale: env.DISCORD_LOCALE,
-    }),
+    queue: await registerCelebrationJobs(boss, { notifier, log: logger }),
+    batchSize: notifier.batchSize,
     locale: env.DISCORD_LOCALE,
   });
   return async (events, locale) => {
-    try {
-      const count = await announce(events, locale);
-      if (count > 0)
-        logger.info({ module: "celebrations", count }, "celebrations posted");
-    } catch (error) {
-      logger.warn(
-        { module: "celebrations", err: error },
-        "celebrations not posted",
-      );
-    }
+    await announce(events, locale);
   };
-};
+}
 
 await registerHistoryJobs(boss, {
   guild: composed.guild,
@@ -191,7 +180,7 @@ await registerHistoryJobs(boss, {
     ...composed.history,
     ...(env.DISCORD_WEBHOOK_URL === undefined
       ? {}
-      : { onChanges: celebrate(env.DISCORD_WEBHOOK_URL) }),
+      : { onChanges: await celebrate(env.DISCORD_WEBHOOK_URL) }),
   }),
   cron: env.HISTORY_CRON,
   timeZone: env.HISTORY_TIME_ZONE,

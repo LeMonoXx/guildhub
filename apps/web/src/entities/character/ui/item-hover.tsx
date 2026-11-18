@@ -22,9 +22,9 @@ export function ItemHover({ item, children }: ItemHoverProps) {
     setWanted(true);
   };
   return (
-    <span
+    <button
+      type="button"
       className="item-hover"
-      tabIndex={0}
       aria-describedby={tooltipId}
       onPointerEnter={want}
       onFocus={want}
@@ -33,6 +33,6 @@ export function ItemHover({ item, children }: ItemHoverProps) {
       <span className="item-hover-tip">
         <ItemTooltip item={full.data ?? item} id={tooltipId} />
       </span>
-    </span>
+    </button>
   );
 }

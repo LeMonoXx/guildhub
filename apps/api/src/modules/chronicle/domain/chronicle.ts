@@ -6,7 +6,6 @@ import {
   composeHallOfFame,
   composeProfessions,
 } from "./chronicle-rolls.js";
-import { composeTimeline } from "./chronicle-timeline.js";
 import { composeMakeup, composeTotals } from "./chronicle-totals.js";
 
 export type {
@@ -35,7 +34,6 @@ export function composeChronicle(input: {
     ...composeMakeup(entries),
     professions: composeProfessions(published),
     bestiary,
-    timeline: composeTimeline(published),
     hallOfFame: composeHallOfFame(entries),
     dossiers: entries.map(composeDossier),
   };

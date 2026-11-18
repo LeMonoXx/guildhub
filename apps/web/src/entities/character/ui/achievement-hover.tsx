@@ -18,15 +18,15 @@ export function AchievementHover({
 }: AchievementHoverProps) {
   const tooltipId = useId();
   return (
-    <span
+    <button
+      type="button"
       className={["achievement-hover", className].filter(Boolean).join(" ")}
-      tabIndex={0}
       aria-describedby={tooltipId}
     >
       {children}
       <span className="achievement-hover-tip">
         <AchievementTooltip achievement={achievement} id={tooltipId} />
       </span>
-    </span>
+    </button>
   );
 }

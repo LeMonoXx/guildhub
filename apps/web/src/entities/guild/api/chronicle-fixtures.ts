@@ -64,20 +64,6 @@ export const fixtureGuildChronicle = (): GuildChronicleResponse =>
         slayers: [shade, brightforge],
       },
     ],
-    timeline: [
-      {
-        ...shade,
-        kind: "achievement",
-        title: "Level 10",
-        at: fetchedAt,
-      },
-      {
-        ...brightforge,
-        kind: "login",
-        title: "Brightforge",
-        at: "2026-11-13T17:00:00.000Z",
-      },
-    ],
     hallOfFame: [
       { ...shade, category: "level", value: 80 },
       { ...brightforge, category: "quests", value: 400 },

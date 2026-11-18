@@ -1,14 +1,17 @@
-import { wowClassColorVar } from "../model/class-color";
+import {
+  HistoryName,
+  HistoryPortrait,
+  wowClassColorVar,
+} from "../../../entities/character";
 import type { HistoryLane, LaneMark } from "../model/history-lanes";
 import type { LaneScale } from "../model/lane-scale";
-import { HistoryName } from "./history-name";
-import { HistoryPortrait } from "./history-portrait";
 import { LaneMarkButton } from "./lane-mark";
 
 interface HistoryLaneRowProps {
   readonly lane: HistoryLane;
   readonly scale: LaneScale;
   readonly selectedKey: string | undefined;
+  readonly tabStopKey: string | undefined;
   readonly onPreview: (mark: LaneMark) => void;
   readonly onPin: (mark: LaneMark) => void;
 }
@@ -18,6 +21,7 @@ export function HistoryLaneRow({
   lane,
   scale,
   selectedKey,
+  tabStopKey,
   onPreview,
   onPin,
 }: HistoryLaneRowProps) {
@@ -50,6 +54,7 @@ export function HistoryLaneRow({
             mark={mark}
             x={scale.x(mark.at)}
             selected={mark.key === selectedKey}
+            tabStop={mark.key === tabStopKey}
             onPreview={onPreview}
             onPin={onPin}
           />

@@ -33,6 +33,9 @@ export function useDragScroll(ref: RefObject<HTMLElement | null>) {
     const up = () => {
       start = undefined;
       delete element.dataset.dragging;
+      setTimeout(() => {
+        dragging = false;
+      });
     };
     const swallowClick = (event: MouseEvent) => {
       if (!dragging) return;

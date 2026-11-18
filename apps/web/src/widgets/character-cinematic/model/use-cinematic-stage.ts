@@ -68,7 +68,9 @@ export function useCinematicStage(
   const [message, setMessage] = useState(labels.loading);
   const [progress, setProgress] = useState(0);
   const decoratorsRef = useRef(options.decorators);
-  decoratorsRef.current = options.decorators;
+  useEffect(() => {
+    decoratorsRef.current = options.decorators;
+  }, [options.decorators]);
 
   const {
     scene,

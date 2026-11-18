@@ -5,10 +5,7 @@ import type {
   GuildPartyResponse,
 } from "@guildhub/contracts";
 import type { ReactNode } from "react";
-import {
-  listedAchievements,
-  wowClassColorVar,
-} from "../../../entities/character";
+import { wowClassColorVar } from "../../../entities/character";
 import type { SectionLink } from "../../../shared/ui";
 import { CharacterArmory } from "../../../widgets/character-armory";
 import {
@@ -18,10 +15,10 @@ import {
 import { CharacterAttributes } from "../../../widgets/character-attributes";
 import { CharacterCollections } from "../../../widgets/character-collections";
 import { CharacterDeeds } from "../../../widgets/character-deeds";
-import { CharacterHistory } from "../../../widgets/character-history";
 import { CharacterProfessions } from "../../../widgets/character-professions";
 import { CharacterReputations } from "../../../widgets/character-reputations";
 import { CharacterTalents } from "../../../widgets/character-talents";
+import { CharacterHistory } from "../../../widgets/history";
 import { CharacterPartyRadar } from "../../../widgets/party";
 
 export interface ProfileSection {
@@ -97,10 +94,14 @@ export const profileSections = (
         <CharacterHistory
           history={history}
           classId={detail.classId}
-          achievements={listedAchievements(detail, profile.achievements.recent)}
           renderCelebration={(event) => (
             <LazyCelebration
               slug={event.slug}
+              manifestUrl={
+                detail.model.status === "ready"
+                  ? detail.model.manifestUrl
+                  : undefined
+              }
               assetBase="/assets/"
               className="celebration-canvas"
             />

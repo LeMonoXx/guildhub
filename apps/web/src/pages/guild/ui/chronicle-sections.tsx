@@ -11,7 +11,7 @@ import { GuildComposition } from "../../../widgets/guild-composition";
 import { GuildCrafters } from "../../../widgets/guild-crafters";
 import { GuildDossiers } from "../../../widgets/guild-dossiers";
 import { GuildHallOfFame } from "../../../widgets/guild-hall-of-fame";
-import { GuildHistory } from "../../../widgets/guild-history";
+import { GuildHistory } from "../../../widgets/history";
 import { GuildPulse } from "../../../widgets/guild-pulse";
 import { GuildPartyRadar } from "../../../widgets/party";
 import { LazyCelebration } from "../../../widgets/character-cinematic";
@@ -46,9 +46,6 @@ export const chronicleSections = (
       body: (
         <GuildHistory
           history={history}
-          achievements={chronicle.timeline.filter(
-            (event) => event.kind === "achievement",
-          )}
           renderCelebration={(event) => (
             <LazyCelebration
               slug={event.slug}

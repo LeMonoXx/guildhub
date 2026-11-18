@@ -198,12 +198,12 @@ describe("diffChecks", () => {
           level: 21,
           achievements: 11,
           recentAchievements: [
-            { id: 9, name: "Late", at: "2026-11-02T05:00:00.000Z" },
+            { id: 9, name: "Early", at: "2026-11-02T03:00:00.000Z" },
           ],
         }),
       ]),
     ]);
-    expect(events.map((event) => event.kind)).toEqual(["achievement", "level"]);
+    expect(events.map((event) => event.kind)).toEqual(["level", "achievement"]);
   });
 
   it("does not invent changes when a profile was not published one of the days", () => {
@@ -233,6 +233,67 @@ describe("diffChecks", () => {
       day("2026-11-02", [member({ questsCompleted: 7 })]),
     );
     expect(uncounted).toEqual([]);
+  });
+});
+
+describe("achievements across checks", () => {
+  function at(time: string, members: MemberState[]): GuildCheck {
+    return {
+      day: time.slice(0, 10),
+      recordedAt: new Date(time),
+      checkedAt: new Date(time),
+      achievementPoints: 0,
+      members,
+    };
+  }
+  const rare = { id: 9, name: "Rare", at: "2026-11-02T13:28:00.000Z" };
+
+  it("shows an achievement Battle.net listed late once, when it was earned", () => {
+    const events = eventsOf([
+      at("2026-11-02T13:00:00.000Z", [member({ recentAchievements: [] })]),
+      at("2026-11-02T14:00:00.000Z", [
+        member({ achievements: 11, recentAchievements: [] }),
+      ]),
+      at("2026-11-02T15:00:00.000Z", [
+        member({ achievements: 11, recentAchievements: [rare] }),
+      ]),
+    ]);
+    expect(events).toEqual([
+      expect.objectContaining({
+        kind: "achievement",
+        achievementId: 9,
+        at: rare.at,
+      }),
+    ]);
+  });
+
+  it("counts achievements of checks recorded before they were listed", () => {
+    const events = eventsOf([
+      at("2026-11-02T13:00:00.000Z", [member()]),
+      at("2026-11-02T14:00:00.000Z", [
+        member({ achievements: 12, achievementPoints: 130 }),
+      ]),
+    ]);
+    expect(events).toEqual([
+      expect.objectContaining({ kind: "achievements", count: 2, points: 30 }),
+    ]);
+  });
+
+  it("counts what a full list could not show beside the achievements it did", () => {
+    const events = diffChecks(
+      at("2026-11-02T13:00:00.000Z", [member({ recentAchievements: [] })]),
+      at("2026-11-02T14:00:00.000Z", [
+        member({
+          achievements: 13,
+          achievementPoints: 160,
+          recentAchievements: [rare],
+        }),
+      ]),
+    );
+    expect(events).toEqual([
+      expect.objectContaining({ kind: "achievement", achievementId: 9 }),
+      expect.objectContaining({ kind: "achievements", count: 2, points: 0 }),
+    ]);
   });
 });
 

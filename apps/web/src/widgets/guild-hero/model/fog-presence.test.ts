@@ -35,7 +35,9 @@ describe("FogPresence", () => {
     const places = arrangeTroop(members.slice(0, 2));
     const [first] = places;
     if (!first) throw new Error("need a place");
-    const presence = new FogPresence(places, () => stageAt(100, 50, 1200, 800));
+    const presence = new FogPresence(places, {
+      current: stageAt(100, 50, 1200, 800),
+    });
     const frame = frameWith([
       {
         kind: "camera",
@@ -64,7 +66,7 @@ describe("FogPresence", () => {
   });
 
   test("reports nothing without a stage element", () => {
-    const presence = new FogPresence([], () => null);
+    const presence = new FogPresence([], { current: null });
     presence.decorate(frameWith([]));
     expect(readFogFigures()).toHaveLength(0);
   });

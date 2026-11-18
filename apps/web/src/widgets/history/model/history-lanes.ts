@@ -1,18 +1,10 @@
-import type { AchievementDetails, HistoryEvent } from "@guildhub/contracts";
-import type { HistoryEventOf } from "./history-event";
+import type { HistoryEvent } from "@guildhub/contracts";
+import type { HistoryEventOf } from "../../../entities/character";
 
 export type MemberRef = Pick<
   HistoryEvent,
   "slug" | "name" | "surname" | "classId" | "avatarUrl"
 >;
-
-/** One achievement, from the history or from a member's recent list. */
-export interface TimelineAchievement extends MemberRef {
-  readonly title: string;
-  readonly at: string;
-  readonly iconUrl?: string;
-  readonly details?: AchievementDetails;
-}
 
 export type CheckEvent = Exclude<HistoryEvent, { kind: "achievement" }>;
 
@@ -28,12 +20,13 @@ export interface LaneMoment {
   readonly lead: CheckEvent["kind"];
 }
 
+/** One achievement, at the time it was earned. */
 export interface LaneAchievement {
   readonly type: "achievement";
   readonly key: string;
   readonly at: string;
   readonly member: MemberRef;
-  readonly achievement: TimelineAchievement;
+  readonly event: HistoryEventOf<"achievement">;
 }
 
 export type LaneMark = LaneMoment | LaneAchievement;
@@ -76,24 +69,6 @@ const LEAD_ORDER: readonly CheckEvent["kind"][] = [
   "quests",
 ];
 
-/** A member's own list of recent achievements, as timeline achievements. */
-export const listedAchievements = (
-  member: MemberRef,
-  recent: readonly {
-    readonly name: string;
-    readonly at: string;
-    readonly iconUrl?: string | undefined;
-    readonly details?: AchievementDetails | undefined;
-  }[],
-): TimelineAchievement[] =>
-  recent.map((achievement) => ({
-    ...member,
-    title: achievement.name,
-    at: achievement.at,
-    iconUrl: achievement.iconUrl,
-    details: achievement.details,
-  }));
-
 const memberOf = (ref: MemberRef): MemberRef => ({
   slug: ref.slug,
   name: ref.name,
@@ -102,84 +77,49 @@ const memberOf = (ref: MemberRef): MemberRef => ({
   avatarUrl: ref.avatarUrl,
 });
 
-const achievementOfEvent = (
+const achievementMark = (
   event: HistoryEventOf<"achievement">,
-): TimelineAchievement => ({
-  ...memberOf(event),
-  title: event.achievement,
+): LaneAchievement => ({
+  type: "achievement",
+  key: `${event.slug}|achievement|${String(event.achievementId)}`,
   at: event.at,
-  iconUrl: event.iconUrl,
+  member: memberOf(event),
+  event,
 });
 
-const uniqueAchievements = (
-  events: readonly HistoryEvent[],
-  listed: readonly TimelineAchievement[],
-): LaneAchievement[] => {
-  const marks = new Map<string, LaneAchievement>();
-  const recorded = events.flatMap((event) =>
-    event.kind === "achievement" ? [achievementOfEvent(event)] : [],
+const moment = (key: string, grouped: readonly CheckEvent[]): LaneMoment => {
+  const [first] = grouped as [CheckEvent, ...CheckEvent[]];
+  const level = grouped.find(
+    (event): event is HistoryEventOf<"level"> => event.kind === "level",
   );
-  for (const achievement of [...recorded, ...listed]) {
-    const key = `${achievement.slug}|${achievement.title}|${achievement.at}`;
-    if (marks.has(key)) continue;
-    marks.set(key, {
-      type: "achievement",
-      key,
-      at: achievement.at,
-      member: memberOf(achievement),
-      achievement,
-    });
-  }
-  return [...marks.values()];
+  return {
+    type: "moment",
+    key,
+    at: first.at,
+    member: memberOf(first),
+    events: grouped,
+    ...(level === undefined ? {} : { level }),
+    lead:
+      LEAD_ORDER.find((kind) => grouped.some((e) => e.kind === kind)) ??
+      first.kind,
+  };
 };
 
-/**
- * A count of new achievements is only kept from before a member's first
- * listed achievement; after that, each achievement shows on its own.
- */
-const firstListedAt = (achievements: readonly LaneAchievement[]) => {
-  const first = new Map<string, string>();
-  for (const { member, at } of achievements) {
-    const known = first.get(member.slug);
-    if (known === undefined || at < known) first.set(member.slug, at);
-  }
-  return first;
-};
-
-const moments = (
-  events: readonly HistoryEvent[],
-  firstListed: ReadonlyMap<string, string>,
-): LaneMoment[] => {
+const marksOf = (events: readonly HistoryEvent[]): LaneMark[] => {
   const groups = new Map<string, CheckEvent[]>();
+  const achievements: LaneAchievement[] = [];
   for (const event of events) {
-    if (event.kind === "achievement") continue;
-    const listedFrom = firstListed.get(event.slug);
-    if (
-      event.kind === "achievements" &&
-      listedFrom !== undefined &&
-      event.at >= listedFrom
-    )
+    if (event.kind === "achievement") {
+      achievements.push(achievementMark(event));
       continue;
+    }
     const key = `${event.slug}|${event.at}`;
     groups.set(key, [...(groups.get(key) ?? []), event]);
   }
-  return [...groups].map(([key, grouped]) => {
-    const [first] = grouped as [CheckEvent, ...CheckEvent[]];
-    const level = grouped.find(
-      (event): event is HistoryEventOf<"level"> => event.kind === "level",
-    );
-    return {
-      type: "moment",
-      key,
-      at: first.at,
-      member: memberOf(first),
-      events: grouped,
-      ...(level === undefined ? {} : { level }),
-      lead:
-        LEAD_ORDER.find((kind) => grouped.some((e) => e.kind === kind)) ??
-        first.kind,
-    };
-  });
+  return [
+    ...[...groups].map(([key, grouped]) => moment(key, grouped)),
+    ...achievements,
+  ].sort((a, b) => a.at.localeCompare(b.at));
 };
 
 const sessionsOf = (marks: readonly LaneMark[]): LaneSession[] => {
@@ -193,19 +133,16 @@ const sessionsOf = (marks: readonly LaneMark[]): LaneSession[] => {
   return sessions.filter((session) => session.from !== session.to);
 };
 
+const newestOf = (lane: HistoryLane) => (lane.marks.at(-1) as LaneMark).at;
+
 /**
  * One lane per member: each hourly check they changed something in is one
  * mark, each achievement another at the time it was earned.
  */
 export function historyLanes(
   events: readonly HistoryEvent[],
-  achievements: readonly TimelineAchievement[] = [],
 ): HistoryLanes | undefined {
-  const listed = uniqueAchievements(events, achievements);
-  const marks: LaneMark[] = [
-    ...moments(events, firstListedAt(listed)),
-    ...listed,
-  ].sort((a, b) => a.at.localeCompare(b.at));
+  const marks = marksOf(events);
   const [oldest] = marks;
   const newest = marks.at(-1);
   if (oldest === undefined || newest === undefined) return undefined;
@@ -221,11 +158,7 @@ export function historyLanes(
       marks: laneMarks,
       sessions: sessionsOf(laneMarks),
     }))
-    .sort((a, b) =>
-      (b.marks.at(-1) as LaneMark).at.localeCompare(
-        (a.marks.at(-1) as LaneMark).at,
-      ),
-    );
+    .sort((a, b) => newestOf(b).localeCompare(newestOf(a)));
   return { lanes, from: oldest.at, to: newest.at };
 }
 

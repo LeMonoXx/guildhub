@@ -52,7 +52,6 @@ export function RecipeFinder({ filters, onChange }: RecipeFinderProps) {
           }}
           placeholder={t("recipes.placeholder")}
           aria-label={t("recipes.placeholder")}
-          autoFocus
         />
         <select
           className="recipe-stat-select"

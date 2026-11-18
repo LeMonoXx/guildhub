@@ -1,11 +1,6 @@
 import type { HistoryEvent } from "@guildhub/contracts";
 import { describe, expect, it } from "vitest";
-import {
-  featuredMark,
-  historyLanes,
-  type HistoryLanes,
-  type TimelineAchievement,
-} from "./history-lanes";
+import { featuredMark, historyLanes, type HistoryLanes } from "./history-lanes";
 
 const aria = { slug: "aria", name: "Aria", surname: "Storm", classId: "8" };
 const bram = { slug: "bram", name: "Bram", surname: "Oak", classId: "1" };
@@ -37,10 +32,17 @@ const counted = (at: string): HistoryEvent => ({
   points: 20,
 });
 
-const listed = (at: string, title: string): TimelineAchievement => ({
+const achievement = (
+  at: string,
+  achievementId: number,
+  title: string,
+): HistoryEvent => ({
   ...aria,
-  title,
+  day: at.slice(0, 10),
   at,
+  kind: "achievement",
+  achievementId,
+  achievement: title,
 });
 
 const shape = (lanes: HistoryLanes | undefined) =>
@@ -48,7 +50,7 @@ const shape = (lanes: HistoryLanes | undefined) =>
     lane.member.slug,
     lane.marks.map((mark) =>
       mark.type === "achievement"
-        ? `achievement ${mark.achievement.title}`
+        ? `achievement ${mark.event.achievement}`
         : `${mark.lead} ${mark.at.slice(11, 16)} x${String(mark.events.length)}`,
     ),
   ]);
@@ -77,39 +79,22 @@ describe("history lanes", () => {
     expect(lanes?.lanes[0]?.marks[0]).toMatchObject({ level: { to: 23 } });
   });
 
-  it("puts achievements at the time they were earned and shows each once", () => {
-    const recorded: HistoryEvent = {
-      ...aria,
-      day: "2026-11-18",
-      at: "2026-11-18T08:15:00.000Z",
-      kind: "achievement",
-      achievementId: 7,
-      achievement: "Explorer",
-    };
+  it("puts each achievement on its own mark, at the time it was earned", () => {
     expect(
       shape(
-        historyLanes(
-          [level("2026-11-18T09:00:00.000Z", 23), recorded],
-          [listed(recorded.at, "Explorer")],
-        ),
+        historyLanes([
+          level("2026-11-18T09:00:00.000Z", 23),
+          achievement("2026-11-18T08:15:00.000Z", 7, "Explorer"),
+        ]),
       ),
     ).toEqual([["aria", ["achievement Explorer", "level 09:00 x1"]]]);
   });
 
-  it("keeps a count of achievements only from before the first listed one", () => {
-    expect(
-      shape(
-        historyLanes(
-          [
-            counted("2026-11-18T10:00:00.000Z"),
-            counted("2026-11-16T10:00:00.000Z"),
-          ],
-          [listed("2026-11-18T09:30:00.000Z", "Explorer")],
-        ),
-      ),
-    ).toEqual([["aria", ["achievements 10:00 x1", "achievement Explorer"]]]);
+  it("keeps the achievements the history could only count", () => {
+    expect(shape(historyLanes([counted("2026-11-16T10:00:00.000Z")]))).toEqual([
+      ["aria", ["achievements 10:00 x1"]],
+    ]);
   });
-
   it("joins marks an hour apart into one session", () => {
     const lanes = historyLanes([
       quests("2026-11-18T08:00:00.000Z"),

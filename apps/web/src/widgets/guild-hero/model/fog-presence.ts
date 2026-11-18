@@ -27,13 +27,13 @@ export class FogPresence implements FrameDecorator {
 
   constructor(
     places: readonly TroopPlace[],
-    private readonly stage: () => HTMLElement | null,
+    private readonly stage: { readonly current: HTMLElement | null },
   ) {
     this.bySlug = new Map(places.map((place) => [place.member.slug, place]));
   }
 
   decorate(frame: CinematicFrame): CinematicFrame {
-    const element = this.stage();
+    const element = this.stage.current;
     if (!element) return frame;
     const rect = element.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return frame;

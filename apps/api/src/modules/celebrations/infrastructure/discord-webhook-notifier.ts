@@ -32,12 +32,6 @@ export interface DiscordWebhookOptions {
   readonly fetch?: typeof fetch;
 }
 
-function chunks<T>(items: readonly T[], size: number): T[][] {
-  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
-    items.slice(index * size, (index + 1) * size),
-  );
-}
-
 function embed(
   celebration: Celebration,
   { siteUrl, locale }: Pick<DiscordWebhookOptions, "siteUrl" | "locale">,
@@ -71,21 +65,20 @@ export function makeDiscordWebhookNotifier(
 ): CelebrationNotifier {
   const send = options.fetch ?? fetch;
   return {
+    batchSize: EMBEDS_PER_MESSAGE,
     async announce(celebrations) {
-      for (const batch of chunks(celebrations, EMBEDS_PER_MESSAGE)) {
-        const response = await send(options.webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            allowed_mentions: { parse: [] },
-            embeds: batch.map((celebration) => embed(celebration, options)),
-          }),
-        });
-        if (!response.ok)
-          throw new Error(
-            `Discord webhook answered ${String(response.status)}`,
-          );
-      }
+      const response = await send(options.webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          allowed_mentions: { parse: [] },
+          embeds: celebrations.map((celebration) =>
+            embed(celebration, options),
+          ),
+        }),
+      });
+      if (!response.ok)
+        throw new Error(`Discord webhook answered ${String(response.status)}`);
     },
   };
 }

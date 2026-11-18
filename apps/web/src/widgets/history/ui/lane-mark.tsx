@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
+import { AchievementIcon, historyGlyphs } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import { historyGlyphs } from "../model/history-event";
 import type {
   LaneAchievement,
   LaneMark,
   LaneMoment,
 } from "../model/history-lanes";
-import { AchievementIcon } from "./achievement-icon";
 
 type Translate = ReturnType<typeof useLocale>["t"];
 
@@ -41,11 +40,11 @@ const achievementLook: MarkLook<LaneAchievement> = {
   face: (mark) => (
     <AchievementIcon
       className="lane-mark-icon"
-      iconUrl={mark.achievement.iconUrl}
+      iconUrl={mark.event.iconUrl}
       fallback="★"
     />
   ),
-  summary: (mark) => mark.achievement.title,
+  summary: (mark) => mark.event.achievement,
 };
 
 const lookOf = (mark: LaneMark) =>
@@ -55,6 +54,8 @@ interface LaneMarkButtonProps {
   readonly mark: LaneMark;
   readonly x: number;
   readonly selected: boolean;
+  /** Only one mark is a tab stop; arrow keys move between the others. */
+  readonly tabStop: boolean;
   readonly onPreview: (mark: LaneMark) => void;
   readonly onPin: (mark: LaneMark) => void;
 }
@@ -64,6 +65,7 @@ export function LaneMarkButton({
   mark,
   x,
   selected,
+  tabStop,
   onPreview,
   onPin,
 }: LaneMarkButtonProps) {
@@ -78,11 +80,13 @@ export function LaneMarkButton({
     <button
       type="button"
       className="lane-mark"
+      data-mark={mark.key}
       data-type={mark.type}
       data-kind={look.kind(mark)}
       data-level={mark.type === "moment" && mark.level !== undefined}
       aria-pressed={selected}
       aria-label={`${mark.member.name}, ${time}: ${look.summary(mark, t)}`}
+      tabIndex={tabStop ? 0 : -1}
       style={{ left: `${String(x)}px` }}
       onMouseEnter={() => {
         onPreview(mark);

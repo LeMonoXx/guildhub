@@ -116,12 +116,6 @@ describe("composeChronicle", () => {
         ],
       },
     ]);
-    expect(chronicle.timeline[0]).toMatchObject({
-      kind: "achievement",
-      title: "Explore",
-      name: "Ann",
-      iconUrl: "/api/icons/136240",
-    });
     expect(
       chronicle.hallOfFame.find((fame) => fame.category === "level"),
     ).toMatchObject({ name: "Cy", value: 30 });

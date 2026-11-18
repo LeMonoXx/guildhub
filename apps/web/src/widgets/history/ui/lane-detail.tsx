@@ -1,19 +1,21 @@
 import type { ReactNode } from "react";
+import {
+  HistoryEventRow,
+  HistoryName,
+  HistoryPortrait,
+  LevelUpCard,
+  type HistoryEventOf,
+} from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
-import type { HistoryEventOf } from "../model/history-event";
 import type {
   LaneAchievement,
   LaneMark,
   LaneMoment,
   MemberRef,
 } from "../model/history-lanes";
-import { HistoryEventRow } from "./history-event-row";
-import { HistoryName } from "./history-name";
-import { HistoryPortrait } from "./history-portrait";
-import { LevelUpCard } from "./level-up-card";
-import { TimelineAchievementCard } from "./timeline-achievement-card";
+import { LaneAchievementCard } from "./lane-achievement-card";
 
-type RenderCelebration = (event: HistoryEventOf<"level">) => ReactNode;
+export type RenderCelebration = (event: HistoryEventOf<"level">) => ReactNode;
 
 function DetailHead({
   member,
@@ -62,8 +64,8 @@ function MomentDetail({
       ) : null}
       {changes.length > 0 ? (
         <ul className="lane-detail-changes">
-          {changes.map((event) => (
-            <li key={JSON.stringify(event)}>
+          {changes.map((event, index) => (
+            <li key={`${event.kind}-${String(index)}`}>
               <HistoryEventRow event={event} />
             </li>
           ))}
@@ -77,7 +79,7 @@ function AchievementDetail({ mark }: { readonly mark: LaneAchievement }) {
   return (
     <>
       <DetailHead member={mark.member} at={mark.at} />
-      <TimelineAchievementCard achievement={mark.achievement} />
+      <LaneAchievementCard event={mark.event} />
     </>
   );
 }

@@ -38,13 +38,12 @@ export { AchievementIcon } from "./ui/achievement-icon";
 export { CharacterLink } from "./ui/character-link";
 export { ClassColoredName } from "./ui/class-colored-name";
 export { ClassMark } from "./ui/class-mark";
-export { HistoryChanges } from "./ui/history-changes";
 export { HistoryChecked } from "./ui/history-checked";
-export {
-  listedAchievements,
-  type TimelineAchievement,
-} from "./model/history-lanes";
-export type { HistoryEventOf } from "./model/history-event";
+export { HistoryEventRow } from "./ui/history-event-row";
+export { HistoryName } from "./ui/history-name";
+export { HistoryPortrait } from "./ui/history-portrait";
+export { LevelUpCard } from "./ui/level-up-card";
+export { historyGlyphs, type HistoryEventOf } from "./model/history-event";
 export { ItemIcon } from "./ui/item-icon";
 export { ItemTooltip } from "./ui/item-tooltip";
 export { Money } from "./ui/money";

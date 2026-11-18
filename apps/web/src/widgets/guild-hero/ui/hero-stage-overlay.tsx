@@ -106,6 +106,7 @@ export function HeroStageOverlay({
   return (
     <div
       className="hero-overlay"
+      role="presentation"
       data-assembled={assembled}
       data-focus={focused !== undefined}
       data-selected={selected !== undefined}

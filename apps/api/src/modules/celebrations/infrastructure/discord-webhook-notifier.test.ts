@@ -45,12 +45,8 @@ describe("discord webhook notifier", () => {
     ]);
   });
 
-  it("splits more than ten celebrations into several messages", async () => {
-    const { bodies, notifier } = setup();
-    await notifier.announce(Array.from({ length: 12 }, () => craft(150)));
-    expect(
-      bodies.map((body) => (body as { embeds: unknown[] }).embeds.length),
-    ).toEqual([10, 2]);
+  it("fits as many celebrations in a post as Discord takes", () => {
+    expect(setup().notifier.batchSize).toBe(10);
   });
 
   it("fails without echoing the secret webhook address", async () => {

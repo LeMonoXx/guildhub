@@ -18,12 +18,13 @@ const capped: HistoryEvent = {
 function setup() {
   const posted: (readonly Celebration[])[] = [];
   const announce = makeAnnounceCelebrations({
-    notifier: {
-      announce: (celebrations) => {
+    queue: {
+      enqueue: (celebrations) => {
         posted.push(celebrations);
         return Promise.resolve();
       },
     },
+    batchSize: 2,
     locale: "de",
   });
   return { posted, announce };
@@ -34,6 +35,15 @@ describe("announceCelebrations", () => {
     const { posted, announce } = setup();
     expect(await announce([capped], "de")).toBe(1);
     expect(posted).toEqual([[expect.objectContaining({ kind: "levelCap" })]]);
+  });
+
+  it("queues one post per batch", async () => {
+    const { posted, announce } = setup();
+    const capping = (slug: string): HistoryEvent => ({ ...capped, slug });
+    expect(
+      await announce([capping("a"), capping("b"), capping("c")], "de"),
+    ).toBe(3);
+    expect(posted.map((batch) => batch.length)).toEqual([2, 1]);
   });
 
   it("skips checks in other languages", async () => {

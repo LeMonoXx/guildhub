@@ -10,7 +10,7 @@ import type { HistoryStore } from "../application/ports.js";
 import type { GuildCheck, MemberState } from "../domain/guild-check.js";
 import { guildCheck } from "./schema.js";
 
-const membersSchema = z.array(
+export const membersSchema = z.array(
   z.object({
     characterId: z.string(),
     slug: z.string(),
@@ -23,6 +23,16 @@ const membersSchema = z.array(
     itemLevel: z.number().optional(),
     achievementPoints: z.number(),
     achievements: z.number(),
+    recentAchievements: z
+      .array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+          iconUrl: z.string().optional(),
+          at: z.string(),
+        }),
+      )
+      .optional(),
     questsCompleted: z.number().optional(),
     equipment: z.array(
       z.object({

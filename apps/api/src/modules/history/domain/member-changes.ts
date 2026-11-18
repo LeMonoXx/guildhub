@@ -1,5 +1,5 @@
 import type { HistoryEvent } from "@guildhub/contracts";
-import type { MemberState } from "./guild-check.js";
+import type { ListedAchievement, MemberState } from "./guild-check.js";
 
 /** Shirts and tabards change looks, not power; they are not worth a headline. */
 const COSMETIC_SLOTS: ReadonlySet<string> = new Set(["SHIRT", "TABARD"]);
@@ -50,18 +50,20 @@ export function rosterChanges(
 /**
  * Changes only a published profile shows. Professions and mounts are compared
  * by name, so they are skipped when the two checks are in different languages.
+ * `earned` are the member's achievements known to fall between the two checks.
  */
 export function profileChanges(
   earlier: MemberState,
   member: MemberState,
   base: EventBase,
   namesComparable: boolean,
+  earned?: readonly ListedAchievement[],
 ): HistoryEvent[] {
   return [
     ...itemChanges(earlier, member, base),
     ...(namesComparable ? professionChanges(earlier, member, base) : []),
     ...reputationChanges(earlier, member, base),
-    ...achievementChanges(earlier, member, base),
+    ...achievementChanges(earlier, member, base, earned),
     ...questChanges(earlier, member, base),
     ...(namesComparable ? mountChanges(earlier, member, base) : []),
   ];
@@ -149,45 +151,64 @@ function reputationChanges(
   });
 }
 
+/** Achievements the later check lists that the earlier one did not; unknown without both lists. */
+function newlyListed(
+  earlier: MemberState,
+  member: MemberState,
+): readonly ListedAchievement[] | undefined {
+  if (
+    earlier.recentAchievements === undefined ||
+    member.recentAchievements === undefined
+  )
+    return undefined;
+  const known = new Set(earlier.recentAchievements.map((a) => a.id));
+  return member.recentAchievements.filter((a) => !known.has(a.id));
+}
+
 /**
- * Each new achievement on its own, at the time it was earned. Checks recorded
- * before achievements were listed only know how many were added.
+ * Each achievement on its own, at the time it was earned: the ones `earned`
+ * places between the checks, else the ones newly listed. Whatever the lists
+ * cannot account for, like checks from before they were kept, stays a count.
  */
 function achievementChanges(
   earlier: MemberState,
   member: MemberState,
   base: EventBase,
+  earned: readonly ListedAchievement[] | undefined,
 ): HistoryEvent[] {
-  const gained = member.achievements - earlier.achievements;
-  if (gained <= 0) return [];
-  if (
-    earlier.recentAchievements !== undefined &&
-    member.recentAchievements !== undefined
-  ) {
-    const known = new Set(earlier.recentAchievements.map((a) => a.id));
-    return member.recentAchievements
-      .filter((achievement) => !known.has(achievement.id))
-      .map((achievement) => ({
-        ...base,
-        at: achievement.at,
-        kind: "achievement",
-        achievementId: achievement.id,
-        achievement: achievement.name,
-        ...(achievement.iconUrl === undefined
-          ? {}
-          : { iconUrl: achievement.iconUrl }),
-      }));
-  }
+  const fresh = newlyListed(earlier, member);
+  const shown = earned ?? fresh ?? [];
+  const accounted = Math.max(fresh?.length ?? 0, shown.length);
+  const unlisted = member.achievements - earlier.achievements - accounted;
   return [
-    {
+    ...shown.map((achievement): HistoryEvent => ({
       ...base,
-      kind: "achievements",
-      count: gained,
-      points: Math.max(0, member.achievementPoints - earlier.achievementPoints),
-    },
+      at: achievement.at,
+      kind: "achievement",
+      achievementId: achievement.id,
+      achievement: achievement.name,
+      ...(achievement.iconUrl === undefined
+        ? {}
+        : { iconUrl: achievement.iconUrl }),
+    })),
+    ...(unlisted > 0
+      ? [
+          {
+            ...base,
+            kind: "achievements" as const,
+            count: unlisted,
+            points:
+              accounted === 0
+                ? Math.max(
+                    0,
+                    member.achievementPoints - earlier.achievementPoints,
+                  )
+                : 0,
+          },
+        ]
+      : []),
   ];
 }
-
 function mountChanges(
   earlier: MemberState,
   member: MemberState,

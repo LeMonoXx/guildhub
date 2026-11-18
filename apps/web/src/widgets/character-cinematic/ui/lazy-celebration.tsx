@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import { characterQueries } from "../../../entities/character";
-import { prefersReducedMotion, useInView } from "../../../shared/lib";
+import { useInView, useMediaQuery } from "../../../shared/lib";
 
 const CelebrationModel = lazy(() =>
   import("../../character-model").then((module) => ({
@@ -11,16 +11,19 @@ const CelebrationModel = lazy(() =>
 
 export interface LazyCelebrationProps {
   readonly slug: string;
+  /** The member's baked look when the page already knows it; asked for otherwise. */
+  readonly manifestUrl?: string | undefined;
   readonly assetBase: string;
   readonly className?: string;
 }
 
 /**
- * A member cheering, drawn only while on screen so a long timeline never
- * holds more than a few WebGL contexts. Nothing until their look is baked.
+ * A member cheering, drawn only while on screen and only for those who allow
+ * motion. Nothing until their look is baked.
  */
 export function LazyCelebration({
   slug,
+  manifestUrl: known,
   assetBase,
   className,
 }: LazyCelebrationProps) {
@@ -28,17 +31,20 @@ export function LazyCelebration({
     once: false,
     rootMargin: "120px 0px",
   });
+  const still = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const wanted = visible && !still;
   const detail = useQuery({
     ...characterQueries.detail(slug),
-    enabled: visible,
+    enabled: wanted && known === undefined,
   });
-  const manifestUrl =
+  const asked =
     detail.data?.model.status === "ready"
       ? detail.data.model.manifestUrl
       : undefined;
+  const manifestUrl = known ?? asked;
   return (
     <div ref={ref} className="celebration-slot">
-      {visible && manifestUrl !== undefined && !prefersReducedMotion() ? (
+      {wanted && manifestUrl !== undefined ? (
         <Suspense fallback={null}>
           <CelebrationModel
             manifestUrl={manifestUrl}

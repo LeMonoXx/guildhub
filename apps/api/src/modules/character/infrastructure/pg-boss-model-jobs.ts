@@ -6,6 +6,7 @@ import {
 import type {
   BakeLook,
   LookRebakeSummary,
+  makeEnsureBosses,
   makePrebakeBodies,
   makeRebakeLooks,
   PrebakeSummary,
@@ -30,6 +31,7 @@ export interface ModelJobs {
   readonly bakeFile: (job: ConvertFileJob) => Promise<void>;
   readonly prebakeBodies: ReturnType<typeof makePrebakeBodies>;
   readonly rebakeLooks: ReturnType<typeof makeRebakeLooks>;
+  readonly ensureBosses: ReturnType<typeof makeEnsureBosses>;
   /** True once the worker shuts down; a prebake ends between bodies or looks. */
   readonly stopping: () => boolean;
   readonly timeZone: string;
@@ -38,7 +40,8 @@ export interface ModelJobs {
 
 /**
  * Look, file, and prebake jobs; prebakes run daily and once at startup. A new
- * game build bakes every body, then every member's look, then goes live.
+ * game build bakes every body, then every member's look, then goes live; the
+ * dungeon bosses follow so a new build bakes them too.
  */
 export async function registerModelJobs(
   boss: PgBoss,
@@ -78,6 +81,10 @@ export async function registerModelJobs(
     }
     logBodies(jobs.log, summary.value);
     logLooks(jobs.log, await jobs.rebakeLooks(jobs.stopping));
+    jobs.log.info(
+      { module: "baker", ...(await jobs.ensureBosses()) },
+      "dungeon bosses ready",
+    );
   });
   await boss.schedule(PREBAKE_QUEUE, DAILY, {}, { tz: jobs.timeZone });
   await boss.send(PREBAKE_QUEUE, {});

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { achievementDetailsSchema } from "./character-profile.js";
 import { characterSlugSchema } from "./guild.js";
 
 const memberRefSchema = z.object({
@@ -80,15 +79,6 @@ export const guildChronicleResponseSchema = z.object({
       place: z.string().optional(),
       kills: z.number().int().nonnegative(),
       slayers: z.array(memberRefSchema),
-    }),
-  ),
-  timeline: z.array(
-    memberRefSchema.extend({
-      kind: z.enum(["achievement", "login"]),
-      title: z.string().min(1),
-      at: z.iso.datetime(),
-      iconUrl: z.string().min(1).optional(),
-      details: achievementDetailsSchema.optional(),
     }),
   ),
   hallOfFame: z.array(

@@ -1,5 +1,7 @@
 import eslint from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
@@ -32,6 +34,10 @@ export default tseslint.config(
         },
       ],
     },
+  },
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    extends: [reactHooks.configs.flat.recommended, jsxA11y.flatConfigs.strict],
   },
   {
     files: ["**/*.{js,mjs,cjs}"],

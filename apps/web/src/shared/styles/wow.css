@@ -90,7 +90,13 @@
 .achievement-hover,
 .item-hover {
   position: relative;
+  padding: 0;
+  border: 0;
   border-bottom: 1px dotted rgb(255 209 0 / 0.45);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
   cursor: help;
 }
 

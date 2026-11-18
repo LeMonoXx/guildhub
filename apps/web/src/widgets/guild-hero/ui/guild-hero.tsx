@@ -49,10 +49,7 @@ export function GuildHero({
   );
   // The fog reads where everyone stands; it watches the frame, never changes it.
   const decorators = useMemo(
-    () => [
-      ...lineup.decorators,
-      new FogPresence(lineup.places, () => stageRef.current),
-    ],
+    () => [...lineup.decorators, new FogPresence(lineup.places, stageRef)],
     [lineup.decorators, lineup.places],
   );
 

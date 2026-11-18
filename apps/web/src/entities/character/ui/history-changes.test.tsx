@@ -43,7 +43,7 @@ describe("HistoryChanges", () => {
     expect(textOf(2)).toMatch(/No visible change/);
   });
 
-  test("lists every change on its own, newest first, with a cheer beside level-ups", async () => {
+  test("puts every member on a lane and opens the latest level-up with its cheer", async () => {
     const member = {
       slug: "aria",
       name: "Aria",
@@ -72,18 +72,19 @@ describe("HistoryChanges", () => {
       />,
     );
     await waitFor(() => {
-      expect(container.querySelector(".history-timeline")).not.toBeNull();
+      expect(container.querySelector(".lanes")).not.toBeNull();
     });
-    const kinds = [...container.querySelectorAll(".history-timeline-node")].map(
-      (node) => node.getAttribute("data-kind"),
+    expect(container.querySelectorAll(".lane")).toHaveLength(1);
+    const kinds = [...container.querySelectorAll(".lane-mark")].map((mark) =>
+      mark.getAttribute("data-kind"),
     );
-    expect(kinds).toEqual(["achievement", "level"]);
-    expect(container.querySelectorAll(".history-timeline-date")).toHaveLength(
-      1,
-    );
+    expect(kinds).toEqual(["level", "achievement"]);
     expect(
-      container.querySelector(".history-timeline-levelup .cheer")?.textContent,
-    ).toBe("Aria");
+      container.querySelector(".lane-mark[aria-pressed='true']")?.textContent,
+    ).toBe("42");
+    expect(container.querySelector(".lane-detail .cheer")?.textContent).toBe(
+      "Aria",
+    );
   });
 });
 

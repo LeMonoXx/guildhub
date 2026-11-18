@@ -43,7 +43,7 @@ export { HistoryChecked } from "./ui/history-checked";
 export {
   listedAchievements,
   type TimelineAchievement,
-} from "./model/history-timeline";
+} from "./model/history-lanes";
 export type { HistoryEventOf } from "./model/history-event";
 export { ItemIcon } from "./ui/item-icon";
 export { ItemTooltip } from "./ui/item-tooltip";

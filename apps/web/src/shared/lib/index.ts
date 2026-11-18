@@ -1,4 +1,5 @@
 export { formatDocumentTitle } from "./document-title";
+export { useDragScroll } from "./drag-scroll";
 export {
   daysBetween,
   formatDate,

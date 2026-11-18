@@ -204,186 +204,448 @@
   }
 }
 
-/* Timeline: the time, a node on a glowing spine, then the card */
-.history-timeline {
-  --timeline-time: 4.4rem;
-  --timeline-node: 1.25rem;
-  --timeline-gap: 0.85rem;
+/* Lanes: one per member, time running to the right */
+.lanes {
+  --lane-member: 9.5rem;
+  --lane-height: 2.1rem;
   display: grid;
-  gap: 1.25rem;
+  gap: 0.75rem;
 }
 
-.history-timeline-days,
-.history-timeline-entries {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.history-timeline-days {
-  display: grid;
-  gap: 1.6rem;
-}
-
-.history-timeline-day {
-  display: grid;
-  gap: 0.9rem;
-}
-
-.history-timeline-date {
-  position: sticky;
-  top: calc(var(--header-gap) * 3 + var(--header-height) + 3rem);
-  z-index: 6;
-  justify-self: start;
-  margin-left: calc(var(--timeline-time) + var(--timeline-gap) - 0.6rem);
-  padding: 0.3rem 1rem;
-  border: 1px solid rgb(var(--accent-rgb) / 0.5);
-  border-radius: 999px;
-  color: var(--color-gold);
-  background: rgb(10 9 14 / 0.9);
-  backdrop-filter: blur(6px);
-  box-shadow:
-    0 0 18px rgb(var(--accent-rgb) / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.08);
-  font-family: var(--font-fantasy);
-  letter-spacing: 0.05em;
-}
-
-.history-timeline-entries {
-  position: relative;
-  display: grid;
-  gap: 0.65rem;
-}
-
-.history-timeline-entries::before {
-  position: absolute;
-  top: -0.9rem;
-  bottom: 0;
-  left: calc(
-    var(--timeline-time) + var(--timeline-gap) + var(--timeline-node) / 2 - 1px
-  );
-  width: 2px;
-  background: linear-gradient(
-    180deg,
-    rgb(var(--accent-rgb) / 0.15),
-    var(--color-gold) 2rem,
-    rgb(var(--accent-rgb) / 0.35) calc(100% - 2rem),
-    rgb(var(--accent-rgb) / 0.15)
-  );
-  box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.45);
-  content: "";
-}
-
-.history-timeline-entry {
-  position: relative;
-  display: grid;
-  grid-template-columns: var(--timeline-time) var(--timeline-node) minmax(
-      0,
-      1fr
-    );
+.lanes-toolbar {
+  display: flex;
   align-items: center;
-  column-gap: var(--timeline-gap);
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.history-timeline-entry.reveal {
-  transform: translateX(-1rem);
-}
-
-.history-timeline-entry.reveal[data-visible="true"] {
-  transform: none;
-}
-
-.history-timeline-entry:hover,
-.history-timeline-entry:focus-within {
-  z-index: 5;
-}
-
-.history-timeline-time {
-  justify-self: end;
+.lanes-hint {
+  margin: 0;
   color: var(--color-muted);
   font-size: 0.8rem;
+}
+
+.lanes-zoom {
+  display: inline-flex;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid rgb(var(--accent-rgb) / 0.35);
+  border-radius: 999px;
+}
+
+.lanes-zoom button {
+  width: 2.1rem;
+  height: 1.9rem;
+  border: 0;
+  color: var(--color-gold);
+  background: rgb(10 9 14 / 0.8);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.lanes-zoom button + button {
+  border-left: 1px solid rgb(var(--accent-rgb) / 0.25);
+}
+
+.lanes-zoom button:not(:disabled):hover {
+  background: rgb(var(--accent-rgb) / 0.15);
+}
+
+.lanes-zoom button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.lanes-viewport {
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid rgb(var(--accent-rgb) / 0.18);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgb(10 12 18 / 0.92), rgb(6 8 12 / 0.95));
+  cursor: grab;
+  scrollbar-color: rgb(var(--accent-rgb) / 0.4) transparent;
+  scrollbar-width: thin;
+}
+
+.lanes-viewport[data-dragging="true"] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.lanes-canvas {
+  position: relative;
+  width: calc(var(--lane-member) + var(--lanes-width));
+}
+
+.lane-axis {
+  display: flex;
+  height: 2rem;
+  border-bottom: 1px solid rgb(var(--accent-rgb) / 0.18);
+}
+
+.lane-axis-spacer,
+.lane-member {
+  position: sticky;
+  left: 0;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--lane-member);
+  background: linear-gradient(90deg, rgb(10 12 18) 88%, rgb(10 12 18 / 0));
+}
+
+.lane-axis-spacer {
+  z-index: 3;
+}
+
+.lane-axis-track,
+.lane-track {
+  position: relative;
+  flex: none;
+  width: var(--lanes-width);
+}
+
+.lane-tick {
+  position: absolute;
+  bottom: 0.4rem;
+  transform: translateX(-50%);
+  color: var(--color-muted);
+  font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.history-timeline-node {
-  --node: var(--color-gold);
-  justify-self: center;
-  width: 0.75rem;
-  height: 0.75rem;
-  transform: rotate(45deg) scale(0);
-  border: 2px solid var(--node);
-  background: var(--color-obsidian);
-  box-shadow: 0 0 10px var(--node);
+.lane-tick[data-day="true"] {
+  transform: none;
+  padding-left: 0.35rem;
+  border-left: 1px solid rgb(var(--accent-rgb) / 0.55);
+  color: var(--color-gold);
+  font-family: var(--font-fantasy);
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
 }
 
-.history-timeline-entry[data-visible="true"] .history-timeline-node {
-  animation: history-node-in 0.6s var(--ease-out) forwards;
-  animation-delay: calc(var(--reveal-delay) + 0.1s);
+.lanes-rows {
+  position: relative;
+  padding: 0.3rem 0;
 }
 
-.history-timeline-node[data-kind="item"] {
-  --node: var(--quality-epic);
+.lane-grid {
+  position: absolute;
+  inset: 0 0 0 var(--lane-member);
+  pointer-events: none;
 }
 
-.history-timeline-node[data-kind="reputation"] {
-  --node: var(--quality-rare);
+.lane-grid-day {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--accent-rgb) / 0.4),
+    rgb(var(--accent-rgb) / 0.08)
+  );
 }
 
-.history-timeline-node[data-kind="profession"] {
-  --node: #d08a4a;
+.lane-grid-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-gold);
+  box-shadow: 0 0 10px var(--color-gold);
+  opacity: 0.75;
 }
 
-.history-timeline-node[data-kind="rank"] {
-  --node: #c08cff;
+.lane-grid-now span {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 0.4rem;
+  color: var(--color-gold);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.history-timeline-node[data-kind="mount"] {
-  --node: #6fd0c0;
+.lane {
+  position: relative;
+  display: flex;
+  height: var(--lane-height);
 }
 
-.history-timeline-node[data-kind="quests"] {
-  --node: var(--quality-uncommon);
+.lane:hover {
+  background: rgb(255 255 255 / 0.03);
 }
 
-.history-timeline-node[data-kind="joined"] {
-  --node: var(--power-health);
+.lane-member {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.6rem;
+  border-left: 2px solid var(--member-class);
 }
 
-.history-timeline-node[data-kind="left"] {
-  --node: var(--color-danger);
+.lane-member .history-portrait {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-width: 1px;
 }
 
-.history-timeline-node[data-kind="level"],
-.history-timeline-node[data-kind="achievement"],
-.history-timeline-node[data-kind="achievements"] {
-  --node: #ffd36b;
-  width: 1.05rem;
-  height: 1.05rem;
-  background: radial-gradient(#fff3c4, var(--node) 45%, #7a4d0a);
+.lane-member .character-link {
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.history-timeline-node[data-kind="achievement"],
-.history-timeline-node[data-kind="achievements"] {
+.lane-track::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgb(255 255 255 / 0.06);
+  content: "";
+}
+
+.lane-session {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--member-class) 35%, transparent),
+    color-mix(in srgb, var(--member-class) 75%, transparent)
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--member-class) 45%, transparent);
+}
+
+.lane-mark {
+  --mark: var(--color-gold);
+  --mark-turn: 0deg;
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  transform: translate(-50%, -50%) rotate(var(--mark-turn));
+  border: 1.5px solid var(--mark);
   border-radius: 50%;
+  color: var(--mark);
+  background: color-mix(in srgb, var(--mark) 18%, rgb(10 9 14));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--mark) 40%, transparent);
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.15s var(--ease-out),
+    box-shadow 0.15s var(--ease-out);
 }
 
-.history-timeline-entry[data-visible="true"]
-  .history-timeline-node:is([data-kind="level"], [data-kind="achievement"]) {
-  animation:
-    history-node-in 0.6s var(--ease-out) forwards,
-    history-node-pulse 2.6s ease-in-out infinite;
-  animation-delay: calc(var(--reveal-delay) + 0.1s), 0.8s;
+.lane-mark:hover,
+.lane-mark:focus-visible {
+  z-index: 3;
+  transform: translate(-50%, -50%) rotate(var(--mark-turn)) scale(1.3);
 }
 
-.history-timeline-card {
-  border-radius: 0 8px 8px 0;
-  background: rgb(6 9 13 / 0.8);
-  transition: transform 0.25s var(--ease-out);
+.lane-mark[aria-pressed="true"] {
+  z-index: 2;
+  transform: translate(-50%, -50%) rotate(var(--mark-turn)) scale(1.3);
+  box-shadow:
+    0 0 0 2px rgb(10 9 14),
+    0 0 0 3.5px var(--mark),
+    0 0 16px var(--mark);
 }
 
-.history-timeline-entry:hover .history-timeline-card {
-  transform: translateX(3px);
+.lane-mark[data-kind="item"] {
+  --mark: var(--quality-epic);
+}
+
+.lane-mark[data-kind="reputation"] {
+  --mark: var(--quality-rare);
+}
+
+.lane-mark[data-kind="profession"] {
+  --mark: #d08a4a;
+}
+
+.lane-mark[data-kind="rank"] {
+  --mark: #c08cff;
+}
+
+.lane-mark[data-kind="mount"] {
+  --mark: #6fd0c0;
+}
+
+.lane-mark[data-kind="quests"] {
+  --mark: var(--quality-uncommon);
+}
+
+.lane-mark[data-kind="joined"] {
+  --mark: var(--power-health);
+}
+
+.lane-mark[data-kind="left"] {
+  --mark: var(--color-danger);
+}
+
+.lane-mark[data-kind="achievements"] {
+  --mark: #ffd36b;
+}
+
+.lane-mark-count {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.45rem;
+  min-width: 0.8rem;
+  padding: 0 0.15rem;
+  border-radius: 999px;
+  color: rgb(10 9 14);
+  background: var(--mark);
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 0.8rem;
+}
+
+.lane-mark[data-level="true"] {
+  --mark: #ffd36b;
+  --mark-turn: 45deg;
+  z-index: 2;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-width: 2px;
+  border-radius: 0.4rem;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #ffb733 45%, #7a4d0a);
+  box-shadow: 0 0 14px rgb(255 190 80 / 0.7);
+  animation: lane-level-glow 2.6s ease-in-out infinite;
+}
+
+.lane-mark-level {
+  transform: rotate(-45deg);
+  color: #2a1700;
+  font-family: var(--font-fantasy);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.lane-mark[data-type="achievement"] {
+  --mark: #ffd36b;
+  width: 1.5rem;
+  height: 1.5rem;
+  overflow: hidden;
+  border-width: 2px;
+}
+
+.lane-mark-icon,
+.lane-mark-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The mark pointed at or pinned, opened up below the lanes */
+.lane-detail {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgb(var(--accent-rgb) / 0.25);
+  border-radius: 6px;
+  background: rgb(8 10 14 / 0.9);
+  animation: lane-detail-in 0.3s var(--ease-out);
+}
+
+.lane-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+
+.lane-detail-head .history-portrait {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-width: 1px;
+}
+
+.lane-detail-head time {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.lane-detail-level {
+  display: grid;
+  align-items: end;
+}
+
+.lane-detail-level[data-cheering="true"] {
+  grid-template-columns: minmax(0, 1fr) 9rem;
+}
+
+.lane-detail-cheer {
+  position: relative;
+  align-self: stretch;
+  min-height: 5rem;
+}
+
+.lane-detail-cheer::before {
+  position: absolute;
+  right: 0.5rem;
+  bottom: -0.3rem;
+  left: 0.5rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 200 90 / 0.45),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+  content: "";
+}
+
+.lane-detail-cheer:has(.celebration-canvas[data-state="ready"])::before {
+  opacity: 1;
+}
+
+.lane-detail-cheer .celebration-slot {
+  position: absolute;
+  inset: 0;
+}
+
+.celebration-canvas {
+  position: absolute;
+  bottom: -0.3rem;
+  left: 0;
+  width: 9rem;
+  height: 9.5rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.celebration-canvas[data-state="ready"] {
+  animation: lane-cheer-in 0.7s var(--ease-out) forwards;
+}
+
+.lane-detail-changes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* Achievement: its own golden card, the icon pops in as a trophy */
@@ -422,8 +684,7 @@
   pointer-events: none;
 }
 
-.history-timeline-entry[data-visible="true"]
-  .history-timeline-achievement::after {
+.lane-detail .history-timeline-achievement::after {
   animation: shimmer 5s ease-in-out infinite;
 }
 
@@ -452,7 +713,7 @@
   object-fit: cover;
 }
 
-.history-timeline-entry[data-visible="true"] .history-timeline-trophy {
+.lane-detail .history-timeline-trophy {
   animation: history-trophy-in 0.85s var(--ease-out) both;
   animation-delay: calc(var(--reveal-delay) + 0.2s);
 }
@@ -479,96 +740,6 @@
 .history-timeline-achievement-title {
   color: #ffe08a;
   text-shadow: 0 0 12px rgb(255 200 90 / 0.45);
-}
-
-/* Level-up: the member cheers beside it once their look is drawn */
-.history-timeline-levelup {
-  --cheer-width: 0rem;
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
-}
-
-.history-timeline-levelup:has(canvas[data-state="ready"]) {
-  --cheer-width: 9rem;
-}
-
-.history-timeline-entry:has(.celebration-canvas[data-state="ready"]) {
-  margin-top: 2.75rem;
-  transition: margin-top 0.6s var(--ease-out);
-}
-
-.history-timeline-cheer {
-  position: relative;
-  order: 2;
-  width: var(--cheer-width);
-  transition: width 0.6s var(--ease-out);
-}
-
-.history-timeline-cheer::before {
-  position: absolute;
-  right: 0;
-  bottom: -0.2rem;
-  left: 0;
-  height: 1.2rem;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--member-class) 55%, transparent),
-    transparent
-  );
-  content: "";
-}
-
-.celebration-slot {
-  position: relative;
-  height: 100%;
-  min-width: 1px;
-  min-height: 4rem;
-}
-
-.celebration-canvas {
-  position: absolute;
-  bottom: -0.3rem;
-  left: 0;
-  width: 9rem;
-  height: 9.5rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s var(--ease-out);
-}
-
-.celebration-canvas[data-state="ready"] {
-  opacity: 1;
-}
-
-.history-timeline-sparks {
-  position: absolute;
-  top: 50%;
-  right: calc(var(--cheer-width) + 2.7rem);
-  z-index: 2;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-.history-timeline-sparks span {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  margin: -2.5px;
-  border-radius: 50%;
-  background: #fff3c4;
-  box-shadow:
-    0 0 6px #ffd36b,
-    0 0 14px var(--member-class);
-  opacity: 0;
-}
-
-.history-timeline-entry[data-visible="true"] .history-timeline-sparks span {
-  animation: history-spark 4.5s var(--ease-out) infinite;
-  animation-delay: calc(var(--reveal-delay) + 0.55s + var(--spark) * 15ms);
 }
 
 /* Level-up card */
@@ -615,7 +786,7 @@
   pointer-events: none;
 }
 
-.history-timeline-entry[data-visible="true"] .history-levelup-rays {
+.lane-detail .history-levelup-rays {
   animation: history-rays 18s linear infinite;
 }
 
@@ -688,39 +859,9 @@
     0 2px 0 rgb(80 50 0);
 }
 
-.history-timeline-entry[data-visible="true"] .history-levelup-level {
+.lane-detail .history-levelup-level {
   animation: history-level-pop 0.9s var(--ease-out) both;
   animation-delay: calc(var(--reveal-delay) + 0.35s);
-}
-
-/* Joined / left: a banner across the timeline */
-.history-banner {
-  --banner: var(--power-health);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0.6rem 1rem;
-  border-block: 1px solid color-mix(in srgb, var(--banner) 55%, transparent);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--banner) 18%, transparent) 20%,
-    color-mix(in srgb, var(--banner) 18%, transparent) 80%,
-    transparent
-  );
-  font-family: var(--font-fantasy);
-  justify-content: center;
-  text-align: center;
-}
-
-.history-banner[data-kind="left"] {
-  --banner: var(--color-danger);
-}
-
-.history-banner-glyph {
-  color: var(--banner);
-  text-shadow: 0 0 10px var(--banner);
 }
 
 /* Every other change: a row with a badge that says what kind it is */
@@ -853,13 +994,6 @@
   font-style: italic;
 }
 
-@keyframes history-event-in {
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 @keyframes history-level-pop {
   0% {
     opacity: 0;
@@ -880,23 +1014,6 @@
   }
 }
 
-@keyframes history-node-in {
-  60% {
-    transform: rotate(45deg) scale(1.6);
-  }
-  100% {
-    transform: rotate(45deg) scale(1);
-  }
-}
-
-@keyframes history-node-pulse {
-  50% {
-    box-shadow:
-      0 0 6px var(--node),
-      0 0 22px var(--node);
-  }
-}
-
 @keyframes history-trophy-in {
   0% {
     opacity: 0;
@@ -911,18 +1028,31 @@
   }
 }
 
-/* One burst at the start of every round, flying out along its own angle. */
-@keyframes history-spark {
-  0% {
-    opacity: 1;
-    transform: rotate(calc(var(--spark) * 30deg)) translateX(0) scale(1.4);
+@keyframes lane-level-glow {
+  50% {
+    box-shadow: 0 0 22px rgb(255 200 90 / 0.95);
   }
-  22% {
+}
+
+@keyframes lane-detail-in {
+  from {
     opacity: 0;
-    transform: rotate(calc(var(--spark) * 30deg)) translateX(3.4rem) scale(0.3);
+    transform: translateY(4px);
+  }
+}
+
+@keyframes lane-cheer-in {
+  0% {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-0.4rem) scale(1.04);
   }
   100% {
-    opacity: 0;
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -937,37 +1067,39 @@
     transform: none;
   }
 
-  .history-timeline-node {
-    transform: rotate(45deg);
-  }
-
   .trend-chart[data-visible="true"] svg,
   .trend-chart[data-visible="true"] .trend-area,
   .trend-chart[data-visible="true"] .trend-dot,
   .trend-chart[data-visible="true"]::before,
-  .history-timeline-entry[data-visible="true"] .history-timeline-node,
-  .history-timeline-entry[data-visible="true"] .history-timeline-trophy,
-  .history-timeline-entry[data-visible="true"] .history-timeline-sparks span,
-  .history-timeline-entry[data-visible="true"]
-    .history-timeline-achievement::after,
-  .history-timeline-entry[data-visible="true"] .history-levelup-rays,
-  .history-timeline-entry[data-visible="true"] .history-levelup-level {
+  .lane-mark[data-level="true"],
+  .lane-detail,
+  .lane-detail .history-timeline-trophy,
+  .lane-detail .history-timeline-achievement::after,
+  .lane-detail .history-levelup-rays,
+  .lane-detail .history-levelup-level {
     animation: none;
   }
 }
 
 @media (max-width: 40rem) {
-  .history-timeline {
-    --timeline-time: 3.6rem;
-    --timeline-gap: 0.5rem;
+  .lanes {
+    --lane-member: 2.6rem;
   }
 
-  .history-timeline-levelup:has(canvas[data-state="ready"]) {
-    --cheer-width: 6rem;
+  .lanes-hint {
+    font-size: 0.72rem;
+  }
+
+  .lane-member .character-link {
+    display: none;
+  }
+
+  .lane-detail-level[data-cheering="true"] {
+    grid-template-columns: minmax(0, 1fr) 6rem;
   }
 
   .celebration-canvas {
     width: 6rem;
-    height: 8.5rem;
+    height: 7.5rem;
   }
 }

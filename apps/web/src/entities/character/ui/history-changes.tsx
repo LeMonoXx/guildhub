@@ -1,12 +1,9 @@
 import type { HistoryEvent } from "@guildhub/contracts";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useLocale } from "../../../shared/i18n";
 import type { HistoryEventOf } from "../model/history-event";
-import {
-  historyTimeline,
-  type TimelineAchievement,
-} from "../model/history-timeline";
-import { HistoryTimeline } from "./history-timeline";
+import { historyLanes, type TimelineAchievement } from "../model/history-lanes";
+import { HistoryLanesView } from "./history-lanes-view";
 
 interface HistoryChangesProps {
   readonly events: readonly HistoryEvent[];
@@ -15,7 +12,6 @@ interface HistoryChangesProps {
   /** How many distinct states are recorded; the first one is only the baseline. */
   readonly recordedChecks: number;
   readonly renderCelebration?: (event: HistoryEventOf<"level">) => ReactNode;
-  readonly pageSize?: number;
 }
 
 export function HistoryChanges({
@@ -23,17 +19,15 @@ export function HistoryChanges({
   achievements,
   recordedChecks,
   renderCelebration,
-  pageSize,
 }: HistoryChangesProps) {
   const { t } = useLocale();
-  const days = historyTimeline(events, achievements);
-  if (days.length > 0)
+  const lanes = useMemo(
+    () => historyLanes(events, achievements),
+    [events, achievements],
+  );
+  if (lanes)
     return (
-      <HistoryTimeline
-        days={days}
-        renderCelebration={renderCelebration}
-        pageSize={pageSize}
-      />
+      <HistoryLanesView lanes={lanes} renderCelebration={renderCelebration} />
     );
   if (recordedChecks <= 1)
     return <p className="history-empty">{t("history.firstCheck")}</p>;

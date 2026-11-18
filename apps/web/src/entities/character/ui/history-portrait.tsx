@@ -1,20 +1,21 @@
-import type { HistoryEvent } from "@guildhub/contracts";
 import { FallbackImage } from "../../../shared/ui";
-import { historyGlyphs } from "../model/history-event";
 
-export function HistoryPortrait({ event }: { readonly event: HistoryEvent }) {
+export function HistoryPortrait({
+  avatarUrl,
+  fallback,
+}: {
+  readonly avatarUrl?: string | undefined;
+  /** Shown when the member has no avatar or it fails to load. */
+  readonly fallback: string;
+}) {
   return (
     <span className="history-portrait" aria-hidden="true">
       <FallbackImage
-        src={event.avatarUrl}
+        src={avatarUrl}
         alt=""
         loading="lazy"
         decoding="async"
-        fallback={
-          <span className="history-portrait-glyph">
-            {historyGlyphs[event.kind]}
-          </span>
-        }
+        fallback={<span className="history-portrait-glyph">{fallback}</span>}
       />
     </span>
   );

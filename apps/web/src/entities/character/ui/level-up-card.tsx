@@ -1,10 +1,10 @@
 import { useLocale } from "../../../shared/i18n";
 import { wowClassColorVar } from "../model/class-color";
-import type { HistoryEventOf } from "../model/history-event";
+import { historyGlyphs, type HistoryEventOf } from "../model/history-event";
 import { HistoryName } from "./history-name";
 import { HistoryPortrait } from "./history-portrait";
 
-/** A level-up is the headline of its day: portrait, the new level, the climb. */
+/** A level-up as a headline: portrait, the new level, the climb. */
 export function LevelUpCard({
   event,
 }: {
@@ -18,7 +18,10 @@ export function LevelUpCard({
       style={{ ["--member-class" as string]: wowClassColorVar(event.classId) }}
     >
       <span className="history-levelup-rays" aria-hidden="true" />
-      <HistoryPortrait event={event} />
+      <HistoryPortrait
+        avatarUrl={event.avatarUrl}
+        fallback={historyGlyphs[event.kind]}
+      />
       <div className="history-levelup-body">
         <span className="history-levelup-label">{t("history.levelUp")}</span>
         <HistoryName event={event} />

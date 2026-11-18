@@ -72,7 +72,6 @@ export function CharacterHistory({
         achievements={achievements}
         recordedChecks={history.series.length}
         renderCelebration={renderCelebration}
-        pageSize={40}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useLocale } from "../../../shared/i18n";
-import type { TimelineAchievement } from "../model/history-timeline";
+import type { TimelineAchievement } from "../model/history-lanes";
 import { AchievementHover } from "./achievement-hover";
 import { AchievementIcon } from "./achievement-icon";
 import { HistoryName } from "./history-name";

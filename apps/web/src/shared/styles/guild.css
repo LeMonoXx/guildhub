@@ -1016,16 +1016,6 @@
   }
 }
 
-.timeline-more {
-  justify-self: center;
-  padding: 0.55rem 1.2rem;
-  border: 1px solid rgb(var(--accent-rgb) / 0.35);
-  border-radius: 999px;
-  color: var(--color-gold);
-  background: none;
-  cursor: pointer;
-}
-
 /* About */
 .guild-about {
   display: grid;

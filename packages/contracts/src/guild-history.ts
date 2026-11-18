@@ -61,6 +61,13 @@ export const historyEventSchema = z.discriminatedUnion("kind", [
     count: z.number().int().positive(),
     points: z.number().int().nonnegative(),
   }),
+  /** One achievement; `at` is when it was earned, not when a check saw it. */
+  eventSchema.extend({
+    kind: z.literal("achievement"),
+    achievementId: z.number().int().positive(),
+    achievement: z.string().min(1),
+    iconUrl: z.string().min(1).optional(),
+  }),
   eventSchema.extend({
     kind: z.literal("mount"),
     mount: z.string().min(1),

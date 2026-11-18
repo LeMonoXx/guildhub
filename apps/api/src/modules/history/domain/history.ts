@@ -49,5 +49,5 @@ export function eventsOf(checks: readonly GuildCheck[]): HistoryEvent[] {
     if (current !== undefined && previous !== undefined)
       events.push(...diffChecks(previous, current));
   }
-  return events;
+  return events.sort((a, b) => b.at.localeCompare(a.at));
 }

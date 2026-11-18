@@ -111,6 +111,13 @@ export function HistoryDetail({ event }: { readonly event: HistoryEvent }) {
           </span>
         </>
       );
+    case "achievement":
+      return (
+        <>
+          {t("history.event.achievementNamed")}{" "}
+          <strong className="history-achievement">[{event.achievement}]</strong>
+        </>
+      );
     case "level":
       return <>{t("history.event.level", { level: event.to })}</>;
     case "joined":

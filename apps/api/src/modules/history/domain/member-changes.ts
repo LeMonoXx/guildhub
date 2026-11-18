@@ -149,6 +149,10 @@ function reputationChanges(
   });
 }
 
+/**
+ * Each new achievement on its own, at the time it was earned. Checks recorded
+ * before achievements were listed only know how many were added.
+ */
 function achievementChanges(
   earlier: MemberState,
   member: MemberState,
@@ -156,6 +160,24 @@ function achievementChanges(
 ): HistoryEvent[] {
   const gained = member.achievements - earlier.achievements;
   if (gained <= 0) return [];
+  if (
+    earlier.recentAchievements !== undefined &&
+    member.recentAchievements !== undefined
+  ) {
+    const known = new Set(earlier.recentAchievements.map((a) => a.id));
+    return member.recentAchievements
+      .filter((achievement) => !known.has(achievement.id))
+      .map((achievement) => ({
+        ...base,
+        at: achievement.at,
+        kind: "achievement",
+        achievementId: achievement.id,
+        achievement: achievement.name,
+        ...(achievement.iconUrl === undefined
+          ? {}
+          : { iconUrl: achievement.iconUrl }),
+      }));
+  }
   return [
     {
       ...base,

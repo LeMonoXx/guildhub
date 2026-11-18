@@ -40,7 +40,11 @@ export { ClassColoredName } from "./ui/class-colored-name";
 export { ClassMark } from "./ui/class-mark";
 export { HistoryChanges } from "./ui/history-changes";
 export { HistoryChecked } from "./ui/history-checked";
-export { HistoryFeed } from "./ui/history-feed";
+export {
+  listedAchievements,
+  type TimelineAchievement,
+} from "./model/history-timeline";
+export type { HistoryEventOf } from "./model/history-event";
 export { ItemIcon } from "./ui/item-icon";
 export { ItemTooltip } from "./ui/item-tooltip";
 export { Money } from "./ui/money";

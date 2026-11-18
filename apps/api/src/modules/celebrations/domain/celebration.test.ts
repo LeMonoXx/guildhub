@@ -84,6 +84,27 @@ describe("celebrationsOf", () => {
     ).toEqual([{ kind: "achievements", member, count: 2, points: 20 }]);
   });
 
+  it("cheers each achievement by name", () => {
+    expect(
+      celebrationsOf([
+        {
+          ...base,
+          kind: "achievement",
+          achievementId: 7,
+          achievement: "Level 20",
+          iconUrl: "/icons/7",
+        },
+      ]),
+    ).toEqual([
+      {
+        kind: "achievement",
+        member,
+        achievement: "Level 20",
+        iconUrl: "/icons/7",
+      },
+    ]);
+  });
+
   it("ignores everyday changes", () => {
     expect(
       celebrationsOf([

@@ -31,6 +31,14 @@ export function toMemberState({ member, profile }: MemberProfile): MemberState {
     ...(itemLevel === undefined ? {} : { itemLevel }),
     achievementPoints: data.summary?.achievementPoints ?? 0,
     achievements: data.achievements.total,
+    recentAchievements: data.achievements.recent.map((achievement) => ({
+      id: achievement.id,
+      name: achievement.name,
+      ...(achievement.iconUrl === undefined
+        ? {}
+        : { iconUrl: achievement.iconUrl }),
+      at: achievement.at,
+    })),
     questsCompleted: data.quests.completedCount,
     equipment: data.equipment.map((item) => ({
       slot: item.slot,

@@ -149,6 +149,63 @@ describe("diffChecks", () => {
     ]);
   });
 
+  it("lists each new achievement at the time it was earned", () => {
+    const first = {
+      id: 6,
+      name: "Level 10",
+      at: "2026-11-01T20:00:00.000Z",
+    };
+    const events = diffChecks(
+      day("2026-11-01", [member({ recentAchievements: [first] })]),
+      day("2026-11-02", [
+        member({
+          achievements: 12,
+          achievementPoints: 120,
+          recentAchievements: [
+            {
+              id: 7,
+              name: "Level 20",
+              iconUrl: "/icons/7",
+              at: "2026-11-02T01:30:00.000Z",
+            },
+            { id: 8, name: "Explore Elwynn", at: "2026-11-02T02:10:00.000Z" },
+            first,
+          ],
+        }),
+      ]),
+    );
+    expect(events).toEqual([
+      expect.objectContaining({
+        kind: "achievement",
+        achievementId: 7,
+        achievement: "Level 20",
+        iconUrl: "/icons/7",
+        at: "2026-11-02T01:30:00.000Z",
+      }),
+      expect.objectContaining({
+        kind: "achievement",
+        achievementId: 8,
+        at: "2026-11-02T02:10:00.000Z",
+      }),
+    ]);
+  });
+
+  it("orders events across checks by when they happened, newest first", () => {
+    const events = eventsOf([
+      day("2026-11-01", [member({ recentAchievements: [] })]),
+      day("2026-11-02", [
+        member({
+          level: 21,
+          achievements: 11,
+          recentAchievements: [
+            { id: 9, name: "Late", at: "2026-11-02T05:00:00.000Z" },
+          ],
+        }),
+      ]),
+    ]);
+    expect(events.map((event) => event.kind)).toEqual(["achievement", "level"]);
+  });
+
   it("does not invent changes when a profile was not published one of the days", () => {
     const hidden = member({
       published: false,

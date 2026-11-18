@@ -14,7 +14,7 @@ import { GuildHallOfFame } from "../../../widgets/guild-hall-of-fame";
 import { GuildHistory } from "../../../widgets/guild-history";
 import { GuildPulse } from "../../../widgets/guild-pulse";
 import { GuildPartyRadar } from "../../../widgets/party";
-import { GuildTimeline } from "../../../widgets/guild-timeline";
+import { LazyCelebration } from "../../../widgets/character-cinematic";
 
 export interface ChronicleSection {
   readonly link: SectionLink;
@@ -43,7 +43,21 @@ export const chronicleSections = (
       link: { id: "history", label: t("home.section.history") },
       eyebrow: t("home.eyebrow.history"),
       lead: t("home.lead.history"),
-      body: <GuildHistory history={history} />,
+      body: (
+        <GuildHistory
+          history={history}
+          achievements={chronicle.timeline.filter(
+            (event) => event.kind === "achievement",
+          )}
+          renderCelebration={(event) => (
+            <LazyCelebration
+              slug={event.slug}
+              assetBase="/assets/"
+              className="celebration-canvas"
+            />
+          )}
+        />
+      ),
     },
     party !== undefined && {
       link: { id: "party", label: t("home.section.party") },
@@ -79,11 +93,6 @@ export const chronicleSections = (
       eyebrow: t("home.eyebrow.crafters"),
       lead: t("home.lead.crafters"),
       body: <GuildCrafters professions={chronicle.professions} />,
-    },
-    {
-      link: { id: "timeline", label: t("home.section.timeline") },
-      eyebrow: t("home.eyebrow.timeline"),
-      body: <GuildTimeline timeline={chronicle.timeline} />,
     },
   ];
   return sections.filter(

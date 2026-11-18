@@ -12,7 +12,7 @@ namespace GuildHub.ModelBaker.Hosted;
 public sealed class FixedLookBaker
 {
   public static readonly int[] DefaultAnimationIds = [0, 67]; // Stand and EmoteWave preserve the CLI contract.
-  public static readonly int[] TroopAnimationIds = [0, 4, 67, 115, 116, 119]; // Stand, Walk, EmoteWave, KneelStart, KneelLoop, StealthWalk.
+  public static readonly int[] TroopAnimationIds = [0, 4, 67, 68, 115, 116, 119]; // Stand, Walk, EmoteWave, EmoteCheer, KneelStart, KneelLoop, StealthWalk.
   readonly AssetStorePaths _paths;
   readonly AssetConversionRunner _assets;
   readonly LookBakePlanner _planner;

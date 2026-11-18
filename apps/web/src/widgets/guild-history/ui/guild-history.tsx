@@ -1,16 +1,29 @@
 import type { GuildHistoryResponse } from "@guildhub/contracts";
-import { HistoryChanges, HistoryChecked } from "../../../entities/character";
+import type { ReactNode } from "react";
+import {
+  HistoryChanges,
+  HistoryChecked,
+  type HistoryEventOf,
+  type TimelineAchievement,
+} from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { daysBetween, formatDate, formatNumber } from "../../../shared/lib";
 import { checkTrend, TrendChart } from "../../../shared/ui";
 
 interface GuildHistoryProps {
   readonly history: GuildHistoryResponse;
+  /** Members' recent achievements with their times. */
+  readonly achievements?: readonly TimelineAchievement[];
+  readonly renderCelebration?: (event: HistoryEventOf<"level">) => ReactNode;
 }
 
 type Point = GuildHistoryResponse["series"][number];
 
-export function GuildHistory({ history }: GuildHistoryProps) {
+export function GuildHistory({
+  history,
+  achievements,
+  renderCelebration,
+}: GuildHistoryProps) {
   const { t, locale } = useLocale();
   if (history.series.length === 0)
     return <p className="history-empty">{t("history.notStarted")}</p>;
@@ -59,7 +72,9 @@ export function GuildHistory({ history }: GuildHistoryProps) {
       </div>
       <HistoryChanges
         events={history.events}
+        achievements={achievements}
         recordedChecks={history.series.length}
+        renderCelebration={renderCelebration}
       />
     </div>
   );

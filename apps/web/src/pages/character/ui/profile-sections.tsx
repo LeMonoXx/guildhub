@@ -5,10 +5,16 @@ import type {
   GuildPartyResponse,
 } from "@guildhub/contracts";
 import type { ReactNode } from "react";
-import { wowClassColorVar } from "../../../entities/character";
+import {
+  listedAchievements,
+  wowClassColorVar,
+} from "../../../entities/character";
 import type { SectionLink } from "../../../shared/ui";
 import { CharacterArmory } from "../../../widgets/character-armory";
-import { LazyItemTurntable } from "../../../widgets/character-cinematic";
+import {
+  LazyCelebration,
+  LazyItemTurntable,
+} from "../../../widgets/character-cinematic";
 import { CharacterAttributes } from "../../../widgets/character-attributes";
 import { CharacterCollections } from "../../../widgets/character-collections";
 import { CharacterDeeds } from "../../../widgets/character-deeds";
@@ -87,7 +93,20 @@ export const profileSections = (
       link: { id: "history", label: t("character.section.history") },
       eyebrow: t("character.eyebrow.history"),
       lead: t("character.lead.history"),
-      body: <CharacterHistory history={history} classId={detail.classId} />,
+      body: (
+        <CharacterHistory
+          history={history}
+          classId={detail.classId}
+          achievements={listedAchievements(detail, profile.achievements.recent)}
+          renderCelebration={(event) => (
+            <LazyCelebration
+              slug={event.slug}
+              assetBase="/assets/"
+              className="celebration-canvas"
+            />
+          )}
+        />
+      ),
     },
     party !== undefined && {
       link: { id: "party", label: t("character.section.party") },

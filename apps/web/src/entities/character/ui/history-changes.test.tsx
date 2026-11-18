@@ -1,11 +1,31 @@
 /** @vitest-environment jsdom */
-import { cleanup, render } from "@testing-library/react";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
+import { cleanup, render, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, test } from "vitest";
 import { LocaleProvider } from "../../../shared/i18n";
 import { HistoryChanges } from "./history-changes";
 import { HistoryChecked } from "./history-checked";
 
 afterEach(cleanup);
+
+/** Member names are links, so the timeline needs a router around it. */
+const renderRouted = (ui: ReactNode) =>
+  render(
+    <RouterProvider
+      router={createRouter({
+        routeTree: createRootRoute({
+          component: () => <LocaleProvider>{ui}</LocaleProvider>,
+        }),
+        history: createMemoryHistory(),
+      })}
+    />,
+  );
 
 const textOf = (recordedChecks: number) =>
   render(
@@ -21,6 +41,49 @@ describe("HistoryChanges", () => {
 
   test("says no visible change once checks can be compared", () => {
     expect(textOf(2)).toMatch(/No visible change/);
+  });
+
+  test("lists every change on its own, newest first, with a cheer beside level-ups", async () => {
+    const member = {
+      slug: "aria",
+      name: "Aria",
+      surname: "Storm",
+      classId: "8",
+    };
+    const { container } = renderRouted(
+      <HistoryChanges
+        events={[
+          {
+            ...member,
+            day: "2026-11-17",
+            at: "2026-11-17T09:00:00Z",
+            kind: "level",
+            from: 41,
+            to: 42,
+          },
+        ]}
+        achievements={[
+          { ...member, title: "Into the Wild", at: "2026-11-17T10:30:00Z" },
+        ]}
+        recordedChecks={3}
+        renderCelebration={(event) => (
+          <span className="cheer">{event.name}</span>
+        )}
+      />,
+    );
+    await waitFor(() => {
+      expect(container.querySelector(".history-timeline")).not.toBeNull();
+    });
+    const kinds = [...container.querySelectorAll(".history-timeline-node")].map(
+      (node) => node.getAttribute("data-kind"),
+    );
+    expect(kinds).toEqual(["achievement", "level"]);
+    expect(container.querySelectorAll(".history-timeline-date")).toHaveLength(
+      1,
+    );
+    expect(
+      container.querySelector(".history-timeline-levelup .cheer")?.textContent,
+    ).toBe("Aria");
   });
 });
 

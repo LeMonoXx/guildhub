@@ -30,6 +30,11 @@ export type Celebration = { readonly member: CelebratedMember } & (
       readonly count: number;
       readonly points: number;
     }
+  | {
+      readonly kind: "achievement";
+      readonly achievement: string;
+      readonly iconUrl?: string;
+    }
 );
 
 type EventOf<K extends HistoryEvent["kind"]> = Extract<
@@ -74,6 +79,14 @@ const selectors: Selectors = {
       : [],
   achievements: (event, member) => [
     { kind: "achievements", member, count: event.count, points: event.points },
+  ],
+  achievement: (event, member) => [
+    {
+      kind: "achievement",
+      member,
+      achievement: event.achievement,
+      ...(event.iconUrl === undefined ? {} : { iconUrl: event.iconUrl }),
+    },
   ],
 };
 

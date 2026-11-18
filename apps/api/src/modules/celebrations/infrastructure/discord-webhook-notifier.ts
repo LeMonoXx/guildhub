@@ -52,8 +52,18 @@ function embed(
     description,
     url: page,
     color: CLASS_COLORS[member.classId] ?? FALLBACK_COLOR,
-    thumbnail: { url: avatar },
+    thumbnail: { url: thumbnailOf(celebration, siteUrl) ?? avatar },
   };
+}
+
+/** An achievement shows its own icon; everything else the member. */
+function thumbnailOf(
+  celebration: Celebration,
+  siteUrl: string,
+): string | undefined {
+  return celebration.kind === "achievement" && celebration.iconUrl !== undefined
+    ? new URL(celebration.iconUrl, siteUrl).href
+    : undefined;
 }
 
 export function makeDiscordWebhookNotifier(

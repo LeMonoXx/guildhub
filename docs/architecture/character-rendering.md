@@ -141,7 +141,7 @@ A `pending` model may carry `bake`: `{ state: "queued", position }` from the pg-
 
 The viewer speaks one manifest: `FixedLookManifest` (`look` + `items` + body + animations). The baker writes that JSON to `looks/{lookHash}/look.json`. There is no second schema.
 
-Sharing the body, the item models, and the texture layers between characters is the point. A new character costs the layers it does not already share. The browser paints them together. There is no baked skin image. Troop clips on a look are Stand, Walk, StealthWalk, KneelStart, KneelLoop, and EmoteWave.
+Sharing the body, the item models, and the texture layers between characters is the point. A new character costs the layers it does not already share. The browser paints them together. There is no baked skin image. Troop clips on a look are Stand, Walk, StealthWalk, KneelStart, KneelLoop, EmoteWave, and EmoteCheer. The history timeline shows a member cheering beside a level-up while it is on screen. Looks baked before EmoteCheer joined the list wave instead.
 
 ## 7. What a visit does
 

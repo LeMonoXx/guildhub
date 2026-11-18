@@ -14,6 +14,13 @@ export interface MemberState {
   readonly itemLevel?: number;
   readonly achievementPoints: number;
   readonly achievements: number;
+  /** The latest achievements Battle.net lists; absent in checks recorded before they were kept. */
+  readonly recentAchievements?: readonly {
+    readonly id: number;
+    readonly name: string;
+    readonly iconUrl?: string;
+    readonly at: string;
+  }[];
   /** Absent in checks recorded before quests were kept. */
   readonly questsCompleted?: number;
   readonly equipment: readonly {

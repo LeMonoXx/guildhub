@@ -1,8 +1,11 @@
 import type { CharacterHistoryResponse } from "@guildhub/contracts";
+import type { ReactNode } from "react";
 import {
   HistoryChanges,
   HistoryChecked,
   wowClassColorVar,
+  type HistoryEventOf,
+  type TimelineAchievement,
 } from "../../../entities/character";
 import { useLocale } from "../../../shared/i18n";
 import { formatNumber } from "../../../shared/lib";
@@ -11,11 +14,18 @@ import { checkTrend, TrendChart } from "../../../shared/ui";
 interface CharacterHistoryProps {
   readonly history: CharacterHistoryResponse;
   readonly classId: string;
+  readonly achievements?: readonly TimelineAchievement[];
+  readonly renderCelebration?: (event: HistoryEventOf<"level">) => ReactNode;
 }
 
 type Point = CharacterHistoryResponse["series"][number];
 
-export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
+export function CharacterHistory({
+  history,
+  classId,
+  achievements,
+  renderCelebration,
+}: CharacterHistoryProps) {
   const { t, locale } = useLocale();
   if (history.series.length === 0)
     return <p className="history-empty">{t("history.notStarted")}</p>;
@@ -59,7 +69,9 @@ export function CharacterHistory({ history, classId }: CharacterHistoryProps) {
       </div>
       <HistoryChanges
         events={history.events}
+        achievements={achievements}
         recordedChecks={history.series.length}
+        renderCelebration={renderCelebration}
         pageSize={40}
       />
     </div>

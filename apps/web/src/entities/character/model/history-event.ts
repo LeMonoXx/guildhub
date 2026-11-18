@@ -14,6 +14,7 @@ export const historyGlyphs: Readonly<Record<HistoryEvent["kind"], string>> = {
   profession: "⚒",
   reputation: "❖",
   achievements: "★",
+  achievement: "★",
   mount: "♞",
   quests: "❢",
 };

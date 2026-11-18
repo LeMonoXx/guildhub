@@ -1,6 +1,10 @@
 export { CharacterModelViewer } from "./ui/CharacterModelViewer";
 export { ItemTurntable, type ItemTurntableProps } from "./ui/item-turntable";
 export { BossModel, type BossModelProps } from "./ui/boss-model";
+export {
+  CelebrationModel,
+  type CelebrationModelProps,
+} from "./ui/celebration-model";
 export type { CharacterHandle } from "./model/character-handle";
 export { AssetStore } from "./lib/asset-store";
 export {

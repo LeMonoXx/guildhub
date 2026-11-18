@@ -32,7 +32,7 @@ export interface LookDescription extends CharacterFacts {
 export const MAIN_HAND_SLOT = 16;
 export const OFF_HAND_SLOT = 17;
 
-export const TROOP_ANIMATION_IDS = [0, 4, 67, 115, 116, 119] as const;
+export const TROOP_ANIMATION_IDS = [0, 4, 67, 68, 115, 116, 119] as const;
 
 export function canonicalLookKey(look: LookDescription): string {
   const custom = [...look.customizations]

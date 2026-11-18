@@ -48,6 +48,10 @@ const texts: Readonly<Record<ContentLocale, Texts>> = {
       title: `${member.name} hat neue Erfolge errungen`,
       description: `Neue Erfolge: ${String(count)} · Punkte: +${String(points)}`,
     }),
+    achievement: ({ member, achievement }) => ({
+      title: `${member.name} hat einen Erfolg errungen`,
+      description: `[${achievement}]`,
+    }),
   },
   en: {
     levelCap: ({ member, level }) => ({
@@ -65,6 +69,10 @@ const texts: Readonly<Record<ContentLocale, Texts>> = {
     achievements: ({ member, count, points }) => ({
       title: `${member.name} earned new achievements`,
       description: `New achievements: ${String(count)} · Points: +${String(points)}`,
+    }),
+    achievement: ({ member, achievement }) => ({
+      title: `${member.name} earned an achievement`,
+      description: `[${achievement}]`,
     }),
   },
 };

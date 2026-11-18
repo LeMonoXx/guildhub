@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { appError } from "../../../platform/kernel/app-error.js";
 import { err, ok } from "../../../platform/kernel/result.js";
-import type { LookBakeDocument } from "../domain/look.js";
+import type { RosterMember } from "../../guild/index.js";
+import type { CharacterFacts, LookBakeDocument } from "../domain/look.js";
+import type { CharacterSnapshot } from "../domain/snapshot.js";
 import {
   makeBakeLook,
   makeEnsureBosses,
   makeEnsureFixedLook,
   makeEnsureWorldMap,
   makePrebakeBodies,
+  makeRebakeLooks,
 } from "./bake-models.js";
 import type {
   BakeUpdate,
@@ -276,5 +279,154 @@ describe("bake models", () => {
       ok: false,
       error: { code: "upstream.unavailable" },
     });
+  });
+});
+
+function facts(raceId: number): CharacterFacts {
+  return {
+    raceId,
+    sex: 0,
+    classId: 1,
+    customizations: [],
+    itemIds: [],
+    equipmentOverrides: [],
+  };
+}
+
+function snapshot(
+  characterId: string,
+  status: CharacterSnapshot["status"],
+  raceId = 1,
+): CharacterSnapshot {
+  return {
+    characterId,
+    slug: characterId,
+    name: characterId,
+    surname: "",
+    status,
+    facts: facts(raceId),
+    fetchedAt: new Date(0),
+  };
+}
+
+function rebake(options: {
+  published: string;
+  snapshots: readonly CharacterSnapshot[];
+  present?: (hash: string) => boolean;
+  fail?: (hash: string) => boolean;
+  stopAfter?: number;
+}) {
+  const state = {
+    published: options.published,
+    requested: [] as string[],
+    baked: [] as LookBakeDocument[],
+  };
+  const assets = {
+    currentBuild: () => Promise.resolve(state.published),
+    publishBuild: (build: string) => {
+      state.published = build;
+      return Promise.resolve();
+    },
+    hasLook: (hash: string) =>
+      Promise.resolve(options.present?.(hash) ?? false),
+    writeLookRequest: (job: LookBakeDocument) => {
+      state.requested.push(job.lookHash);
+      return Promise.resolve();
+    },
+    bakeProgress: () => Promise.resolve(undefined),
+  } satisfies ModelAssetStore;
+  const run = makeRebakeLooks({
+    baker: baker(),
+    assets,
+    bakeLook: (job) => {
+      if (options.fail?.(job.lookHash) === true)
+        return Promise.reject(new Error("no body"));
+      state.baked.push(job);
+      return Promise.resolve();
+    },
+    roster: () =>
+      Promise.resolve(
+        options.snapshots.map(
+          (s) => ({ characterId: s.characterId }) as RosterMember,
+        ),
+      ),
+    cache: {
+      latest: () => Promise.resolve(undefined),
+      latestMany: (ids) =>
+        Promise.resolve(
+          options.snapshots.filter((s) => ids.includes(s.characterId)),
+        ),
+      save: () => Promise.resolve(),
+    },
+  });
+  let checks = 0;
+  return {
+    state,
+    run: () =>
+      run(
+        () => options.stopAfter !== undefined && checks++ >= options.stopAfter,
+      ),
+  };
+}
+
+describe("rebake looks for a new build", () => {
+  it("does nothing while the site shows the build the baker serves", async () => {
+    const { state, run } = rebake({
+      published: "2.0",
+      snapshots: [snapshot("a", "found")],
+    });
+    expect(await run()).toMatchObject({ current: true, published: false });
+    expect(state.baked).toEqual([]);
+  });
+
+  it("bakes each published member's look once for the new build, then goes live", async () => {
+    const { state, run } = rebake({
+      published: "1.0",
+      snapshots: [
+        snapshot("a", "found", 1),
+        snapshot("twin", "found", 1),
+        snapshot("b", "found", 2),
+        snapshot("hidden", "missing", 3),
+      ],
+    });
+    const summary = await run();
+    expect(summary).toMatchObject({
+      build: "2.0",
+      looks: 2,
+      baked: 2,
+      published: true,
+    });
+    expect(state.baked.map((look) => look.clientBuild)).toEqual(["2.0", "2.0"]);
+    expect(state.requested).toHaveLength(2);
+    expect(state.published).toBe("2.0");
+  });
+
+  it("goes live past a failed look and skips looks already baked", async () => {
+    const first = rebake({
+      published: "1.0",
+      snapshots: [snapshot("a", "found", 1)],
+    });
+    await first.run();
+    const present = first.state.baked[0]?.lookHash;
+    const { state, run } = rebake({
+      published: "1.0",
+      snapshots: [snapshot("a", "found", 1), snapshot("b", "found", 2)],
+      present: (hash) => hash === present,
+      fail: () => true,
+    });
+    const summary = await run();
+    expect(summary).toMatchObject({ baked: 0, published: true });
+    expect(summary.failed).toHaveLength(1);
+    expect(state.published).toBe("2.0");
+  });
+
+  it("stays on the old build when the worker stops mid-way", async () => {
+    const { state, run } = rebake({
+      published: "1.0",
+      snapshots: [snapshot("a", "found", 1), snapshot("b", "found", 2)],
+      stopAfter: 1,
+    });
+    expect(await run()).toMatchObject({ baked: 1, published: false });
+    expect(state.published).toBe("1.0");
   });
 });

@@ -7,11 +7,13 @@ import {
   makeEnsureFixedLook,
   makeEnsureWorldMap,
   makePrebakeBodies,
+  makeRebakeLooks,
   publicIconUrl,
 } from "./modules/character/index.js";
 import {
   BakerProcess,
   makeBattleNetPlayableRaceSource,
+  makeDrizzleCharacterCache,
   makeFileBakeProgressSink,
   makeFilePrebakeLedger,
   makeFilesystemModelAssetStore,
@@ -130,16 +132,27 @@ const composed = await composeGuild({
 });
 const today = calendarDay(systemClock.now(), env.HISTORY_TIME_ZONE);
 
+const bakeLook = makeBakeLook({
+  baker,
+  progress: makeFileBakeProgressSink(assetRoot),
+});
 await registerModelJobs(boss, {
-  bakeLook: makeBakeLook({
-    baker,
-    progress: makeFileBakeProgressSink(assetRoot),
-  }),
+  bakeLook,
   bakeFile: (job) => baker.bakeFile(job),
   prebakeBodies: makePrebakeBodies({
     baker,
     races: makeBattleNetPlayableRaceSource(composed.battleNet),
     ledger: makeFilePrebakeLedger(path.join(bakerCache, "prebake.json")),
+  }),
+  rebakeLooks: makeRebakeLooks({
+    baker,
+    assets,
+    bakeLook,
+    roster: async () => {
+      const roster = await composed.getGuildRoster(composed.guild);
+      return roster.ok ? roster.value.data : [];
+    },
+    cache: makeDrizzleCharacterCache(database),
   }),
   stopping: () => shuttingDown,
   timeZone: env.HISTORY_TIME_ZONE,

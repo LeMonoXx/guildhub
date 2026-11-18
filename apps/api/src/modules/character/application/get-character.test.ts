@@ -62,6 +62,7 @@ function assets(
   const requests: string[] = [];
   return {
     currentBuild: () => Promise.resolve("1.60.1.70938"),
+    publishBuild: () => Promise.resolve(),
     hasLook: (hash) => Promise.resolve(readyHashes.includes(hash)),
     writeLookRequest: (job) => {
       requests.push(job.lookHash);

@@ -5,7 +5,10 @@ import {
 } from "../../../platform/jobs/queue.js";
 import type {
   BakeLook,
+  LookRebakeSummary,
   makePrebakeBodies,
+  makeRebakeLooks,
+  PrebakeSummary,
 } from "../application/bake-models.js";
 import type { ConvertFileJob } from "../application/ports.js";
 import type { LookBakeDocument } from "../domain/look.js";
@@ -26,13 +29,17 @@ export interface ModelJobs {
   readonly bakeLook: BakeLook;
   readonly bakeFile: (job: ConvertFileJob) => Promise<void>;
   readonly prebakeBodies: ReturnType<typeof makePrebakeBodies>;
-  /** True once the worker shuts down; a prebake ends between bodies. */
+  readonly rebakeLooks: ReturnType<typeof makeRebakeLooks>;
+  /** True once the worker shuts down; a prebake ends between bodies or looks. */
   readonly stopping: () => boolean;
   readonly timeZone: string;
   readonly log: JobLog;
 }
 
-/** Look, file, and prebake jobs; prebakes run daily and once at startup. */
+/**
+ * Look, file, and prebake jobs; prebakes run daily and once at startup. A new
+ * game build bakes every body, then every member's look, then goes live.
+ */
 export async function registerModelJobs(
   boss: PgBoss,
   jobs: ModelJobs,
@@ -69,18 +76,34 @@ export async function registerModelJobs(
       );
       throw new Error(`playable races unavailable: ${summary.error.code}`);
     }
-    const { build, current, races, baked, failed } = summary.value;
-    if (current) {
-      jobs.log.info({ module: "baker", build }, "game build unchanged");
-      return;
-    }
-    for (const failure of failed)
-      jobs.log.warn({ module: "baker", build, ...failure }, "prebake failed");
-    jobs.log.info(
-      { module: "baker", build, races, baked, failed: failed.length },
-      "bodies prebaked",
-    );
+    logBodies(jobs.log, summary.value);
+    logLooks(jobs.log, await jobs.rebakeLooks(jobs.stopping));
   });
   await boss.schedule(PREBAKE_QUEUE, DAILY, {}, { tz: jobs.timeZone });
   await boss.send(PREBAKE_QUEUE, {});
+}
+
+function logBodies(log: JobLog, summary: PrebakeSummary): void {
+  const { build, current, races, baked, failed } = summary;
+  if (current) {
+    log.info({ module: "baker", build }, "game build unchanged");
+    return;
+  }
+  for (const failure of failed)
+    log.warn({ module: "baker", build, ...failure }, "prebake failed");
+  log.info(
+    { module: "baker", build, races, baked, failed: failed.length },
+    "bodies prebaked",
+  );
+}
+
+function logLooks(log: JobLog, summary: LookRebakeSummary): void {
+  const { build, current, looks, baked, failed, published } = summary;
+  if (current) return;
+  for (const failure of failed)
+    log.warn({ module: "baker", build, ...failure }, "look rebake failed");
+  log.info(
+    { module: "baker", build, looks, baked, failed: failed.length, published },
+    published ? "game build published" : "look rebake stopped",
+  );
 }

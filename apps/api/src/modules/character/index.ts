@@ -27,6 +27,7 @@ export {
   makeEnsureFixedLook,
   makeEnsureWorldMap,
   makePrebakeBodies,
+  makeRebakeLooks,
 } from "./application/bake-models.js";
 export type { ConvertFileJob, ModelBuildQueue } from "./application/ports.js";
 export type { LookBakeDocument } from "./domain/look.js";

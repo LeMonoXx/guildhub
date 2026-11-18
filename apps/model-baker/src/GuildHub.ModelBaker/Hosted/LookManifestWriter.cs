@@ -34,9 +34,11 @@ public sealed class LookManifestWriter(string build)
         animations);
 
     store.WriteJson(AssetStorePaths.ManifestPath(lookHash), manifest);
-    store.WriteJson(
-        AssetStorePaths.CurrentPath,
-        new { build, fixedLook = AssetStorePaths.ManifestPath(null) });
+    // The worker moves the site to a new build once every member's look is baked for it.
+    if (!store.Exists(AssetStorePaths.CurrentPath))
+      store.WriteJson(
+          AssetStorePaths.CurrentPath,
+          new { build, fixedLook = AssetStorePaths.ManifestPath(null) });
     return manifest;
   }
 }

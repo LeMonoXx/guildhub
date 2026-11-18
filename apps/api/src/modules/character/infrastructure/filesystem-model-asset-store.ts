@@ -1,8 +1,10 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ModelAssetStore, WorldMapAssets } from "../application/ports.js";
 import type { LookBakeDocument } from "../domain/look.js";
 import { readLookProgress } from "./look-progress-file.js";
+
+const FIXED_LOOK_MANIFEST_PATH = "looks/fixed/look.json";
 
 export function makeFilesystemModelAssetStore(
   root: string | undefined,
@@ -19,6 +21,16 @@ export function makeFilesystemModelAssetStore(
       } catch {
         return undefined;
       }
+    },
+    publishBuild: async (build) => {
+      if (root === undefined) return;
+      const target = path.join(root, "current.json");
+      const staged = `${target}.next`;
+      await writeFile(
+        staged,
+        `${JSON.stringify({ build, fixedLook: FIXED_LOOK_MANIFEST_PATH }, null, 2)}\n`,
+      );
+      await rename(staged, target);
     },
     hasLook: async (lookHash) => {
       if (root === undefined) return false;

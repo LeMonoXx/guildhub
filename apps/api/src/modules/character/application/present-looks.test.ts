@@ -48,6 +48,7 @@ describe("present featured members", () => {
     };
     const assets: ModelAssetStore = {
       currentBuild: () => Promise.resolve("1.60.1.70938"),
+      publishBuild: () => Promise.resolve(),
       hasLook: () => Promise.resolve(false),
       writeLookRequest: () => Promise.resolve(),
       bakeProgress: () => Promise.resolve(undefined),
@@ -88,6 +89,7 @@ describe("present featured members", () => {
       },
       assets: {
         currentBuild: () => Promise.resolve("1.60.1.70938"),
+        publishBuild: () => Promise.resolve(),
         hasLook: () => Promise.resolve(true),
         writeLookRequest: () => Promise.resolve(),
         bakeProgress: () => Promise.resolve(undefined),

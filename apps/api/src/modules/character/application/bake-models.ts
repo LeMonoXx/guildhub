@@ -1,8 +1,12 @@
 import type { AppError } from "../../../platform/kernel/app-error.js";
 import { ok, type Result } from "../../../platform/kernel/result.js";
-import type { LookBakeDocument } from "../domain/look.js";
+import type { RosterMember } from "../../guild/index.js";
+import { toLookBakeDocument, type LookBakeDocument } from "../domain/look.js";
+import type { CharacterSnapshot } from "../domain/snapshot.js";
+import { lookHash } from "./look-hash.js";
 import type {
   BakeProgressSink,
+  CharacterCache,
   ModelAssetStore,
   ModelBaker,
   PlayableRaceSource,
@@ -116,6 +120,102 @@ export const makePrebakeBodies =
       failed: run.failed,
     });
   };
+
+export interface LookRebakeSummary {
+  readonly build: string;
+  /** True when the site already shows this build; nothing was baked. */
+  readonly current: boolean;
+  readonly looks: number;
+  readonly baked: number;
+  readonly failed: readonly {
+    readonly lookHash: string;
+    readonly reason: string;
+  }[];
+  /** True when the site now shows `build`. */
+  readonly published: boolean;
+}
+
+/**
+ * Bakes every member's cached look for a new game build before the site
+ * switches to it, so no visitor waits on a bake after a patch. A failed look
+ * does not hold the switch back: it bakes again on demand. A stop leaves the
+ * site on the old build and the next run picks up the rest.
+ */
+export const makeRebakeLooks =
+  (deps: {
+    readonly baker: ModelBaker;
+    readonly assets: ModelAssetStore;
+    readonly bakeLook: BakeLook;
+    readonly roster: () => Promise<readonly RosterMember[]>;
+    readonly cache: CharacterCache;
+  }) =>
+  async (
+    shouldStop: () => boolean = () => false,
+  ): Promise<LookRebakeSummary> => {
+    const build = await deps.baker.currentBuild();
+    if ((await deps.assets.currentBuild()) === build)
+      return {
+        build,
+        current: true,
+        looks: 0,
+        baked: 0,
+        failed: [],
+        published: false,
+      };
+
+    const members = await deps.roster();
+    const snapshots = await deps.cache.latestMany(
+      members.map((member) => member.characterId),
+    );
+    const looks = looksFor(snapshots, build);
+    let baked = 0;
+    const failed: LookRebakeSummary["failed"][number][] = [];
+    for (const look of looks) {
+      if (shouldStop())
+        return {
+          build,
+          current: false,
+          looks: looks.length,
+          baked,
+          failed,
+          published: false,
+        };
+      if (await deps.assets.hasLook(look.lookHash)) continue;
+      try {
+        await deps.assets.writeLookRequest(look);
+        await deps.bakeLook(look);
+        baked++;
+      } catch (error) {
+        failed.push({
+          lookHash: look.lookHash,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    await deps.assets.publishBuild(build);
+    return {
+      build,
+      current: false,
+      looks: looks.length,
+      baked,
+      failed,
+      published: true,
+    };
+  };
+
+function looksFor(
+  snapshots: readonly CharacterSnapshot[],
+  build: string,
+): LookBakeDocument[] {
+  const looks = new Map<string, LookBakeDocument>();
+  for (const snapshot of snapshots) {
+    if (snapshot.status !== "found") continue;
+    const look = { ...snapshot.facts, clientBuild: build };
+    const hash = lookHash(look);
+    looks.set(hash, toLookBakeDocument(hash, look));
+  }
+  return [...looks.values()];
+}
 
 interface RaceList {
   readonly ids: readonly number[];

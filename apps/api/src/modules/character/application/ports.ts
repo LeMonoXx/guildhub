@@ -82,7 +82,10 @@ export interface ModelBuildQueue {
 }
 
 export interface ModelAssetStore {
+  /** The game build whose looks the site shows. */
   currentBuild(): Promise<string | undefined>;
+  /** Switches the site to `build`; its looks must be baked first. */
+  publishBuild(build: string): Promise<void>;
   hasLook(lookHash: string): Promise<boolean>;
   writeLookRequest(job: LookBakeDocument): Promise<void>;
   /** Undefined when no bake of this look is running. */

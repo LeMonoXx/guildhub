@@ -120,6 +120,7 @@ function professionChanges(
         ...base,
         kind: "profession",
         profession: profession.name,
+        ...(profession.id === undefined ? {} : { professionId: profession.id }),
         from,
         to: profession.skill,
         ...(profession.maxSkill === undefined
@@ -166,6 +167,18 @@ function newlyListed(
 }
 
 /**
+ * Whether gains may lie beyond what the list shows: always without lists, and
+ * with them only when every listed achievement is new. Otherwise Battle.net
+ * counted an achievement before listing it, and a later check names it.
+ */
+const overflowed = (
+  member: MemberState,
+  fresh: readonly ListedAchievement[] | undefined,
+) =>
+  fresh === undefined ||
+  (fresh.length > 0 && fresh.length === member.recentAchievements?.length);
+
+/**
  * Each achievement on its own, at the time it was earned: the ones `earned`
  * places between the checks, else the ones newly listed. Whatever the lists
  * cannot account for, like checks from before they were kept, stays a count.
@@ -179,7 +192,9 @@ function achievementChanges(
   const fresh = newlyListed(earlier, member);
   const shown = earned ?? fresh ?? [];
   const accounted = Math.max(fresh?.length ?? 0, shown.length);
-  const unlisted = member.achievements - earlier.achievements - accounted;
+  const unlisted = overflowed(member, fresh)
+    ? member.achievements - earlier.achievements - accounted
+    : 0;
   return [
     ...shown.map((achievement): HistoryEvent => ({
       ...base,

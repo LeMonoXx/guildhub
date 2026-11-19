@@ -267,6 +267,17 @@ describe("achievements across checks", () => {
     ]);
   });
 
+  it("waits for Battle.net to name an achievement it already counted", () => {
+    const known = { id: 6, name: "Known", at: "2026-11-01T20:00:00.000Z" };
+    const events = diffChecks(
+      at("2026-11-02T13:00:00.000Z", [member({ recentAchievements: [known] })]),
+      at("2026-11-02T14:00:00.000Z", [
+        member({ achievements: 11, recentAchievements: [known] }),
+      ]),
+    );
+    expect(events).toEqual([]);
+  });
+
   it("counts achievements of checks recorded before they were listed", () => {
     const events = eventsOf([
       at("2026-11-02T13:00:00.000Z", [member()]),

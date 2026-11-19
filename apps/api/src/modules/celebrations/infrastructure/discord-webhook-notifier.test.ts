@@ -7,6 +7,7 @@ const craft = (milestone: number): Celebration => ({
   kind: "profession",
   member,
   profession: "Schmiedekunst",
+  professionId: 164,
   milestone,
 });
 
@@ -36,13 +37,20 @@ describe("discord webhook notifier", () => {
             title: "Ann: Schmiedekunst auf 300",
             url: "https://guild.example/characters/ann-example",
             color: 0xfff569,
-            thumbnail: {
-              url: "https://guild.example/api/characters/ann-example/avatar",
-            },
+            thumbnail: { url: "https://guild.example/api/icons/136241" },
           }),
         ],
       },
     ]);
+  });
+
+  it("leaves the picture out rather than repeat the member", async () => {
+    const { bodies, notifier } = setup();
+    await notifier.announce([
+      { kind: "profession", member, profession: "X", milestone: 150 },
+    ]);
+    const [body] = bodies as { embeds: Record<string, unknown>[] }[];
+    expect(body?.embeds[0]).not.toHaveProperty("thumbnail");
   });
 
   it("fits as many celebrations in a post as Discord takes", () => {

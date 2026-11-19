@@ -17,6 +17,7 @@ export type Celebration = { readonly member: CelebratedMember } & (
   | {
       readonly kind: "profession";
       readonly profession: string;
+      readonly professionId?: number;
       readonly milestone: number;
     }
   | {
@@ -28,7 +29,6 @@ export type Celebration = { readonly member: CelebratedMember } & (
   | {
       readonly kind: "achievements";
       readonly count: number;
-      readonly points: number;
     }
   | {
       readonly kind: "achievement";
@@ -63,6 +63,9 @@ const selectors: Selectors = {
         kind: "profession",
         member,
         profession: event.profession,
+        ...(event.professionId === undefined
+          ? {}
+          : { professionId: event.professionId }),
         milestone,
       })),
   reputation: (event, member) =>
@@ -78,7 +81,7 @@ const selectors: Selectors = {
         ]
       : [],
   achievements: (event, member) => [
-    { kind: "achievements", member, count: event.count, points: event.points },
+    { kind: "achievements", member, count: event.count },
   ],
   achievement: (event, member) => [
     {

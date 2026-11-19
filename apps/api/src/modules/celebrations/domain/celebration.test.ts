@@ -81,7 +81,7 @@ describe("celebrationsOf", () => {
   it("cheers new achievements", () => {
     expect(
       celebrationsOf([{ ...base, kind: "achievements", count: 2, points: 20 }]),
-    ).toEqual([{ kind: "achievements", member, count: 2, points: 20 }]);
+    ).toEqual([{ kind: "achievements", member, count: 2 }]);
   });
 
   it("cheers each achievement by name", () => {

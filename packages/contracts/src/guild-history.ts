@@ -47,6 +47,8 @@ export const historyEventSchema = z.discriminatedUnion("kind", [
   eventSchema.extend({
     kind: z.literal("profession"),
     profession: z.string().min(1),
+    /** Battle.net's skill line; absent in checks recorded before it was kept. */
+    professionId: z.number().int().positive().optional(),
     ...change(z.number().int().nonnegative()).shape,
     maxSkill: z.number().int().nonnegative().optional(),
   }),

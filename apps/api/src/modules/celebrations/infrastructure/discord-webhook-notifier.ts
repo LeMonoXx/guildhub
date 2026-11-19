@@ -1,6 +1,7 @@
 import type { ContentLocale } from "@guildhub/contracts";
 import type { CelebrationNotifier } from "../application/ports.js";
 import type { Celebration } from "../domain/celebration.js";
+import { celebrationImage } from "./discord-images.js";
 import { celebrationText } from "./discord-texts.js";
 
 /** Discord rejects a message with more embeds than this. */
@@ -40,24 +41,17 @@ function embed(
   const page = new URL(`/characters/${member.slug}`, siteUrl).href;
   const avatar = new URL(`/api/characters/${member.slug}/avatar`, siteUrl).href;
   const { title, description } = celebrationText(celebration, locale);
+  const image = celebrationImage(celebration);
   return {
     author: { name: member.name, url: page, icon_url: avatar },
     title,
     description,
     url: page,
     color: CLASS_COLORS[member.classId] ?? FALLBACK_COLOR,
-    thumbnail: { url: thumbnailOf(celebration, siteUrl) ?? avatar },
+    ...(image === undefined
+      ? {}
+      : { thumbnail: { url: new URL(image, siteUrl).href } }),
   };
-}
-
-/** An achievement shows its own icon; everything else the member. */
-function thumbnailOf(
-  celebration: Celebration,
-  siteUrl: string,
-): string | undefined {
-  return celebration.kind === "achievement" && celebration.iconUrl !== undefined
-    ? new URL(celebration.iconUrl, siteUrl).href
-    : undefined;
 }
 
 export function makeDiscordWebhookNotifier(

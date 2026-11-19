@@ -49,6 +49,7 @@ export function toMemberState({ member, profile }: MemberProfile): MemberState {
       ...(item.iconUrl === undefined ? {} : { iconUrl: item.iconUrl }),
     })),
     professions: data.professions.map((p) => ({
+      id: p.id,
       name: p.name,
       skill: p.skill,
       maxSkill: p.maxSkill,

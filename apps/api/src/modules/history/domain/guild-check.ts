@@ -35,6 +35,7 @@ export interface MemberState {
     readonly iconUrl?: string;
   }[];
   readonly professions: readonly {
+    readonly id?: number;
     readonly name: string;
     readonly skill: number;
     readonly maxSkill?: number;

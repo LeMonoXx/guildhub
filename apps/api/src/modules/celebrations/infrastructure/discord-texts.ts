@@ -44,9 +44,10 @@ const texts: Readonly<Record<ContentLocale, Texts>> = {
       title: `${member.name} ist jetzt ${standing}`,
       description: `Ruf bei ${faction}: ${standing}.`,
     }),
-    achievements: ({ member, count, points }) => ({
-      title: `${member.name} hat neue Erfolge errungen`,
-      description: `Neue Erfolge: ${String(count)} · Punkte: +${String(points)}`,
+    achievements: ({ member, count }) => ({
+      title: `${member.name} hat ${String(count)} Erfolge errungen`,
+      description:
+        "So viele auf einmal, dass Battle.net nicht alle einzeln nennt.",
     }),
     achievement: ({ member, achievement }) => ({
       title: `${member.name} hat einen Erfolg errungen`,
@@ -66,9 +67,9 @@ const texts: Readonly<Record<ContentLocale, Texts>> = {
       title: `${member.name} is now ${standing}`,
       description: `Reputation with ${faction}: ${standing}.`,
     }),
-    achievements: ({ member, count, points }) => ({
-      title: `${member.name} earned new achievements`,
-      description: `New achievements: ${String(count)} · Points: +${String(points)}`,
+    achievements: ({ member, count }) => ({
+      title: `${member.name} earned ${String(count)} achievements`,
+      description: "So many at once that Battle.net does not name them all.",
     }),
     achievement: ({ member, achievement }) => ({
       title: `${member.name} earned an achievement`,

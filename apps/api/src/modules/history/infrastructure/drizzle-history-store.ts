@@ -46,6 +46,7 @@ export const membersSchema = z.array(
     ),
     professions: z.array(
       z.object({
+        id: z.number().optional(),
         name: z.string(),
         skill: z.number(),
         maxSkill: z.number().optional(),

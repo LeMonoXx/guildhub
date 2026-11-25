@@ -51,14 +51,29 @@ export async function sendBattleNet<NotFound extends ProblemCode>(
     if (client.defaults.token === undefined) {
       await client.refreshAccessToken();
     }
-    const body = await client.sendRequest(resource, {
-      locale: battleNetLocaleOf(locale),
-    });
-    if (body === undefined) return err(appError("upstream.unavailable"));
-    return ok(body);
+    return await readBattleNet(client, resource, locale);
   } catch (error) {
-    return err(mapUpstreamError(error, notFound));
+    if (httpStatus(error) !== 401)
+      return err(mapUpstreamError(error, notFound));
+    try {
+      await client.refreshAccessToken();
+      return await readBattleNet(client, resource, locale);
+    } catch (retryError) {
+      return err(mapUpstreamError(retryError, notFound));
+    }
   }
+}
+
+async function readBattleNet(
+  client: BlizzardApiClient,
+  resource: BattleNetResource,
+  locale: ContentLocale,
+): Promise<Result<unknown, AppError<"upstream.unavailable">>> {
+  const body = await client.sendRequest(resource, {
+    locale: battleNetLocaleOf(locale),
+  });
+  if (body === undefined) return err(appError("upstream.unavailable"));
+  return ok(body);
 }
 
 const MAX_RETRY_WAIT_MS = 5000;

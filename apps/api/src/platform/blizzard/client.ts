@@ -31,7 +31,9 @@ export async function createBattleNetClient(
       },
     };
   }
-  return createBlizzardApiClient(options, false);
+  // Client credentials expire. The library refreshes the token before that,
+  // and again after a failed refresh, so a long-lived process keeps reading.
+  return createBlizzardApiClient(options, true);
 }
 
 export function rewriteBattleNetRequest(

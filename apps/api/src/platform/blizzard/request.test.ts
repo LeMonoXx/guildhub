@@ -1,6 +1,6 @@
 import type { BlizzardApiClient } from "@blizzard-api/client";
 import { describe, expect, it } from "vitest";
-import { sendBattleNetPatiently } from "./request.js";
+import { sendBattleNet, sendBattleNetPatiently } from "./request.js";
 
 const throttled = (retryAfter: string) =>
   Object.assign(new Error("Too Many Requests"), {
@@ -26,6 +26,35 @@ const clientAnswering = (...answers: (Error | object)[]) => {
 };
 
 const resource = { path: "/data/wow/item/1", namespace: "static" } as never;
+
+describe("sendBattleNet", () => {
+  it("refreshes an expired token and reads again", async () => {
+    const unauthorized = Object.assign(new Error("Unauthorized"), {
+      response: new Response(null, { status: 401 }),
+    });
+    let refreshed = 0;
+    let calls = 0;
+    const client = {
+      defaults: { token: "expired" },
+      refreshAccessToken: () => {
+        refreshed += 1;
+        return Promise.resolve({ access_token: "fresh", expires_in: 3600 });
+      },
+      sendRequest: () => {
+        calls += 1;
+        return calls === 1
+          ? Promise.reject(unauthorized)
+          : Promise.resolve({ id: 7 });
+      },
+    } as unknown as BlizzardApiClient;
+    const result = await sendBattleNet(client, resource, {
+      notFound: "character.not_found",
+    });
+    expect(result).toEqual({ ok: true, value: { id: 7 } });
+    expect(refreshed).toBe(1);
+    expect(calls).toBe(2);
+  });
+});
 
 describe("sendBattleNetPatiently", () => {
   it("waits as asked and tries a throttled request again", async () => {

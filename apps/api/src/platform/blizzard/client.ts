@@ -31,9 +31,10 @@ export async function createBattleNetClient(
       },
     };
   }
-  // Client credentials expire. The library refreshes the token before that,
-  // and again after a failed refresh, so a long-lived process keeps reading.
-  return createBlizzardApiClient(options, true);
+  // Do not refresh during construction. The image health check and a short
+  // OAuth outage must still let the process listen. An expired token is
+  // replaced when Battle.net rejects it.
+  return createBlizzardApiClient(options, false);
 }
 
 export function rewriteBattleNetRequest(
